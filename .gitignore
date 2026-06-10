@@ -25,7 +25,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files — valores reais só no Dokploy (R9)
+.env
 .env*.local
 
 # vercel

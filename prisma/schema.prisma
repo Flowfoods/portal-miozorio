@@ -1,0 +1,15 @@
+// Esquema do portal Mi Ozorio.
+// As tabelas completas — business_settings, professionals, services, customers,
+// bookings, schedule_blocks, booking_events, event_sessions, waitlist,
+// notification_log — entram no Módulo 1 (M1.1), junto da migration SQL manual
+// da constraint no_overlap (EXCLUDE USING gist + btree_gist) que impede
+// double-booking no banco (regra R2).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

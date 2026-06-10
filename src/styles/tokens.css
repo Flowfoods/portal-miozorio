@@ -1,0 +1,17 @@
+/* Design tokens — Mi Ozorio Beauty Artist (fonte: skill miespecialista, seção 5).
+   As fontes Cormorant Garamond e Jost são carregadas via next/font (layout.tsx),
+   que injeta as variáveis --font-titulo e --font-corpo no <body>. */
+:root {
+  --mi-branco: #ffffff;
+  --mi-bege: #f5f0e8; /* fundo principal */
+  --mi-cinza: #e8e6e3; /* superfícies/divisores */
+  --mi-marrom: #8a7361; /* acento, títulos, botões */
+  --mi-marrom-escuro: #5c4a3d; /* hover/texto forte */
+  --mi-texto: #3d3733;
+
+  --font-titulo-stack: var(--font-titulo), "Cormorant Garamond", serif;
+  --font-corpo-stack: var(--font-corpo), "Jost", "Inter", sans-serif;
+
+  --radius: 14px;
+  --shadow-suave: 0 8px 30px rgb(0 0 0 / 0.06);
+}
