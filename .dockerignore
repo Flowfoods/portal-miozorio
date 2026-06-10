@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.husky
+coverage
+npm-debug.log*
+.env
+.env*.local
+README.md
+docs
+tests
+.claude
