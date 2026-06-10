@@ -1,9 +1,11 @@
-// Esquema do portal Mi Ozorio.
-// As tabelas completas — business_settings, professionals, services, customers,
-// bookings, schedule_blocks, booking_events, event_sessions, waitlist,
-// notification_log — entram no Módulo 1 (M1.1), junto da migration SQL manual
-// da constraint no_overlap (EXCLUDE USING gist + btree_gist) que impede
-// double-booking no banco (regra R2).
+// Esquema do portal Mi Ozorio (M1.1).
+// Base: booking-engine/references/schema-sql.md, adaptado ao negócio da Milene
+// (preço estúdio/domicílio, pending_price de sobrancelha, curso com turmas,
+// campos de responsável/LGPD para debutantes menores — R6).
+//
+// ⚠️ A constraint no_overlap (EXCLUDE USING gist) que impede double-booking no
+// banco (R2) NÃO é expressável em Prisma — está na migration SQL manual
+// (prisma/migrations/.../migration.sql).
 
 generator client {
   provider = "prisma-client-js"
@@ -12,4 +14,181 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  completed
+  cancelled_by_client
+  cancelled_by_business
+  no_show
+}
+
+/// Configuração do negócio — parâmetros externos, nunca hardcode (R3).
+/// Chaves: working_hours, buffer_min, min_lead_hours, max_lead_days,
+/// reminder_hours, cancel_window_days, strike_limit, hold_minutes,
+/// timezone, deposit_policy.
+model BusinessSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@map("business_settings")
+}
+
+model Professional {
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String
+  active Boolean @default(true)
+
+  bookings       Booking[]
+  scheduleBlocks ScheduleBlock[]
+
+  @@map("professionals")
+}
+
+model Service {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique // slug estável p/ seed: maquiagem-social, penteado...
+  name            String
+  category        String // social | noiva | debutante | curso | sobrancelha
+  durationMin     Int      @map("duration_min")
+  bufferMin       Int      @default(15) @map("buffer_min")
+  priceCents      Int      @map("price_cents") // preço estúdio/base
+  priceHomeCents  Int?     @map("price_home_cents") // preço domicílio (null = n/a)
+  bookableOnline  Boolean  @default(true) @map("bookable_online") // false p/ noiva/debutante (R1)
+  requiresDeposit Boolean  @default(false) @map("requires_deposit")
+  pendingPrice    Boolean  @default(false) @map("pending_price") // sobrancelha a confirmar
+  isCourse        Boolean  @default(false) @map("is_course") // usa event_sessions
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  bookings      Booking[]
+  eventSessions EventSession[]
+  waitlist      Waitlist[]
+
+  @@map("services")
+}
+
+model Customer {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  phoneE164       String    @unique @map("phone_e164") // +5521970225231 (R5)
+  email           String?
+  birthDate       DateTime? @map("birth_date") @db.Date
+  guardianName    String?   @map("guardian_name") // obrigatório se menor (R6)
+  guardianPhone   String?   @map("guardian_phone")
+  strikes         Int       @default(0)
+  requiresDeposit Boolean   @default(false) @map("requires_deposit") // régua de reincidência
+  lgpdConsentAt   DateTime? @map("lgpd_consent_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  bookings Booking[]
+  waitlist Waitlist[]
+
+  @@map("customers")
+}
+
+model Booking {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId     String        @map("customer_id") @db.Uuid
+  serviceId      String        @map("service_id") @db.Uuid
+  professionalId String?       @map("professional_id") @db.Uuid
+  eventSessionId String?       @map("event_session_id") @db.Uuid
+  startsAt       DateTime      @map("starts_at") @db.Timestamptz
+  endsAt         DateTime      @map("ends_at") @db.Timestamptz // inclui buffer
+  status         BookingStatus @default(pending)
+  location       String        @default("studio") // studio | home
+  priceCents     Int           @map("price_cents") // snapshot do valor cobrado
+  holdExpiresAt  DateTime?     @map("hold_expires_at") @db.Timestamptz // só em pending
+  depositCents   Int?          @map("deposit_cents")
+  depositPaidAt  DateTime?     @map("deposit_paid_at") @db.Timestamptz
+  anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
+  source         String        @default("web") // web | whatsapp | manual
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  service       Service           @relation(fields: [serviceId], references: [id])
+  professional  Professional?     @relation(fields: [professionalId], references: [id])
+  eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
+  events        BookingEvent[]
+  notifications NotificationLog[]
+  // ⚠️ CHECK (ends_at > starts_at) + constraint no_overlap EXCLUDE USING gist
+  //    na migration SQL manual — ver migration.sql.
+
+  @@index([startsAt])
+  @@index([customerId])
+  @@map("bookings")
+}
+
+/// Bloqueios de agenda (férias, evento fechado, compromisso). professional_id
+/// NULL = bloqueia todos.
+model ScheduleBlock {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  professionalId String?  @map("professional_id") @db.Uuid
+  startsAt       DateTime @map("starts_at") @db.Timestamptz
+  endsAt         DateTime @map("ends_at") @db.Timestamptz
+  reason         String?
+
+  professional Professional? @relation(fields: [professionalId], references: [id])
+
+  @@map("schedule_blocks")
+}
+
+/// Auditoria de transições de status (quem/quando/motivo) — regra de ouro 7.
+model BookingEvent {
+  id         BigInt         @id @default(autoincrement())
+  bookingId  String         @map("booking_id") @db.Uuid
+  fromStatus BookingStatus? @map("from_status")
+  toStatus   BookingStatus  @map("to_status")
+  actor      String // customer | business | system
+  reason     String?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("booking_events")
+}
+
+/// Turmas/cursos com vagas (ex: automaquiagem). vagas = capacity − confirmados.
+model EventSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId String   @map("service_id") @db.Uuid
+  startsAt  DateTime @map("starts_at") @db.Timestamptz
+  endsAt    DateTime @map("ends_at") @db.Timestamptz
+  capacity  Int      @default(1)
+
+  service  Service   @relation(fields: [serviceId], references: [id])
+  bookings Booking[]
+
+  @@map("event_sessions")
+}
+
+/// Fila de espera de um dia lotado (R: F6).
+model Waitlist {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId  String    @map("customer_id") @db.Uuid
+  serviceId   String    @map("service_id") @db.Uuid
+  desiredDate DateTime  @map("desired_date") @db.Date
+  notifiedAt  DateTime? @map("notified_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+
+  @@map("waitlist")
+}
+
+/// Idempotência de webhooks/notificações (R10). dedup_key único por evento.
+model NotificationLog {
+  id        BigInt   @id @default(autoincrement())
+  bookingId String?  @map("booking_id") @db.Uuid
+  kind      String // reminder_24h | confirmation | review_request...
+  dedupKey  String   @unique @map("dedup_key")
+  sentAt    DateTime @default(now()) @map("sent_at") @db.Timestamptz
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@map("notification_log")
 }
