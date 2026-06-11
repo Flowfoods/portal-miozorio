@@ -21,3 +21,12 @@
     color: var(--mi-marrom-escuro);
   }
 }
+
+@layer components {
+  .input-mi {
+    @apply w-full rounded-mi border border-mi-cinza bg-mi-branco px-4 py-3 font-corpo text-mi-texto outline-none transition-colors;
+  }
+  .input-mi:focus {
+    @apply border-mi-marrom;
+  }
+}
