@@ -19,6 +19,14 @@ RUN npm run build
 # ignora o tsconfig do projeto, então o output fica isolado em /app/seed-dist.
 RUN npx tsc prisma/seed.ts --outDir seed-dist --module commonjs --target es2020 --esModuleInterop --skipLibCheck
 
+# CLI do Prisma isolado para o `migrate deploy` do entrypoint. Instalar via npm
+# garante a árvore completa (o CLI 6.x requer effect/@prisma/config etc. — copiar
+# só node_modules/prisma do builder quebra com MODULE_NOT_FOUND).
+FROM node:20-alpine AS prisma-cli
+WORKDIR /cli
+RUN apk add --no-cache openssl \
+  && npm install prisma@6.19.3 --omit=dev --no-audit --no-fund
+
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -32,11 +40,11 @@ RUN apk add --no-cache openssl \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Prisma: schema + engines + CLI para `migrate deploy` no entrypoint.
+# Prisma: schema + engines do client + CLI isolado p/ `migrate deploy`.
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=prisma-cli --chown=nextjs:nodejs /cli/node_modules ./prisma-cli/node_modules
 # Seed compilado (idempotente; entrypoint roda com --if-empty).
 COPY --from=builder --chown=nextjs:nodejs /app/seed-dist/seed.js ./prisma/seed.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
