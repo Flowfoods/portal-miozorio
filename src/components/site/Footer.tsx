@@ -38,8 +38,12 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-mi-cinza/60 py-4 text-center font-corpo text-xs text-mi-marrom">
-        © {new Date().getFullYear()} Milene Ozorio · Beauty Artist
+      <div className="flex items-center justify-center gap-3 border-t border-mi-cinza/60 py-4 text-center font-corpo text-xs text-mi-marrom">
+        <span>© {new Date().getFullYear()} Milene Ozorio · Beauty Artist</span>
+        <span aria-hidden>·</span>
+        <Link href="/admin" className="hover:underline">
+          Área da Mi
+        </Link>
       </div>
     </footer>
   );
