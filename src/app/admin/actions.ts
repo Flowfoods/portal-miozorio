@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { Prisma } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
@@ -111,6 +112,106 @@ export async function adminUpdateService(
   revalidatePath("/agendar");
 }
 
+/** "Maquiagem p/ Festa" → "maquiagem-p-festa" (único: sufixo -2, -3…). */
+async function uniqueServiceCode(name: string): Promise<string> {
+  const base =
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48) || "servico";
+  let code = base;
+  for (let i = 2; ; i++) {
+    const exists = await prisma.service.findUnique({ where: { code } });
+    if (!exists) return code;
+    code = `${base}-${i}`;
+  }
+}
+
+const SERVICE_CATEGORIES = [
+  "social",
+  "sobrancelha",
+  "curso",
+  "noiva",
+  "debutante",
+] as const;
+
+export async function adminCreateService(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 3) fail("Dê um nome ao serviço (mínimo 3 letras).");
+
+  const category = String(formData.get("category") ?? "");
+  if (!SERVICE_CATEGORIES.includes(category as never)) {
+    fail("Categoria inválida.");
+  }
+
+  const priceCents = reaisToCents(formData.get("price"));
+  const priceHomeCents = reaisToCents(formData.get("priceHome"));
+  const durationMin = Number(formData.get("durationMin"));
+  const bufferMin = Number(formData.get("bufferMin"));
+  const pendingPrice = formData.get("pendingPrice") === "on";
+  if ((priceCents == null && !pendingPrice) || priceCents == null) {
+    fail("Informe o preço (ou marque 'preço a confirmar' com preço 0).");
+  }
+  if (!Number.isInteger(durationMin) || durationMin <= 0) {
+    fail("Duração inválida.");
+  }
+
+  // R1: noiva/debutante nascem (e permanecem) não-agendáveis online.
+  const lockedOffline = category === "noiva" || category === "debutante";
+
+  await prisma.service.create({
+    data: {
+      code: await uniqueServiceCode(name),
+      name,
+      category,
+      durationMin,
+      bufferMin: Number.isInteger(bufferMin) && bufferMin >= 0 ? bufferMin : 15,
+      priceCents,
+      priceHomeCents,
+      bookableOnline: lockedOffline
+        ? false
+        : formData.get("bookableOnline") === "on",
+      pendingPrice,
+      requiresDeposit: formData.get("requiresDeposit") === "on",
+      isCourse: category === "curso",
+      active: true,
+    },
+  });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+}
+
+export async function adminDeleteService(id: string): Promise<void> {
+  await requireAdmin();
+
+  const service = await prisma.service.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
+    },
+  });
+  if (!service) fail("Serviço não encontrado.");
+
+  const refs =
+    service._count.bookings +
+    service._count.eventSessions +
+    service._count.waitlist;
+  if (refs > 0) {
+    fail(
+      "Esse serviço já tem atendimentos no histórico — desative em vez de excluir.",
+    );
+  }
+
+  await prisma.service.delete({ where: { id } });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+}
+
 // ── Configurações do negócio (R3) ───────────────────────────────────────────
 
 const HOURS_RE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
@@ -210,6 +311,70 @@ export async function adminDeleteBlock(id: string): Promise<void> {
   await requireAdmin();
   await prisma.scheduleBlock.delete({ where: { id } }).catch(() => null);
   revalidatePath("/admin/bloqueios");
+}
+
+// ── Usuárias do painel ──────────────────────────────────────────────────────
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export async function adminCreateUser(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (name.length < 2) fail("Informe o nome.");
+  if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
+  if (password.length < 8) fail("A senha precisa de pelo menos 8 caracteres.");
+
+  const exists = await prisma.adminUser.findUnique({ where: { email } });
+  if (exists) fail("Já existe uma conta com esse e-mail.");
+
+  await prisma.adminUser.create({
+    data: { name, email, passwordHash: bcrypt.hashSync(password, 12) },
+  });
+  revalidatePath("/admin/usuarias");
+}
+
+export async function adminToggleUser(id: string): Promise<void> {
+  const session = await requireAdmin();
+
+  const user = await prisma.adminUser.findUnique({ where: { id } });
+  if (!user) fail("Conta não encontrada.");
+  if (user.email === session.user?.email?.toLowerCase()) {
+    fail("Você não pode desativar a própria conta.");
+  }
+  if (user.active) {
+    const otherActive = await prisma.adminUser.count({
+      where: { active: true, id: { not: id } },
+    });
+    if (otherActive === 0) fail("Não dá para desativar a última conta ativa.");
+  }
+
+  await prisma.adminUser.update({
+    where: { id },
+    data: { active: !user.active },
+  });
+  revalidatePath("/admin/usuarias");
+}
+
+export async function adminResetUserPassword(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) fail("A senha precisa de pelo menos 8 caracteres.");
+
+  const user = await prisma.adminUser.findUnique({ where: { id } });
+  if (!user) fail("Conta não encontrada.");
+
+  await prisma.adminUser.update({
+    where: { id },
+    data: { passwordHash: bcrypt.hashSync(password, 12) },
+  });
+  revalidatePath("/admin/usuarias");
 }
 
 // ── Clientes ────────────────────────────────────────────────────────────────
