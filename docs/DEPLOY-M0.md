@@ -42,7 +42,11 @@ OU cron do host:
 - **Create Service → Application** → Source = GitHub (repo + branch) → Build Type =
   **Dockerfile** (`./Dockerfile`, já no repo, build standalone).
 - **Environment:** copiar de `.env.example` (valores reais no Dokploy).
-- Após o `pg-miozorio` no ar: rodar as migrations do M1 (`prisma migrate deploy`).
+- **Migrations + seed são automáticos:** o entrypoint do container roda
+  `prisma migrate deploy` e `seed --if-empty` (só semeia banco virgem) antes de
+  subir o Next — nada manual após o deploy.
+- **Admin (M5):** com `ADMIN_EMAIL`/`ADMIN_PASSWORD` no environment, o seed cria
+  a conta do painel `/admin` no primeiro boot (não sobrescreve se já existir).
 - **Healthcheck:** `GET /api/health` → `{ app, db, version }` (200 = ok).
 
 ---
