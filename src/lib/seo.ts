@@ -1,5 +1,41 @@
+import type { Metadata } from "next";
+
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
+
+/**
+ * Metadata padrão de página (M8.1): canonical próprio por rota (o layout raiz
+ * NÃO define mais canonical — apontava tudo pra home e matava o SEO interno),
+ * og:image dinâmico 1200×630 e twitter card.
+ */
+export function pageMeta(opts: {
+  /** Caminho canônico da rota, ex.: "/noivas" */
+  path: string;
+  title: string;
+  description: string;
+  /** Título curto exibido DENTRO da og:image (default: title até o 1º "·") */
+  ogTitle?: string;
+}): Metadata {
+  const ogTitle = opts.ogTitle ?? opts.title.split("·")[0]!.trim();
+  const ogImage = `/api/og?t=${encodeURIComponent(ogTitle)}`;
+  return {
+    title: opts.title,
+    description: opts.description,
+    alternates: { canonical: opts.path },
+    openGraph: {
+      url: opts.path,
+      title: opts.title,
+      description: opts.description,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: opts.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: opts.title,
+      description: opts.description,
+      images: [ogImage],
+    },
+  };
+}
 
 const offer = (name: string, priceCents: number) => ({
   "@type": "Offer",

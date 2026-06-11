@@ -30,13 +30,14 @@ export const metadata: Metadata = {
   },
   description:
     "Maquiagem e penteado para noivas, debutantes e festas no Rio de Janeiro. Agendamento online com a maquiadora Milene Ozorio.",
-  alternates: { canonical: "/" },
+  // ⚠️ SEM canonical aqui (M8.1): seria herdado por TODAS as rotas apontando
+  // pra home. Cada página define o seu via pageMeta().
   openGraph: {
     type: "website",
     locale: "pt_BR",
     siteName: "Mi Ozorio · Beauty Artist",
-    url: SITE_URL,
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/privacidade",
   title: "Política de Privacidade · Mi Ozorio",
   description:
     "Como a Milene Ozorio Beauty Artist trata os seus dados, com cuidado e respeito à LGPD.",
-};
+  ogTitle: "Política de Privacidade",
+});
 
 export default function PrivacidadePage() {
   return (

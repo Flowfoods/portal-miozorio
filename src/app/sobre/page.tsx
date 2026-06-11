@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/sobre",
   title: "Sobre a Mi · Milene Ozorio Beauty Artist",
   description:
     "Conheça a Milene Ozorio: 12 anos de experiência em maquiagem e penteado, estúdio em Santíssimo, RJ. Formações em HD, colorimetria, pele negra e visagismo.",
-};
+  ogTitle: "Sobre a Mi",
+});
 
 const FORMACOES = [
   "Maquiagem HD (foto e TV)",

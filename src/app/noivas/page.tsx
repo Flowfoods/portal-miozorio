@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { faqSchema } from "@/lib/seo";
+import { faqSchema, pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/noivas",
   title: "Noivas · La Mariée · Mi Ozorio",
   description:
     "Maquiagem e penteado de noiva no Rio de Janeiro com a Milene Ozorio. Reunião criativa, prévia e exclusividade no grande dia. Pacotes La Mariée.",
-};
+  ogTitle: "Noivas · La Mariée",
+});
 
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta%20%F0%9F%92%9B";

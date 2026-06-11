@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { beautySalonSchema } from "@/lib/seo";
+import { beautySalonSchema, pageMeta } from "@/lib/seo";
+
+export const metadata = pageMeta({
+  path: "/",
+  title: "Milene Ozorio · Beauty Artist · Maquiagem e penteado RJ",
+  description:
+    "Maquiagem e penteado para noivas, debutantes e festas no Rio de Janeiro. Agendamento online com a maquiadora Milene Ozorio.",
+  ogTitle: "Maquiagem & Penteado no RJ",
+});
 
 const SERVICOS = [
   {
