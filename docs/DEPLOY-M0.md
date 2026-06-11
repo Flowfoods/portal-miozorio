@@ -52,7 +52,7 @@ OU cron do host:
 ---
 
 ## M0.4 — Domínio + SSL (AGUARDANDO — Rodolfo registra via Registro.br)
-Quando o domínio existir (sugestão `agenda.mileneozorio.com`):
+Domínio real: `miozorio.com.br` (Registro.br). Passos:
 1. Registro.br → registro **A** do host → `76.13.230.78`.
 2. Dokploy → app → **Domains → Add Domain** → HTTPS on → **Let's Encrypt** (port 3000).
 3. Redirect www→raiz e http→https.
