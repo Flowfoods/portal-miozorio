@@ -191,6 +191,16 @@ const services: SeedService[] = [
 ];
 
 async function main() {
+  // --if-empty (entrypoint do container): só semeia banco virgem, para nunca
+  // sobrescrever ajustes feitos pela Mi no admin (R3) num restart.
+  if (process.argv.includes("--if-empty")) {
+    const count = await prisma.service.count();
+    if (count > 0) {
+      console.log(`seed: pulado (--if-empty, ${count} serviços já existem)`);
+      return;
+    }
+  }
+
   // Configurações do negócio
   for (const [key, value] of Object.entries(businessSettings)) {
     await prisma.businessSetting.upsert({
