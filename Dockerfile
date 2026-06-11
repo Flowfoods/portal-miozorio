@@ -45,6 +45,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=prisma-cli --chown=nextjs:nodejs /cli/node_modules ./prisma-cli/node_modules
+# bcryptjs (puro JS): o file-tracing do standalone não o incluiu — usado pelo
+# seed (hash do admin) e pelo authorize do NextAuth.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
 # Seed compilado (idempotente; entrypoint roda com --if-empty).
 COPY --from=builder --chown=nextjs:nodejs /app/seed-dist/seed.js ./prisma/seed.js
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
