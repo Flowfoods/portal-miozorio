@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -190,7 +191,36 @@ const services: SeedService[] = [
   },
 ];
 
+/**
+ * Bootstrap da conta do painel /admin (M5). Roda SEMPRE (mesmo com --if-empty),
+ * mas só cria se o e-mail ainda não existir — nunca sobrescreve senha trocada.
+ * ADMIN_EMAIL/ADMIN_PASSWORD vêm do ambiente (Dokploy — R9).
+ */
+async function ensureAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) {
+    console.log("admin: ADMIN_EMAIL/ADMIN_PASSWORD ausentes — pulado");
+    return;
+  }
+  const exists = await prisma.adminUser.findUnique({ where: { email } });
+  if (exists) {
+    console.log(`admin: ${email} já existe — mantido`);
+    return;
+  }
+  await prisma.adminUser.create({
+    data: {
+      email,
+      name: process.env.ADMIN_NAME?.trim() || "Mi",
+      passwordHash: bcrypt.hashSync(password, 12),
+    },
+  });
+  console.log(`✓ admin: ${email} criado`);
+}
+
 async function main() {
+  await ensureAdmin();
+
   // --if-empty (entrypoint do container): só semeia banco virgem, para nunca
   // sobrescrever ajustes feitos pela Mi no admin (R3) num restart.
   if (process.argv.includes("--if-empty")) {

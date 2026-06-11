@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getSettings } from "./settings";
 import { normalizeE164BR } from "./phone";
-import { evaluateCancellation } from "./policies";
+import { evaluateCancellation, evaluateNoShow } from "./policies";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -180,7 +180,10 @@ export type ConfirmResult =
       message: string;
     };
 
-export async function confirmBooking(id: string): Promise<ConfirmResult> {
+export async function confirmBooking(
+  id: string,
+  actor: "system" | "business" = "system",
+): Promise<ConfirmResult> {
   const booking = await prisma.booking.findUnique({
     where: { id },
     include: { customer: true, service: true },
@@ -195,15 +198,24 @@ export async function confirmBooking(id: string): Promise<ConfirmResult> {
       message: "Essa reserva não está mais pendente.",
     };
   }
-  if (!booking.holdExpiresAt || booking.holdExpiresAt <= new Date()) {
+  // A Mi pode confirmar manualmente mesmo com hold vencido (a vaga continua
+  // ocupada pela linha pending até alguém limpar — confirmar é decisão dela).
+  const holdCheckApplies = actor !== "business";
+  if (
+    holdCheckApplies &&
+    (!booking.holdExpiresAt || booking.holdExpiresAt <= new Date())
+  ) {
     return {
       ok: false,
       code: "hold_expired",
       message: "O tempo da reserva expirou. Tente escolher o horário de novo 💛",
     };
   }
+  // Sinal recebido por fora (PIX direto pra Mi) não passa pelo sistema:
+  // confirmação manual dela não exige deposit_paid_at.
   const needsDeposit =
-    booking.customer.requiresDeposit || booking.service.requiresDeposit;
+    actor !== "business" &&
+    (booking.customer.requiresDeposit || booking.service.requiresDeposit);
   if (needsDeposit && !booking.depositPaidAt) {
     return {
       ok: false,
@@ -222,11 +234,96 @@ export async function confirmBooking(id: string): Promise<ConfirmResult> {
         bookingId: id,
         fromStatus: "pending",
         toStatus: "confirmed",
-        actor: "system",
+        actor,
       },
     });
   });
   return { ok: true, status: "confirmed" };
+}
+
+export type AdminTransitionResult =
+  | { ok: true; status: "no_show" | "completed" }
+  | { ok: false; code: "not_found" | "invalid_status"; message: string };
+
+/** No-show marcado pela Mi: +1 strike, retém sinal (se houver) — política §3. */
+export async function markNoShow(id: string): Promise<AdminTransitionResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: { customer: true },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  if (booking.status !== "confirmed" && booking.status !== "pending") {
+    return {
+      ok: false,
+      code: "invalid_status",
+      message: "Só agendamentos pendentes/confirmados viram no-show.",
+    };
+  }
+
+  const settings = await getSettings();
+  const result = evaluateNoShow({
+    currentStrikes: booking.customer.strikes,
+    strikeLimit: settings.strikeLimit,
+    hasDeposit: booking.depositPaidAt != null,
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id },
+      data: { status: "no_show", holdExpiresAt: null },
+    });
+    await tx.bookingEvent.create({
+      data: {
+        bookingId: id,
+        fromStatus: booking.status,
+        toStatus: "no_show",
+        actor: "business",
+        reason: result.depositRetained ? "sinal_retido" : undefined,
+      },
+    });
+    await tx.customer.update({
+      where: { id: booking.customerId },
+      data: {
+        strikes: result.newStrikes,
+        requiresDeposit:
+          booking.customer.requiresDeposit || result.requiresDeposit,
+      },
+    });
+  });
+  return { ok: true, status: "no_show" };
+}
+
+/** Atendimento realizado — dispara o pós-atendimento no M4 (avaliação+foto). */
+export async function markCompleted(id: string): Promise<AdminTransitionResult> {
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  if (booking.status !== "confirmed") {
+    return {
+      ok: false,
+      code: "invalid_status",
+      message: "Só agendamentos confirmados podem ser concluídos.",
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id },
+      data: { status: "completed" },
+    });
+    await tx.bookingEvent.create({
+      data: {
+        bookingId: id,
+        fromStatus: "confirmed",
+        toStatus: "completed",
+        actor: "business",
+      },
+    });
+  });
+  return { ok: true, status: "completed" };
 }
 
 export type CancelResult =
