@@ -1,0 +1,9 @@
+// Renderiza um bloco JSON-LD (dados estruturados) no <head>/<body>.
+export function JsonLd({ data }: { data: Record<string, unknown> }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
