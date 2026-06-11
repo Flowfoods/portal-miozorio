@@ -4,7 +4,7 @@
 set -e
 
 echo "[entrypoint] prisma migrate deploy"
-node node_modules/prisma/build/index.js migrate deploy
+node prisma-cli/node_modules/prisma/build/index.js migrate deploy
 
 echo "[entrypoint] seed --if-empty"
 node prisma/seed.js --if-empty
