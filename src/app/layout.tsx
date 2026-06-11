@@ -20,7 +20,7 @@ const jost = Jost({
 });
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://mileneozorio.com.br";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

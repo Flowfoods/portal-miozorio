@@ -1,5 +1,5 @@
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://mileneozorio.com.br";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
 const offer = (name: string, priceCents: number) => ({
   "@type": "Offer",
