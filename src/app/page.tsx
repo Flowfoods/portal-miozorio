@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { beautySalonSchema } from "@/lib/seo";
 
 const SERVICOS = [
   {
@@ -74,6 +76,7 @@ const DEPOIMENTOS = [
 export default function Home() {
   return (
     <main>
+      <JsonLd data={beautySalonSchema} />
       {/* HERO */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>

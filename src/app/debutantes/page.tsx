@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { faqSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Debutantes · 15 anos · Mi Ozorio",
@@ -46,9 +48,33 @@ const ENSAIO = [
   { o: "Acompanhamento exclusivo no ensaio", v: "R$ 1.500" },
 ];
 
+const FAQ = [
+  {
+    q: "A debutante precisa estar acompanhada?",
+    a: "Sim. Como ela é menor de idade, a comunicação e o contrato são sempre com o responsável, e a prévia é acompanhada por ele.",
+  },
+  {
+    q: "Quantos testes a prévia inclui?",
+    a: "No Pacote Básico são até 2 testes em cada prévia (maquiagem e penteado); no Master, até 3 testes em cada.",
+  },
+  {
+    q: "Vocês fazem ensaio externo?",
+    a: "Sim! O ensaio externo pode ser contratado avulso (a partir de R$ 380) ou já vem incluso no Pacote Master.",
+  },
+  {
+    q: "Como funciona o pagamento?",
+    a: "20% na assinatura do contrato e o restante até 3 dias antes da festa. No cartão, em até 10x sem juros; no PIX, parcelado sem juros.",
+  },
+  {
+    q: "O deslocamento está incluído?",
+    a: "Sim, o deslocamento está incluído nos dois pacotes.",
+  },
+];
+
 export default function DebutantesPage() {
   return (
     <main>
+      <JsonLd data={faqSchema(FAQ)} />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           15 anos
@@ -128,6 +154,26 @@ export default function DebutantesPage() {
           💛 Como a debutante é menor de idade, toda a combinação e o contrato
           são feitos com o responsável, e a prévia é sempre acompanhada por ele.
         </p>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-3xl px-5 py-16">
+        <h2 className="text-center font-titulo text-3xl text-mi-marrom-escuro">
+          Perguntas frequentes
+        </h2>
+        <div className="mt-8 space-y-3">
+          {FAQ.map((f) => (
+            <details
+              key={f.q}
+              className="rounded-mi border border-mi-cinza bg-mi-branco p-5"
+            >
+              <summary className="cursor-pointer font-corpo font-medium text-mi-marrom-escuro">
+                {f.q}
+              </summary>
+              <p className="mt-2 font-corpo text-sm text-mi-texto">{f.a}</p>
+            </details>
+          ))}
+        </div>
       </section>
 
       {/* CTA WhatsApp (R1) */}

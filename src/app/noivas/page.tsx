@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { faqSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Noivas · La Mariée · Mi Ozorio",
@@ -58,9 +60,33 @@ const PACOTES = [
   },
 ];
 
+const FAQ = [
+  {
+    q: "Como funciona a prévia da noiva?",
+    a: "A prévia acontece um mês antes do casamento, no estúdio, com 3h de duração — testamos maquiagem e penteado exatamente como serão no grande dia.",
+  },
+  {
+    q: "Preciso pagar sinal para reservar a data?",
+    a: "A reserva da data é feita com R$ 300, que são abatidos do valor total do pacote, seguidos do alinhamento e da assinatura do contrato.",
+  },
+  {
+    q: "O deslocamento está incluído?",
+    a: "Sim, o deslocamento está incluído dentro do Rio de Janeiro. Para outras cidades ou estados, combinamos taxa e hospedagem.",
+  },
+  {
+    q: "Quantos ajustes a prévia inclui?",
+    a: "Até 3 ajustes de maquiagem estão inclusos. Acima disso, há uma taxa adicional de R$ 120.",
+  },
+  {
+    q: "Posso levar acompanhantes para se produzirem?",
+    a: "Sim! O Pacote Exclusivo inclui a produção de 2 acompanhantes e o Pacote Estúdio inclui 1 acompanhante (maquiagem e penteado).",
+  },
+];
+
 export default function NoivasPage() {
   return (
     <main>
+      <JsonLd data={faqSchema(FAQ)} />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           La Mariée
@@ -154,6 +180,26 @@ export default function NoivasPage() {
               cidades: combinamos taxa e hospedagem.
             </li>
           </ul>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-3xl px-5 py-16">
+        <h2 className="text-center font-titulo text-3xl text-mi-marrom-escuro">
+          Perguntas frequentes
+        </h2>
+        <div className="mt-8 space-y-3">
+          {FAQ.map((f) => (
+            <details
+              key={f.q}
+              className="rounded-mi border border-mi-cinza bg-mi-branco p-5"
+            >
+              <summary className="cursor-pointer font-corpo font-medium text-mi-marrom-escuro">
+                {f.q}
+              </summary>
+              <p className="mt-2 font-corpo text-sm text-mi-texto">{f.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
