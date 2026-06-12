@@ -34,6 +34,11 @@ const nextConfig = {
   // Build standalone → imagem Docker enxuta para deploy no Dokploy.
   output: "standalone",
   reactStrictMode: true,
+  experimental: {
+    // Upload de fotos do painel (M8.4) vai por server action multipart —
+    // o default de 1MB não comporta foto de celular.
+    serverActions: { bodySizeLimit: "25mb" },
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

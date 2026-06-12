@@ -193,6 +193,22 @@ model AdminUser {
   @@map("admin_users")
 }
 
+/// Fotos do site (M8.4): hero, página Sobre, portfólio e cards de serviço.
+/// Arquivo físico em MEDIA_DIR (volume persistente), servido por /media/...
+model MediaAsset {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url       String   @unique // caminho público: /media/<arquivo>.webp
+  alt       String
+  category  String // portfolio | hero | sobre | servico
+  tags      String[] @default([])
+  sort      Int      @default(0)
+  published Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([category, published])
+  @@map("media_assets")
+}
+
 /// Idempotência de webhooks/notificações (R10). dedup_key único por evento.
 model NotificationLog {
   id        BigInt   @id @default(autoincrement())
