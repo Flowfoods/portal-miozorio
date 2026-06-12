@@ -172,6 +172,260 @@ export async function createBooking(
   }
 }
 
+// ── Encaixe manual pela Mi (M10) ─────────────────────────────────────────────
+
+export interface ManualBookingInput {
+  serviceId: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  location: "studio" | "home";
+  /** Origem do encaixe — alimenta o dashboard do M14. */
+  source: "admin_phone" | "admin_whatsapp";
+  /** Cliente existente (id) OU cadastro rápido (name+phone). */
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  anamnesis?: Record<string, unknown>;
+}
+
+export type ManualBookingResult =
+  | { ok: true; id: string }
+  | {
+      ok: false;
+      code:
+        | "invalid_service"
+        | "invalid_customer"
+        | "invalid_phone"
+        | "invalid_datetime"
+        | "slot_taken";
+      message: string;
+    };
+
+/**
+ * Cria um agendamento direto pela Mi (cliente ligou/fechou no WhatsApp).
+ * Nasce `confirmed` (sem hold), auditado com actor `admin` (R17). Ignora lead
+ * time e horário de funcionamento — a Mi decide —, MAS a colisão de horário
+ * continua soberana no banco (R2): no 23P01 nomeia quem já ocupa o horário.
+ * Diferente de createBooking, aceita serviços não-agendáveis online
+ * (noiva/debutante): a Mi pode bloquear o estúdio por eles pelo painel.
+ */
+export async function createManualBooking(
+  input: ManualBookingInput,
+): Promise<ManualBookingResult> {
+  const settings = await getSettings();
+  const tz = settings.timezone;
+
+  const service = await prisma.service.findUnique({
+    where: { id: input.serviceId },
+  });
+  if (!service || !service.active) {
+    return {
+      ok: false,
+      code: "invalid_service",
+      message: "Serviço não encontrado.",
+    };
+  }
+
+  const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, { zone: tz });
+  if (!startsAt.isValid) {
+    return {
+      ok: false,
+      code: "invalid_datetime",
+      message: "Data ou horário inválido.",
+    };
+  }
+  const endsAt = startsAt.plus({
+    minutes: service.durationMin + service.bufferMin,
+  });
+
+  // Cliente: existente por id, ou cadastro rápido (upsert por telefone).
+  let customerId = input.customerId ?? null;
+  if (!customerId) {
+    const name = (input.customerName ?? "").trim();
+    if (name.length < 2) {
+      return {
+        ok: false,
+        code: "invalid_customer",
+        message: "Informe o nome da cliente.",
+      };
+    }
+    const phone = normalizeE164BR(input.customerPhone ?? "");
+    if (!phone) {
+      return {
+        ok: false,
+        code: "invalid_phone",
+        message: "WhatsApp da cliente inválido.",
+      };
+    }
+    const customer = await prisma.customer.upsert({
+      where: { phoneE164: phone },
+      update: { name },
+      create: { name, phoneE164: phone },
+    });
+    customerId = customer.id;
+  } else {
+    const exists = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!exists) {
+      return {
+        ok: false,
+        code: "invalid_customer",
+        message: "Cliente não encontrada.",
+      };
+    }
+  }
+
+  const priceCents =
+    input.location === "home" && service.priceHomeCents != null
+      ? service.priceHomeCents
+      : service.priceCents;
+
+  const professional = await prisma.professional.findFirst({
+    where: { active: true },
+  });
+
+  try {
+    const booking = await prisma.$transaction(async (tx) => {
+      const created = await tx.booking.create({
+        data: {
+          customerId,
+          serviceId: service.id,
+          professionalId: professional?.id ?? null,
+          startsAt: startsAt.toJSDate(),
+          endsAt: endsAt.toJSDate(),
+          status: "confirmed",
+          location: input.location,
+          priceCents,
+          holdExpiresAt: null,
+          ...(input.anamnesis !== undefined
+            ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
+            : {}),
+          source: input.source,
+        },
+      });
+      await tx.bookingEvent.create({
+        data: {
+          bookingId: created.id,
+          toStatus: "confirmed",
+          actor: "admin",
+          reason: "encaixe_manual",
+        },
+      });
+      return created;
+    });
+    return { ok: true, id: booking.id };
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      const clash = await findOverlappingBooking(startsAt.toJSDate(), endsAt.toJSDate());
+      const who = clash?.customer.name.split(" ")[0];
+      return {
+        ok: false,
+        code: "slot_taken",
+        message: who
+          ? `Esse horário já está ocupado com ${who}.`
+          : "Esse horário já está ocupado.",
+      };
+    }
+    throw e;
+  }
+}
+
+/** Acha um booking vivo (pending vivo/confirmed) que sobrepõe o intervalo. */
+async function findOverlappingBooking(startsAt: Date, endsAt: Date) {
+  return prisma.booking.findFirst({
+    where: {
+      startsAt: { lt: endsAt },
+      endsAt: { gt: startsAt },
+      OR: [
+        { status: "confirmed" },
+        { status: "pending", holdExpiresAt: { gt: new Date() } },
+      ],
+    },
+    include: { customer: true },
+  });
+}
+
+export type RescheduleResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: "not_found" | "invalid_status" | "invalid_datetime" | "slot_taken";
+      message: string;
+    };
+
+/**
+ * Remarca um agendamento pelo painel (M10.3). Mantém o status (pending/
+ * confirmed) e só move starts/ends; colisão barrada no banco (R2). Registra
+ * em booking_events com o de/para no `reason` (o enum não tem `rescheduled`).
+ */
+export async function rescheduleBooking(
+  id: string,
+  date: string,
+  time: string,
+): Promise<RescheduleResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: { service: true },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  if (booking.status !== "pending" && booking.status !== "confirmed") {
+    return {
+      ok: false,
+      code: "invalid_status",
+      message: "Só agendamentos ativos podem ser remarcados.",
+    };
+  }
+
+  const settings = await getSettings();
+  const tz = settings.timezone;
+  const startsAt = DateTime.fromISO(`${date}T${time}`, { zone: tz });
+  if (!startsAt.isValid) {
+    return {
+      ok: false,
+      code: "invalid_datetime",
+      message: "Data ou horário inválido.",
+    };
+  }
+  const endsAt = startsAt.plus({
+    minutes: booking.service.durationMin + booking.service.bufferMin,
+  });
+
+  const fmt = (d: Date) =>
+    DateTime.fromJSDate(d).setZone(tz).toFormat("dd/LL HH:mm");
+  const reason = `remarcado: ${fmt(booking.startsAt)} → ${startsAt.toFormat("dd/LL HH:mm")}`;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id },
+        data: { startsAt: startsAt.toJSDate(), endsAt: endsAt.toJSDate() },
+      });
+      await tx.bookingEvent.create({
+        data: {
+          bookingId: id,
+          fromStatus: booking.status,
+          toStatus: booking.status,
+          actor: "admin",
+          reason,
+        },
+      });
+    });
+    return { ok: true };
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      return {
+        ok: false,
+        code: "slot_taken",
+        message: "Esse horário já está ocupado. Escolha outro 💛",
+      };
+    }
+    throw e;
+  }
+}
+
 export type ConfirmResult =
   | { ok: true; status: "confirmed" }
   | {

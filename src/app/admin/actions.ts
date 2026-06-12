@@ -12,6 +12,8 @@ import {
   cancelBooking,
   markNoShow,
   markCompleted,
+  createManualBooking,
+  rescheduleBooking,
 } from "@/lib/booking-service";
 import {
   MEDIA_CATEGORIES,
@@ -61,6 +63,64 @@ export async function adminMarkNoShow(id: string): Promise<void> {
 export async function adminMarkCompleted(id: string): Promise<void> {
   await requireAdmin();
   const r = await markCompleted(id);
+  refreshAgenda();
+  if (!r.ok) fail(r.message);
+}
+
+// ── Encaixe manual + remarcação (M10) ───────────────────────────────────────
+
+/** Monta o objeto de anamnese só com os campos preenchidos (evita {} ruidoso). */
+function anamnesisFrom(formData: FormData): Record<string, string> | undefined {
+  const out: Record<string, string> = {};
+  for (const [key, field] of [
+    ["alergia", "alergia"],
+    ["referencia", "referencia"],
+    ["ocasiao", "ocasiao"],
+  ] as const) {
+    const v = String(formData.get(field) ?? "").trim();
+    if (v) out[key] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+export async function adminCreateManualBooking(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+
+  const source = String(formData.get("source") ?? "");
+  if (source !== "admin_phone" && source !== "admin_whatsapp") {
+    fail("Informe como a cliente fechou (telefone ou WhatsApp).");
+  }
+  const location = formData.get("location") === "home" ? "home" : "studio";
+
+  const r = await createManualBooking({
+    serviceId: String(formData.get("serviceId") ?? ""),
+    date: String(formData.get("date") ?? ""),
+    time: String(formData.get("time") ?? ""),
+    location,
+    source,
+    customerId: String(formData.get("customerId") ?? "") || undefined,
+    customerName: String(formData.get("customerName") ?? "") || undefined,
+    customerPhone: String(formData.get("customerPhone") ?? "") || undefined,
+    anamnesis: anamnesisFrom(formData),
+  });
+  if (!r.ok) fail(r.message);
+
+  // TODO(M4): se "notify" ligado, disparar confirmação no WhatsApp via Evolution.
+  // A integração n8n/Evolution é o M4 (ainda não construído) — não simular envio.
+  refreshAgenda();
+}
+
+export async function adminRescheduleBooking(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+  const r = await rescheduleBooking(
+    String(formData.get("id") ?? ""),
+    String(formData.get("date") ?? ""),
+    String(formData.get("time") ?? ""),
+  );
   refreshAgenda();
   if (!r.ok) fail(r.message);
 }
