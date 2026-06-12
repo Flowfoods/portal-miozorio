@@ -25,6 +25,17 @@ export function maskPhoneBR(value: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+/** E.164 "+5521970225231" → exibição "(21) 97022-5231". */
+export function formatPhoneBR(e164: string): string {
+  const d = e164.replace(/\D/g, "").replace(/^55/, "");
+  return maskPhoneBR(d) || e164;
+}
+
+/** Link de conversa no WhatsApp: "+5521970225231" → "https://wa.me/5521970225231". */
+export function waLink(phoneE164: string): string {
+  return `https://wa.me/${phoneE164.replace(/\D/g, "")}`;
+}
+
 /** Data ISO "2026-06-13" → "sábado, 13 de junho". */
 export function formatDateLong(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);

@@ -65,7 +65,9 @@ export default function WeekAgenda({
               )}
               {list.map((b) => {
                 const t = DateTime.fromJSDate(b.startsAt).setZone(tz);
-                const alergia = temAlergia(b.anamnesis);
+                const alergia =
+                  temAlergia(b.anamnesis) ||
+                  (b.customer.allergies ?? "").trim().length > 0;
                 return (
                   <Link
                     key={b.id}

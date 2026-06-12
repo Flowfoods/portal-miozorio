@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeE164BR } from "@/lib/phone";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import {
   confirmBooking,
@@ -546,4 +547,96 @@ export async function adminResetStrikes(
     data: { strikes: 0, requiresDeposit: false },
   });
   revalidatePath("/admin/clientes");
+  revalidatePath(`/admin/clientes/${customerId}`);
+}
+
+// ── Ficha da cliente (M11) ──────────────────────────────────────────────────
+
+function refreshFicha(customerId: string) {
+  revalidatePath("/admin/clientes");
+  revalidatePath(`/admin/clientes/${customerId}`);
+  revalidatePath("/admin"); // badge de alergia da agenda lê a ficha
+}
+
+export async function adminUpdateCustomer(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) fail("Cliente não encontrada.");
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) fail("Informe o nome da cliente.");
+
+  const phone = normalizeE164BR(String(formData.get("phone") ?? ""));
+  if (!phone) fail("WhatsApp inválido — use DDD + número.");
+  if (phone !== customer.phoneE164) {
+    const taken = await prisma.customer.findUnique({
+      where: { phoneE164: phone },
+    });
+    if (taken) fail("Já existe outra cliente com esse WhatsApp.");
+  }
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (email && !EMAIL_RE.test(email)) fail("E-mail inválido.");
+
+  const birthRaw = String(formData.get("birthDate") ?? "").trim();
+  let birthDate: Date | null = null;
+  if (birthRaw) {
+    const d = DateTime.fromISO(birthRaw, { zone: "utc" });
+    if (!d.isValid || d > DateTime.utc()) fail("Data de nascimento inválida.");
+    birthDate = d.toJSDate();
+  }
+
+  // R6: responsável de menor — telefone, se informado, também vira E.164 (R5).
+  const guardianName =
+    String(formData.get("guardianName") ?? "").trim() || null;
+  const guardianRaw = String(formData.get("guardianPhone") ?? "").trim();
+  let guardianPhone: string | null = null;
+  if (guardianRaw) {
+    guardianPhone = normalizeE164BR(guardianRaw);
+    if (!guardianPhone) fail("Telefone do responsável inválido.");
+  }
+
+  await prisma.customer.update({
+    where: { id },
+    data: { name, phoneE164: phone, email: email || null, birthDate, guardianName, guardianPhone },
+  });
+  refreshFicha(id);
+}
+
+export async function adminUpdateCustomerCare(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) fail("Cliente não encontrada.");
+
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      allergies: String(formData.get("allergies") ?? "").trim() || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
+    },
+  });
+  refreshFicha(id);
+}
+
+/** R18: foto da cliente só com autorização registrada (com data da mudança). */
+export async function adminSetPhotoConsent(
+  customerId: string,
+  consent: boolean,
+): Promise<void> {
+  await requireAdmin();
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+  });
+  if (!customer) fail("Cliente não encontrada.");
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: { photoConsent: consent, photoConsentAt: new Date() },
+  });
+  refreshFicha(customerId);
 }
