@@ -24,6 +24,13 @@ export interface BusinessSettings {
   clubLadder: ClubLadderStep[];
 }
 
+/** Fallback da escada do Clube (a migration insere a versão oficial no banco). */
+export const DEFAULT_CLUB_LADDER: ClubLadderStep[] = [
+  { nivel: 1, beneficio: "Mimo de agradecimento (a confirmar com a Mi)" },
+  { nivel: 3, beneficio: "Benefício especial (a confirmar com a Mi)" },
+  { nivel: 5, beneficio: "Cortesia premium (combinar direto com a Mi)" },
+];
+
 const DEFAULTS: BusinessSettings = {
   workingHours: {
     sat: [["09:00", "19:00"]],
@@ -40,13 +47,7 @@ const DEFAULTS: BusinessSettings = {
   slotStepMin: 30,
   timezone: "America/Sao_Paulo",
   depositPolicy: { default: "none", on_strikes: true },
-  // Fallback se a key club_ladder não existir (a migration do clube insere a
-  // versão oficial no banco; textos a confirmar com a Mi).
-  clubLadder: [
-    { nivel: 1, beneficio: "Mimo de agradecimento (a confirmar com a Mi)" },
-    { nivel: 3, beneficio: "Benefício especial (a confirmar com a Mi)" },
-    { nivel: 5, beneficio: "Cortesia premium (combinar direto com a Mi)" },
-  ],
+  clubLadder: DEFAULT_CLUB_LADDER,
 };
 
 const TTL_MS = 60_000;

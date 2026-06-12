@@ -1,7 +1,11 @@
 import { randomBytes } from "crypto";
 import { DateTime } from "luxon";
 import { prisma } from "./prisma";
-import { getSettings, type ClubLadderStep } from "./settings";
+import {
+  getSettings,
+  DEFAULT_CLUB_LADDER,
+  type ClubLadderStep,
+} from "./settings";
 
 /**
  * Clube de Fidelidade & Indicação — motor de indicação + ciclo de vida.
@@ -178,6 +182,18 @@ export async function avaliarEscadaIndicacao(
   if (fechadas >= 1) await ensureClubMember(embaixadoraId);
 
   return { embaixadoraId, novos };
+}
+
+/**
+ * Escada para páginas com prerender (landing /clube): nunca lança — sem banco
+ * (build local) devolve o fallback, mesmo padrão de getPublishedMedia.
+ */
+export async function getClubLadder(): Promise<ClubLadderStep[]> {
+  try {
+    return (await getSettings()).clubLadder;
+  } catch {
+    return DEFAULT_CLUB_LADDER;
+  }
 }
 
 /** Função pura: degraus da escada cobertos por N indicações fechadas. */

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { getSettings } from "@/lib/settings";
+import { getClubLadder } from "@/lib/clube";
 import JoinForm from "@/components/clube/JoinForm";
 
 export const metadata: Metadata = pageMeta({
@@ -34,7 +34,7 @@ const PASSOS = [
 const ORDINAL: Record<number, string> = { 1: "1ª", 3: "3ª", 5: "5ª" };
 
 export default async function ClubePage() {
-  const { clubLadder } = await getSettings();
+  const clubLadder = await getClubLadder();
 
   return (
     <main className="mx-auto max-w-5xl px-5 pb-24 pt-14">
