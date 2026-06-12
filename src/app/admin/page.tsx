@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import type { BookingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
 import AdminNav from "@/components/admin/AdminNav";
+import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import WeekAgenda from "@/components/admin/WeekAgenda";
 import RescheduleForm from "@/components/admin/RescheduleForm";
@@ -17,24 +17,6 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "Pendente",
-  confirmed: "Confirmado",
-  completed: "Concluído",
-  cancelled_by_client: "Cancelado (cliente)",
-  cancelled_by_business: "Cancelado (Mi)",
-  no_show: "Não compareceu",
-};
-
-const STATUS_STYLE: Record<BookingStatus, string> = {
-  pending: "bg-amber-100 text-amber-900",
-  confirmed: "bg-emerald-100 text-emerald-900",
-  completed: "bg-mi-cinza text-mi-texto",
-  cancelled_by_client: "bg-red-50 text-red-800",
-  cancelled_by_business: "bg-red-50 text-red-800",
-  no_show: "bg-red-100 text-red-900",
-};
 
 type BookingWithRels = Awaited<ReturnType<typeof queryDay>>[number];
 
@@ -71,7 +53,9 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
   const starts = DateTime.fromJSDate(b.startsAt).setZone(tz);
   const ends = DateTime.fromJSDate(b.endsAt).setZone(tz);
   const actionable = b.status === "pending" || b.status === "confirmed";
-  const alergia = temAlergia(b.anamnesis);
+  // Alergia: vale tanto a da anamnese do atendimento quanto a da ficha (M11).
+  const alergiaFicha = (b.customer.allergies ?? "").trim();
+  const alergia = temAlergia(b.anamnesis) || alergiaFicha.length > 0;
   return (
     <article
       id={`b-${b.id}`}
@@ -84,13 +68,20 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             {b.service.name}
           </p>
           <p className="text-sm text-mi-texto/80">
-            {b.customer.name} · {b.customer.phoneE164} ·{" "}
+            <Link
+              href={`/admin/clientes/${b.customerId}`}
+              className="underline underline-offset-4"
+            >
+              {b.customer.name}
+            </Link>{" "}
+            · {b.customer.phoneE164} ·{" "}
             {b.location === "home" ? "domicílio" : "estúdio"} ·{" "}
             {formatBRL(b.priceCents)}
           </p>
           {alergia && (
             <p className="mt-1 text-xs font-medium text-red-800">
               ⚠ Alergia registrada
+              {alergiaFicha && <> (ficha): {alergiaFicha}</>}
             </p>
           )}
           {b.customer.strikes > 0 && (
