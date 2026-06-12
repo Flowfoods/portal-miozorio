@@ -4,7 +4,11 @@ import type { BookingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
+import { temAlergia } from "@/lib/anamnesis";
 import AdminNav from "@/components/admin/AdminNav";
+import NovoAgendamento from "@/components/admin/NovoAgendamento";
+import WeekAgenda from "@/components/admin/WeekAgenda";
+import RescheduleForm from "@/components/admin/RescheduleForm";
 import {
   adminConfirmBooking,
   adminCancelBooking,
@@ -67,8 +71,12 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
   const starts = DateTime.fromJSDate(b.startsAt).setZone(tz);
   const ends = DateTime.fromJSDate(b.endsAt).setZone(tz);
   const actionable = b.status === "pending" || b.status === "confirmed";
+  const alergia = temAlergia(b.anamnesis);
   return (
-    <article className="rounded-mi bg-mi-branco p-4 shadow-suave">
+    <article
+      id={`b-${b.id}`}
+      className="scroll-mt-24 rounded-mi bg-mi-branco p-4 shadow-suave target:ring-2 target:ring-mi-marrom"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-medium">
@@ -80,6 +88,11 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             {b.location === "home" ? "domicílio" : "estúdio"} ·{" "}
             {formatBRL(b.priceCents)}
           </p>
+          {alergia && (
+            <p className="mt-1 text-xs font-medium text-red-800">
+              ⚠ Alergia registrada
+            </p>
+          )}
           {b.customer.strikes > 0 && (
             <p className="text-xs text-red-800">
               ⚠ {b.customer.strikes} cancelamento(s) em cima da hora
@@ -119,51 +132,87 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
               Cancelar
             </button>
           </form>
+          <RescheduleForm
+            bookingId={b.id}
+            defaultDate={starts.toISODate() ?? ""}
+          />
         </div>
       )}
     </article>
   );
 }
 
+// Sáb→sex: começa o quadro no sábado da semana que contém `day` (o forte da Mi).
+function weekStartSaturday(day: DateTime): DateTime {
+  const offset = (day.weekday - 6 + 7) % 7; // sáb(6)=0, dom(7)=1, seg(1)=2…
+  return day.minus({ days: offset }).startOf("day");
+}
+
 export default async function AdminAgendaPage({
   searchParams,
 }: {
-  searchParams: { data?: string };
+  searchParams: { data?: string; vista?: string };
 }) {
   const settings = await getSettings();
   const tz = settings.timezone;
   const today = DateTime.now().setZone(tz).startOf("day");
+  const isWeek = searchParams.vista === "semana";
 
   const requested = searchParams.data
     ? DateTime.fromISO(searchParams.data, { zone: tz }).startOf("day")
     : today;
   const day = requested.isValid ? requested : today;
 
-  const [bookings, pendingUpcoming, confirmedWeek] = await Promise.all([
-    queryDay(day.toJSDate(), day.plus({ days: 1 }).toJSDate()),
-    prisma.booking.findMany({
-      where: { status: "pending", startsAt: { gte: today.toJSDate() } },
-      include: { customer: true, service: true },
-      orderBy: { startsAt: "asc" },
-      take: 20,
-    }),
-    prisma.booking.count({
-      where: {
-        status: "confirmed",
-        startsAt: {
-          gte: today.toJSDate(),
-          lt: today.plus({ days: 7 }).toJSDate(),
+  const weekStart = weekStartSaturday(day);
+  const weekEnd = weekStart.plus({ days: 7 });
+
+  const [bookings, pendingUpcoming, confirmedWeek, services, weekBookings] =
+    await Promise.all([
+      queryDay(day.toJSDate(), day.plus({ days: 1 }).toJSDate()),
+      prisma.booking.findMany({
+        where: { status: "pending", startsAt: { gte: today.toJSDate() } },
+        include: { customer: true, service: true },
+        orderBy: { startsAt: "asc" },
+        take: 20,
+      }),
+      prisma.booking.count({
+        where: {
+          status: "confirmed",
+          startsAt: {
+            gte: today.toJSDate(),
+            lt: today.plus({ days: 7 }).toJSDate(),
+          },
         },
-      },
-    }),
-  ]);
+      }),
+      prisma.service.findMany({
+        where: { active: true },
+        select: {
+          id: true,
+          name: true,
+          durationMin: true,
+          bookableOnline: true,
+          isCourse: true,
+        },
+        orderBy: [{ bookableOnline: "desc" }, { name: "asc" }],
+      }),
+      isWeek
+        ? queryDay(weekStart.toJSDate(), weekEnd.toJSDate())
+        : Promise.resolve([]),
+    ]);
 
   const fmtDay = day.setLocale("pt-BR").toFormat("cccc, dd 'de' LLLL");
+  const fmtWeek = `${weekStart.toFormat("dd/LL")} a ${weekEnd
+    .minus({ days: 1 })
+    .toFormat("dd/LL")}`;
+
+  // Preserva a vista atual ao navegar de dia/semana.
+  const withView = (iso: string) =>
+    isWeek ? `/admin?vista=semana&data=${iso}` : `/admin?data=${iso}`;
 
   return (
     <>
       <AdminNav />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Agenda</h1>
         <p className="text-sm text-mi-texto/70">
           {confirmedWeek} confirmado(s) nos próximos 7 dias ·{" "}
@@ -171,6 +220,86 @@ export default async function AdminAgendaPage({
         </p>
       </div>
 
+      {/* Novo agendamento (encaixe manual M10.1) + toggle Dia/Semana */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <NovoAgendamento
+          services={services}
+          defaultDate={day.toISODate() ?? today.toISODate() ?? ""}
+        />
+        <div className="inline-flex rounded-mi bg-mi-cinza p-1 text-sm">
+          <Link
+            href={`/admin?data=${day.toISODate()}`}
+            className={`min-h-[36px] rounded-[10px] px-4 leading-9 ${
+              !isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom"
+            }`}
+          >
+            Dia
+          </Link>
+          <Link
+            href={`/admin?vista=semana&data=${day.toISODate()}`}
+            className={`min-h-[36px] rounded-[10px] px-4 leading-9 ${
+              isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom"
+            }`}
+          >
+            Semana
+          </Link>
+        </div>
+      </div>
+
+      {isWeek ? (
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <Link
+              className="rounded-mi bg-mi-branco px-3 py-1.5 text-sm shadow-suave"
+              href={withView(weekStart.minus({ days: 7 }).toISODate() ?? "")}
+            >
+              ← semana anterior
+            </Link>
+            <span className="font-titulo text-lg">{fmtWeek}</span>
+            <Link
+              className="rounded-mi bg-mi-branco px-3 py-1.5 text-sm shadow-suave"
+              href={withView(weekStart.plus({ days: 7 }).toISODate() ?? "")}
+            >
+              próxima →
+            </Link>
+          </div>
+          <WeekAgenda
+            weekStartISO={weekStart.toISODate() ?? ""}
+            bookings={weekBookings}
+            tz={tz}
+          />
+        </section>
+      ) : (
+        <DayView
+          day={day}
+          today={today}
+          tz={tz}
+          fmtDay={fmtDay}
+          bookings={bookings}
+          pendingUpcoming={pendingUpcoming}
+        />
+      )}
+    </>
+  );
+}
+
+function DayView({
+  day,
+  today,
+  tz,
+  fmtDay,
+  bookings,
+  pendingUpcoming,
+}: {
+  day: DateTime;
+  today: DateTime;
+  tz: string;
+  fmtDay: string;
+  bookings: BookingWithRels[];
+  pendingUpcoming: BookingWithRels[];
+}) {
+  return (
+    <>
       <div className="mb-6 flex items-center gap-3">
         <Link
           className="rounded-mi bg-mi-branco px-3 py-1.5 text-sm shadow-suave"

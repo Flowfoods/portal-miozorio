@@ -39,3 +39,6 @@ seed-dist/
 
 # fotos locais do sistema de midia (M8.4) - em prod e volume do Dokploy
 /media
+
+# helpers locais com segredos (token Dokploy) - R9, nunca versionar
+/.claude/*.py
