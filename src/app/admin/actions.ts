@@ -13,6 +13,12 @@ import {
   markNoShow,
   markCompleted,
 } from "@/lib/booking-service";
+import {
+  MEDIA_CATEGORIES,
+  MAX_UPLOAD_BYTES,
+  processUpload,
+  deleteMediaFile,
+} from "@/lib/media";
 
 /**
  * Server actions do painel /admin (M5). Todas exigem sessão (requireAdmin) —
@@ -375,6 +381,98 @@ export async function adminResetUserPassword(
     data: { passwordHash: bcrypt.hashSync(password, 12) },
   });
   revalidatePath("/admin/usuarias");
+}
+
+// ── Fotos do site (M8.4) ────────────────────────────────────────────────────
+
+/** Alt padrão por categoria — a Mi não precisa escrever descrição foto a foto. */
+const MEDIA_DEFAULT_ALT: Record<string, string> = {
+  hero: "Maquiagem por Milene Ozorio",
+  sobre: "Milene Ozorio no estúdio",
+  portfolio: "Produção de beleza por Mi Ozorio",
+  servico: "Serviço de beleza por Mi Ozorio",
+};
+
+function refreshMedia() {
+  revalidatePath("/admin/fotos");
+  revalidatePath("/");
+  revalidatePath("/sobre");
+}
+
+export async function adminUploadMedia(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const category = String(formData.get("category") ?? "");
+  if (!MEDIA_CATEGORIES.includes(category as never)) {
+    fail("Escolha onde a foto vai aparecer.");
+  }
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  if (!files.length) fail("Escolha pelo menos uma foto.");
+
+  const alt = String(formData.get("alt") ?? "").trim();
+  let saved = 0;
+  for (const file of files) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      fail(
+        saved
+          ? `${saved} foto(s) já foram salvas, mas "${file.name}" é muito grande (máximo 12MB por foto).`
+          : `"${file.name}" é muito grande (máximo 12MB por foto).`,
+      );
+    }
+    let name: string;
+    try {
+      name = await processUpload(Buffer.from(await file.arrayBuffer()));
+    } catch {
+      fail(
+        saved
+          ? `${saved} foto(s) já foram salvas, mas não consegui ler "${file.name}" — tente enviá-la em JPG ou PNG.`
+          : `Não consegui ler "${file.name}" — tente enviá-la em JPG ou PNG.`,
+      );
+    }
+    await prisma.mediaAsset.create({
+      data: {
+        url: `/media/${name}`,
+        alt: alt || MEDIA_DEFAULT_ALT[category] || "Foto Mi Ozorio",
+        category,
+        published: true,
+      },
+    });
+    saved++;
+  }
+  refreshMedia();
+}
+
+export async function adminToggleMediaPublished(id: string): Promise<void> {
+  await requireAdmin();
+  const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+  if (!asset) fail("Foto não encontrada.");
+  await prisma.mediaAsset.update({
+    where: { id },
+    data: { published: !asset.published },
+  });
+  refreshMedia();
+}
+
+export async function adminUpdateMediaAlt(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const alt = String(formData.get("alt") ?? "").trim();
+  if (alt.length < 3) fail("Escreva uma descrição curtinha para a foto.");
+  const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+  if (!asset) fail("Foto não encontrada.");
+  await prisma.mediaAsset.update({ where: { id }, data: { alt } });
+  refreshMedia();
+}
+
+export async function adminDeleteMedia(id: string): Promise<void> {
+  await requireAdmin();
+  const asset = await prisma.mediaAsset.findUnique({ where: { id } });
+  if (!asset) fail("Foto não encontrada.");
+  await prisma.mediaAsset.delete({ where: { id } });
+  await deleteMediaFile(asset.url);
+  refreshMedia();
 }
 
 // ── Clientes ────────────────────────────────────────────────────────────────
