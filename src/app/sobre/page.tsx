@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { pageMeta } from "@/lib/seo";
+import { getPublishedMedia } from "@/lib/media";
+import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
+
+// ISR: retrato vem de media_assets; o painel revalida na hora ao publicar.
+export const revalidate = 3600;
 
 export const metadata: Metadata = pageMeta({
   path: "/sobre",
@@ -22,7 +28,8 @@ const FORMACOES = [
 const MAPA =
   "https://www.google.com/maps?q=Rua+Ipom%C3%A9ia,+5,+Sant%C3%ADssimo,+Rio+de+Janeiro&output=embed";
 
-export default function SobrePage() {
+export default async function SobrePage() {
+  const [retrato] = await getPublishedMedia("sobre", 1);
   return (
     <main>
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
@@ -44,10 +51,19 @@ export default function SobrePage() {
             ocasião.
           </p>
         </div>
-        <div className="aspect-[4/5] w-full overflow-hidden rounded-mi bg-mi-cinza shadow-suave">
-          <div className="flex h-full items-center justify-center font-corpo text-sm text-mi-marrom/70">
-            foto da Mi
-          </div>
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-mi bg-mi-bege shadow-suave">
+          {retrato ? (
+            <Image
+              src={retrato.url}
+              alt={retrato.alt}
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 480px"
+              className="object-cover"
+            />
+          ) : (
+            <MonogramPlaceholder />
+          )}
         </div>
       </section>
 
