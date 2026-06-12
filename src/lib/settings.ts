@@ -2,6 +2,12 @@ import { prisma } from "./prisma";
 
 export type WeeklyHours = Record<string, [string, string][]>;
 
+/** Degrau da escada de indicação do Clube (configurável — R3). */
+export interface ClubLadderStep {
+  nivel: number;
+  beneficio: string;
+}
+
 export interface BusinessSettings {
   workingHours: WeeklyHours;
   courseWorkingHours: WeeklyHours;
@@ -15,6 +21,7 @@ export interface BusinessSettings {
   slotStepMin: number;
   timezone: string;
   depositPolicy: { default: string; on_strikes: boolean };
+  clubLadder: ClubLadderStep[];
 }
 
 const DEFAULTS: BusinessSettings = {
@@ -33,6 +40,13 @@ const DEFAULTS: BusinessSettings = {
   slotStepMin: 30,
   timezone: "America/Sao_Paulo",
   depositPolicy: { default: "none", on_strikes: true },
+  // Fallback se a key club_ladder não existir (a migration do clube insere a
+  // versão oficial no banco; textos a confirmar com a Mi).
+  clubLadder: [
+    { nivel: 1, beneficio: "Mimo de agradecimento (a confirmar com a Mi)" },
+    { nivel: 3, beneficio: "Benefício especial (a confirmar com a Mi)" },
+    { nivel: 5, beneficio: "Cortesia premium (combinar direto com a Mi)" },
+  ],
 };
 
 const TTL_MS = 60_000;
@@ -74,6 +88,9 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
       (m.get("deposit_policy") as unknown as
         | BusinessSettings["depositPolicy"]
         | undefined) ?? DEFAULTS.depositPolicy,
+    clubLadder:
+      (m.get("club_ladder") as unknown as ClubLadderStep[] | undefined) ??
+      DEFAULTS.clubLadder,
   };
 
   cache = { at: Date.now(), data };

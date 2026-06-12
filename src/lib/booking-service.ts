@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { getSettings } from "./settings";
 import { normalizeE164BR } from "./phone";
 import { evaluateCancellation, evaluateNoShow } from "./policies";
+import { avaliarEscadaIndicacao } from "./clube";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -577,6 +578,16 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
       },
     });
   });
+
+  // Clube: se a cliente foi indicada, reavalia a escada de quem indicou
+  // (idempotente — R10). Falha aqui não desfaz a conclusão do atendimento.
+  // TODO(M4): marco novo dispara parabéns no WhatsApp via Evolution/n8n.
+  try {
+    await avaliarEscadaIndicacao(booking.customerId);
+  } catch (e) {
+    console.error("clube: falha ao avaliar escada de indicação", e);
+  }
+
   return { ok: true, status: "completed" };
 }
 
