@@ -36,3 +36,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 seed-dist/
+
+# fotos locais do sistema de midia (M8.4) - em prod e volume do Dokploy
+/media

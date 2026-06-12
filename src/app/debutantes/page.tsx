@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { faqSchema } from "@/lib/seo";
+import { faqSchema, pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/debutantes",
   title: "Debutantes · 15 anos · Mi Ozorio",
   description:
     "Maquiagem e penteado para debutantes no Rio de Janeiro com a Milene Ozorio. Pacotes Básico e Master, ensaio externo e acompanhamento na festa.",
-};
+  ogTitle: "Debutantes · 15 anos",
+});
 
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Quero%20saber%20dos%20pacotes%20de%20debutante%20%F0%9F%92%9B";

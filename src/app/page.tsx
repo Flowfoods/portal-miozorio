@@ -1,6 +1,21 @@
 import Link from "next/link";
+import Image from "next/image";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { beautySalonSchema } from "@/lib/seo";
+import { beautySalonSchema, pageMeta } from "@/lib/seo";
+import { getPublishedMedia } from "@/lib/media";
+import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
+
+// ISR: as fotos vêm do banco (media_assets). Mudanças no painel chamam
+// revalidatePath("/") e aparecem na hora; 1h é só o teto de segurança.
+export const revalidate = 3600;
+
+export const metadata = pageMeta({
+  path: "/",
+  title: "Milene Ozorio · Beauty Artist · Maquiagem e penteado RJ",
+  description:
+    "Maquiagem e penteado para noivas, debutantes e festas no Rio de Janeiro. Agendamento online com a maquiadora Milene Ozorio.",
+  ogTitle: "Maquiagem & Penteado no RJ",
+});
 
 const SERVICOS = [
   {
@@ -73,7 +88,9 @@ const DEPOIMENTOS = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const [heroFoto] = await getPublishedMedia("hero", 1);
+  const portfolio = await getPublishedMedia("portfolio", 6);
   return (
     <main>
       <JsonLd data={beautySalonSchema} />
@@ -106,10 +123,19 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="aspect-[4/5] w-full overflow-hidden rounded-mi bg-mi-cinza shadow-suave">
-          <div className="flex h-full items-center justify-center font-corpo text-sm text-mi-marrom/70">
-            foto da Mi
-          </div>
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-mi bg-mi-bege shadow-suave">
+          {heroFoto ? (
+            <Image
+              src={heroFoto.url}
+              alt={heroFoto.alt}
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 480px"
+              className="object-cover"
+            />
+          ) : (
+            <MonogramPlaceholder />
+          )}
         </div>
       </section>
 
@@ -176,14 +202,30 @@ export default function Home() {
           </p>
         </header>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex aspect-[4/5] items-center justify-center rounded-mi bg-mi-cinza font-corpo text-xs text-mi-marrom/60"
-            >
-              foto {i + 1}
-            </div>
-          ))}
+          {portfolio.length > 0
+            ? portfolio.map((foto) => (
+                <div
+                  key={foto.id}
+                  className="relative aspect-[4/5] overflow-hidden rounded-mi bg-mi-bege"
+                >
+                  <Image
+                    src={foto.url}
+                    alt={foto.alt}
+                    fill
+                    loading="lazy"
+                    sizes="(max-width: 640px) 50vw, 320px"
+                    className="object-cover"
+                  />
+                </div>
+              ))
+            : Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-[4/5] overflow-hidden rounded-mi"
+                >
+                  <MonogramPlaceholder />
+                </div>
+              ))}
         </div>
       </section>
 
