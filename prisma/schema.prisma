@@ -82,6 +82,10 @@ model Customer {
   strikes         Int       @default(0)
   requiresDeposit Boolean   @default(false) @map("requires_deposit") // régua de reincidência
   lgpdConsentAt   DateTime? @map("lgpd_consent_at") @db.Timestamptz
+  allergies       String? // alergia persistente da cliente — dado de saúde (R6/R18)
+  notes           String? // anotações privadas da Mi — nunca aparecem no site
+  photoConsent    Boolean   @default(false) @map("photo_consent") // foto da cliente só com isto (R18)
+  photoConsentAt  DateTime? @map("photo_consent_at") @db.Timestamptz // quando o consentimento mudou
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   bookings Booking[]
