@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/agendar",
     "/noivas",
     "/debutantes",
+    "/clube",
     "/sobre",
     "/privacidade",
   ];

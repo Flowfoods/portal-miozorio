@@ -64,6 +64,17 @@ export function segmentoDe(input: SegmentoInput): SegmentoClube {
   return "NOVA";
 }
 
+/** Ocasiões aceitas no formulário de indicação (R13: linguagem da cliente). */
+export const OCASIOES_INDICACAO = [
+  "Maquiagem para evento",
+  "Penteado",
+  "Sobrancelha",
+  "Curso de automaquiagem",
+  "Vou casar (noiva)",
+  "Festa de 15 anos (debutante)",
+  "Outra ocasião",
+] as const;
+
 // ── Código de indicação ──────────────────────────────────────────────────────
 
 // Sem 0/O/1/I/L — o código vai ser ditado por telefone e digitado do celular.
