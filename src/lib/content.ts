@@ -86,6 +86,128 @@ export const CONTENT_FIELDS: ContentField[] = [
     default: "Rua Ipoméia, 5 — Vila Maria, Santíssimo, Rio de Janeiro",
     grupo: "Sobre a Mi",
   },
+  {
+    key: "home.especiais.subtitle",
+    label: "Home · subtítulo de Noivas & Debutantes",
+    default:
+      "Atendimentos exclusivos, com reunião, prévia e todo o cuidado do grande dia.",
+    multiline: true,
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.title",
+    label: "Home · chamada final (título)",
+    default: "Vamos cuidar da sua beleza?",
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.subtitle",
+    label: "Home · chamada final (texto)",
+    default: "Escolha o seu horário em poucos toques. Estou te esperando 💛",
+    multiline: true,
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.button",
+    label: "Home · chamada final (botão)",
+    default: "Agendar meu horário",
+    grupo: "Início",
+  },
+  {
+    key: "diaadia.intro.title",
+    label: "Dia a dia · título",
+    default: "Dia a dia",
+    grupo: "Dia a dia",
+  },
+  {
+    key: "diaadia.intro.subtitle",
+    label: "Dia a dia · texto de introdução",
+    default:
+      "Cuidado de perto, no seu ritmo. Cabelo e sobrancelhas para você se sentir bem todos os dias — não só nas ocasiões especiais. 💛",
+    multiline: true,
+    grupo: "Dia a dia",
+  },
+  // ── Noivas ──
+  {
+    key: "noivas.hero.eyebrow",
+    label: "Noivas · linha de cima",
+    default: "La Mariée",
+    grupo: "Noivas",
+  },
+  {
+    key: "noivas.hero.title",
+    label: "Noivas · título",
+    default: "O seu dia merece exclusividade",
+    grupo: "Noivas",
+  },
+  {
+    key: "noivas.hero.subtitle",
+    label: "Noivas · subtítulo",
+    default:
+      "Uma experiência pensada nos mínimos detalhes — da primeira conversa ao último retoque antes do “sim”. 💛",
+    multiline: true,
+    grupo: "Noivas",
+  },
+  {
+    key: "noivas.cta.title",
+    label: "Noivas · chamada final (título)",
+    default: "Vamos criar a sua produção dos sonhos?",
+    grupo: "Noivas",
+  },
+  {
+    key: "noivas.cta.subtitle",
+    label: "Noivas · chamada final (texto)",
+    default:
+      "Cada noiva é única, então preparo uma proposta personalizada pra você. Me chama no WhatsApp 💛",
+    multiline: true,
+    grupo: "Noivas",
+  },
+  {
+    key: "noivas.cta.button",
+    label: "Noivas · chamada final (botão)",
+    default: "Quero uma proposta",
+    grupo: "Noivas",
+  },
+  // ── Debutantes ──
+  {
+    key: "debutantes.hero.eyebrow",
+    label: "Debutantes · linha de cima",
+    default: "15 anos",
+    grupo: "Debutantes",
+  },
+  {
+    key: "debutantes.hero.title",
+    label: "Debutantes · título",
+    default: "O brilho da debutante, do nosso jeito",
+    grupo: "Debutantes",
+  },
+  {
+    key: "debutantes.hero.subtitle",
+    label: "Debutantes · subtítulo",
+    default:
+      "Da reunião criativa ao acompanhamento na festa — com todo o cuidado que esse dia tão especial merece. 💛",
+    multiline: true,
+    grupo: "Debutantes",
+  },
+  {
+    key: "debutantes.cta.title",
+    label: "Debutantes · chamada final (título)",
+    default: "Bora planejar essa festa?",
+    grupo: "Debutantes",
+  },
+  {
+    key: "debutantes.cta.subtitle",
+    label: "Debutantes · chamada final (texto)",
+    default: "Me chama no WhatsApp que eu preparo uma proposta sob medida 💛",
+    multiline: true,
+    grupo: "Debutantes",
+  },
+  {
+    key: "debutantes.cta.button",
+    label: "Debutantes · chamada final (botão)",
+    default: "Falar com a Mi",
+    grupo: "Debutantes",
+  },
 ];
 
 const DEFAULTS: Record<string, string> = Object.fromEntries(
