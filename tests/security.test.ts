@@ -5,6 +5,8 @@ import {
   LOCK_BASE_MS,
   LOCK_MAX_MS,
   MIN_SENHA,
+  generateResetToken,
+  hashResetToken,
 } from "@/lib/security";
 
 describe("lockoutMs (bloqueio progressivo de login — M13.2)", () => {
@@ -42,5 +44,31 @@ describe("lockoutMs (bloqueio progressivo de login — M13.2)", () => {
 describe("política de senha (M13.1)", () => {
   it("exige senha forte de 12+ caracteres", () => {
     expect(MIN_SENHA).toBeGreaterThanOrEqual(12);
+  });
+});
+
+describe("token de reset de senha (M13.4)", () => {
+  it("hash é determinístico para o mesmo token", () => {
+    const t = generateResetToken();
+    expect(hashResetToken(t)).toBe(hashResetToken(t));
+  });
+
+  it("tokens diferentes geram hashes diferentes", () => {
+    expect(hashResetToken(generateResetToken())).not.toBe(
+      hashResetToken(generateResetToken()),
+    );
+  });
+
+  it("o hash não é o token cru (nunca guardamos o valor em claro)", () => {
+    const t = generateResetToken();
+    expect(hashResetToken(t)).not.toBe(t);
+    expect(hashResetToken(t)).toHaveLength(64); // sha-256 hex
+  });
+
+  it("gera tokens de alta entropia (não colidem)", () => {
+    const tokens = new Set(
+      Array.from({ length: 200 }, () => generateResetToken()),
+    );
+    expect(tokens.size).toBe(200);
   });
 });

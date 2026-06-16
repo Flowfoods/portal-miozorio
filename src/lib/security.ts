@@ -3,6 +3,8 @@
  * Constantes puras — compartilhadas entre server actions, NextAuth e UI.
  */
 
+import { createHash, randomBytes } from "crypto";
+
 /** Tamanho mínimo de senha do painel (M13: senha forte). */
 export const MIN_SENHA = 12;
 
@@ -27,4 +29,20 @@ export function lockoutMs(failedAttempts: number): number {
   if (failedAttempts < LOCK_THRESHOLD) return 0;
   const over = failedAttempts - LOCK_THRESHOLD; // 0 na primeira trava
   return Math.min(LOCK_BASE_MS * 2 ** over, LOCK_MAX_MS);
+}
+
+// ── M13.4 — token de redefinição de senha ────────────────────────────────────
+
+/** Validade do link de redefinição (1 hora). */
+export const RESET_TTL_MS = 60 * 60 * 1000;
+
+/** Token cru, alta entropia (32 bytes), vai só no e-mail — nunca ao banco. */
+export function generateResetToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+/** Hash determinístico do token (o que fica no banco). SHA-256 basta: o token
+ *  já é aleatório de 256 bits, não é senha — não precisa de salt/bcrypt. */
+export function hashResetToken(raw: string): string {
+  return createHash("sha256").update(raw).digest("hex");
 }
