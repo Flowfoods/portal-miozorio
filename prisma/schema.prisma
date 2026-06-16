@@ -228,14 +228,32 @@ model Waitlist {
 /// Usuárias do painel /admin (M5). Senha = hash bcrypt; bootstrap via seed
 /// com ADMIN_EMAIL/ADMIN_PASSWORD (segredos só no Dokploy — R9).
 model AdminUser {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique
-  name         String
-  passwordHash String   @map("password_hash")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique
+  name           String
+  passwordHash   String    @map("password_hash")
+  active         Boolean   @default(true)
+  // M13.2 — bloqueio progressivo de login (anti brute-force, por conta).
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("admin_users")
+}
+
+/// M13.4 — token de redefinição de senha por e-mail. Guarda só o SHA-256 do
+/// token (nunca o valor cru), expira e é de uso único. Não há FK forte: se a
+/// conta sumir, o token vira inválido na checagem.
+model PasswordResetToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminUserId String    @map("admin_user_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz
+  usedAt      DateTime? @map("used_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([adminUserId])
+  @@map("password_reset_tokens")
 }
 
 /// Fotos do site (M8.4): hero, página Sobre, portfólio e cards de serviço.

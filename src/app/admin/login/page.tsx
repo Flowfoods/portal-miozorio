@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
@@ -36,6 +37,11 @@ function LoginForm() {
       <p className="mb-8 text-sm text-mi-texto/70">
         Acesso restrito. Entre com sua conta do estúdio.
       </p>
+      {search.get("reset") === "ok" && (
+        <p className="mb-6 rounded-mi bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Senha redefinida. Entre com a nova senha.
+        </p>
+      )}
       <form onSubmit={onSubmit} className="space-y-4">
         <input
           className="input-mi"
@@ -64,6 +70,11 @@ function LoginForm() {
           {loading ? "Entrando…" : "Entrar"}
         </button>
       </form>
+      <p className="mt-6 text-center text-sm">
+        <Link href="/admin/recuperar" className="text-mi-marrom underline">
+          Esqueci a senha
+        </Link>
+      </p>
     </div>
   );
 }

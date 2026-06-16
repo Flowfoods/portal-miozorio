@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { MIN_SENHA } from "@/lib/security";
 import AdminNav from "@/components/admin/AdminNav";
 import {
   adminCreateUser,
   adminToggleUser,
   adminResetUserPassword,
+  adminUpdateUser,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -47,12 +49,12 @@ export default async function AdminUsuariasPage() {
             />
           </label>
           <label className="text-xs">
-            Senha (mín. 8)
+            Senha (mín. {MIN_SENHA})
             <input
               className="input-mi mt-1 !py-2"
               name="password"
               type="password"
-              minLength={8}
+              minLength={MIN_SENHA}
               required
             />
           </label>
@@ -99,18 +101,57 @@ export default async function AdminUsuariasPage() {
                   )}
                 </div>
               </div>
+              <details className="mt-3">
+                <summary className="cursor-pointer text-sm text-mi-marrom">
+                  Editar nome e e-mail
+                </summary>
+                <form
+                  action={adminUpdateUser}
+                  className="mt-2 flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="id" value={u.id} />
+                  <label className="text-xs">
+                    Nome
+                    <input
+                      className="input-mi mt-1 !py-2"
+                      name="name"
+                      defaultValue={u.name}
+                      required
+                    />
+                  </label>
+                  <label className="text-xs">
+                    E-mail
+                    <input
+                      className="input-mi mt-1 !py-2"
+                      name="email"
+                      type="email"
+                      defaultValue={u.email}
+                      required
+                    />
+                  </label>
+                  <button className="rounded-mi border border-mi-cinza px-3 py-2 text-sm">
+                    Salvar
+                  </button>
+                </form>
+                {isMe && (
+                  <p className="mt-1 text-xs text-mi-texto/60">
+                    Se trocar o próprio e-mail, entre de novo com o novo
+                    endereço.
+                  </p>
+                )}
+              </details>
               <form
                 action={adminResetUserPassword}
                 className="mt-3 flex flex-wrap items-end gap-2"
               >
                 <input type="hidden" name="id" value={u.id} />
                 <label className="text-xs">
-                  Nova senha (mín. 8)
+                  Nova senha (mín. {MIN_SENHA})
                   <input
                     className="input-mi mt-1 !py-2"
                     name="password"
                     type="password"
-                    minLength={8}
+                    minLength={MIN_SENHA}
                     required
                   />
                 </label>

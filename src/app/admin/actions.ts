@@ -9,6 +9,7 @@ import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
 import { ensureClubMember } from "@/lib/clube";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
+import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import {
   confirmBooking,
   cancelBooking,
@@ -393,13 +394,38 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   const password = String(formData.get("password") ?? "");
   if (name.length < 2) fail("Informe o nome.");
   if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
-  if (password.length < 8) fail("A senha precisa de pelo menos 8 caracteres.");
+  if (password.length < MIN_SENHA) fail(SENHA_CURTA);
 
   const exists = await prisma.adminUser.findUnique({ where: { email } });
   if (exists) fail("Já existe uma conta com esse e-mail.");
 
   await prisma.adminUser.create({
     data: { name, email, passwordHash: bcrypt.hashSync(password, 12) },
+  });
+  revalidatePath("/admin/usuarias");
+}
+
+export async function adminUpdateUser(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (name.length < 2) fail("Informe o nome.");
+  if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
+
+  const user = await prisma.adminUser.findUnique({ where: { id } });
+  if (!user) fail("Conta não encontrada.");
+
+  // Trocar e-mail: só se não colidir com outra conta.
+  if (email !== user.email) {
+    const exists = await prisma.adminUser.findUnique({ where: { email } });
+    if (exists) fail("Já existe uma conta com esse e-mail.");
+  }
+
+  await prisma.adminUser.update({
+    where: { id },
+    data: { name, email },
   });
   revalidatePath("/admin/usuarias");
 }
@@ -433,7 +459,7 @@ export async function adminResetUserPassword(
 
   const id = String(formData.get("id") ?? "");
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8) fail("A senha precisa de pelo menos 8 caracteres.");
+  if (password.length < MIN_SENHA) fail(SENHA_CURTA);
 
   const user = await prisma.adminUser.findUnique({ where: { id } });
   if (!user) fail("Conta não encontrada.");
