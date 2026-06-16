@@ -4,7 +4,10 @@ import { prisma } from "./prisma";
 import { getSettings } from "./settings";
 import { normalizeE164BR } from "./phone";
 import { evaluateCancellation, evaluateNoShow } from "./policies";
-import { avaliarEscadaIndicacao } from "./clube";
+import {
+  creditarPontosServico,
+  creditarPontosIndicacao,
+} from "./clube-pontos";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -579,13 +582,15 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
     });
   });
 
-  // Clube: se a cliente foi indicada, reavalia a escada de quem indicou
-  // (idempotente — R10). Falha aqui não desfaz a conclusão do atendimento.
-  // Marco novo emite evento ao n8n (parabéns no WhatsApp) — env-gated.
+  // Clube por pontos (idempotente — R10). Falha aqui não desfaz a conclusão:
+  //  (1) pontos do serviço para a própria cliente (se for membro);
+  //  (2) pontos de indicação para a embaixadora (se a cliente foi indicada) —
+  //      emite parabéns via n8n.
   try {
-    await avaliarEscadaIndicacao(booking.customerId);
+    await creditarPontosServico(id);
+    await creditarPontosIndicacao(booking.customerId);
   } catch (e) {
-    console.error("clube: falha ao avaliar escada de indicação", e);
+    console.error("clube: falha ao creditar pontos", e);
   }
 
   return { ok: true, status: "completed" };
