@@ -3,6 +3,7 @@ import Image from "next/image";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { beautySalonSchema, pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
+import { getPublishedTestimonials } from "@/lib/testimonials";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
 
 // ISR: as fotos vêm do banco (media_assets). Mudanças no painel chamam
@@ -72,25 +73,10 @@ const DIFERENCIAIS = [
   },
 ];
 
-// ⚠️ Depoimentos ilustrativos — substituir pelos reais da Mi (pendência).
-const DEPOIMENTOS = [
-  {
-    txt: "A Mi entendeu exatamente o que eu queria. Me senti a versão mais bonita de mim mesma.",
-    nome: "Ana · madrinha",
-  },
-  {
-    txt: "Maquiagem impecável o dia inteiro, mesmo com calor e emoção. Recomendo de olhos fechados.",
-    nome: "Carol · formanda",
-  },
-  {
-    txt: "Cuidado, carinho e um resultado de tirar o fôlego. Já virou minha maquiadora oficial.",
-    nome: "Bia · noiva",
-  },
-];
-
 export default async function Home() {
   const [heroFoto] = await getPublishedMedia("hero", 1);
   const portfolio = await getPublishedMedia("portfolio", 6);
+  const depoimentos = await getPublishedTestimonials(6);
   return (
     <main>
       <JsonLd data={beautySalonSchema} />
@@ -238,16 +224,16 @@ export default async function Home() {
             </h2>
           </header>
           <div className="grid gap-6 sm:grid-cols-3">
-            {DEPOIMENTOS.map((d) => (
+            {depoimentos.map((d, i) => (
               <figure
-                key={d.nome}
+                key={i}
                 className="rounded-mi border border-mi-cinza bg-mi-branco p-6 shadow-suave"
               >
                 <blockquote className="font-corpo text-mi-texto">
-                  “{d.txt}”
+                  “{d.quote}”
                 </blockquote>
                 <figcaption className="mt-4 font-corpo text-sm text-mi-marrom">
-                  {d.nome}
+                  {d.author}
                 </figcaption>
               </figure>
             ))}

@@ -289,6 +289,20 @@ model MediaAsset {
   @@map("media_assets")
 }
 
+/// M12 — depoimentos de clientes (prova social). CRUD pela Mi no /admin.
+/// LGPD: só publicar com autorização da cliente (Anexo A).
+model Testimonial {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote     String // o depoimento
+  author    String // "Ana · madrinha"
+  published Boolean  @default(true)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([published])
+  @@map("testimonials")
+}
+
 /// Idempotência de webhooks/notificações (R10). dedup_key único por evento.
 model NotificationLog {
   id        BigInt   @id @default(autoincrement())
