@@ -6,6 +6,7 @@ import {
   DEFAULT_CLUB_LADDER,
   type ClubLadderStep,
 } from "./settings";
+import { dispatchClubEvent } from "./notify";
 
 /**
  * Clube de Fidelidade & Indicação — motor de indicação + ciclo de vida.
@@ -143,8 +144,8 @@ export interface MarcoNovo {
  * Gatilho da escada: chamada quando um booking vira `completed`. Se a cliente
  * do booking foi indicada, reavalia a escada de quem a indicou e cria os
  * marcos atingidos. Idempotente via UNIQUE (customer_id, nivel) — rodar duas
- * vezes não duplica (R10). Retorna só os marcos criados AGORA (insumo do M4:
- * mensagem de parabéns via Evolution — ainda não construído, nada é enviado).
+ * vezes não duplica (R10). Cada marco novo emite um evento ao n8n (M4) para
+ * parabenizar no WhatsApp — env-gated: sem N8N_WEBHOOK_URL nada é enviado.
  */
 export async function avaliarEscadaIndicacao(
   indicadaId: string,
@@ -180,6 +181,29 @@ export async function avaliarEscadaIndicacao(
 
   // Embaixadora ganha código próprio automaticamente (já pode compartilhar).
   if (fechadas >= 1) await ensureClubMember(embaixadoraId);
+
+  // M4 — avisa o n8n de cada marco novo (parabéns no WhatsApp). Env-gated e
+  // idempotente; dedupKey casa com o marco, então não repete em reruns (R10).
+  if (novos.length) {
+    const embaixadora = await prisma.customer.findUnique({
+      where: { id: embaixadoraId },
+      select: { name: true, phoneE164: true },
+    });
+    if (embaixadora) {
+      for (const marco of novos) {
+        await dispatchClubEvent({
+          kind: "club_milestone",
+          dedupKey: `club_milestone:${embaixadoraId}:${marco.nivel}`,
+          data: {
+            nome: embaixadora.name,
+            telefone: embaixadora.phoneE164,
+            nivel: marco.nivel,
+            beneficio: marco.beneficio,
+          },
+        });
+      }
+    }
+  }
 
   return { embaixadoraId, novos };
 }

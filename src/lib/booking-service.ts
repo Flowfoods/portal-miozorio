@@ -581,7 +581,7 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
 
   // Clube: se a cliente foi indicada, reavalia a escada de quem indicou
   // (idempotente — R10). Falha aqui não desfaz a conclusão do atendimento.
-  // TODO(M4): marco novo dispara parabéns no WhatsApp via Evolution/n8n.
+  // Marco novo emite evento ao n8n (parabéns no WhatsApp) — env-gated.
   try {
     await avaliarEscadaIndicacao(booking.customerId);
   } catch (e) {
