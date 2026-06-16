@@ -19,6 +19,8 @@ interface ApiService {
   priceHomeCents: number | null;
   pendingPrice: boolean;
   isCourse: boolean;
+  /** Dias próprios (Luxon 1=seg..7=dom); null = regra padrão. M9.5. */
+  availableWeekdays: number[] | null;
 }
 
 type Location = "studio" | "home";
@@ -103,7 +105,15 @@ export default function AgendarWizard() {
       d.setHours(12, 0, 0, 0);
       if (d < lead) continue;
       const dow = d.getDay(); // 0=dom ... 6=sáb
-      const ok = service.isCourse ? true : dow === 0 || dow === 6;
+      const luxonWd = dow === 0 ? 7 : dow; // 1=seg..7=dom
+      // M9.5: serviço com dias próprios respeita-os; senão, curso=qualquer dia,
+      // demais=fim de semana (agenda social).
+      const ok =
+        service.availableWeekdays && service.availableWeekdays.length
+          ? service.availableWeekdays.includes(luxonWd)
+          : service.isCourse
+            ? true
+            : dow === 0 || dow === 6;
       if (ok) out.push(d.toISOString().slice(0, 10));
     }
     return out;
