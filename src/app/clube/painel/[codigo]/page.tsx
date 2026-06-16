@@ -9,6 +9,7 @@ import {
   SEGMENTO_LABEL,
   SEGMENTO_STYLE,
 } from "@/lib/clube";
+import { saldoDoCliente } from "@/lib/clube-pontos";
 
 export const metadata: Metadata = {
   title: "Minha carteirinha · Clube Mi Ozorio",
@@ -32,24 +33,29 @@ export default async function PainelMembroPage({
   const membro = await prisma.customer.findUnique({
     where: { referralCode: params.codigo },
     include: {
-      milestones: { orderBy: { nivel: "asc" } },
       _count: { select: { referrals: true } },
     },
   });
   if (!membro?.clubJoinedAt) notFound();
 
-  const [settings, fechadas, ocasioes, ultima] = await Promise.all([
-    getSettings(),
-    contarIndicacoesFechadas(membro.id),
-    prisma.booking.count({
-      where: { customerId: membro.id, status: "completed" },
-    }),
-    prisma.booking.findFirst({
-      where: { customerId: membro.id, status: "completed" },
-      orderBy: { startsAt: "desc" },
-      select: { startsAt: true },
-    }),
-  ]);
+  const [settings, fechadas, ocasioes, ultima, saldo, recompensas] =
+    await Promise.all([
+      getSettings(),
+      contarIndicacoesFechadas(membro.id),
+      prisma.booking.count({
+        where: { customerId: membro.id, status: "completed" },
+      }),
+      prisma.booking.findFirst({
+        where: { customerId: membro.id, status: "completed" },
+        orderBy: { startsAt: "desc" },
+        select: { startsAt: true },
+      }),
+      saldoDoCliente(membro.id),
+      prisma.clubReward.findMany({
+        where: { ativo: true },
+        orderBy: [{ sort: "asc" }, { custoPontos: "asc" }],
+      }),
+    ]);
 
   const segmento = segmentoDe({
     ocasioes,
@@ -65,7 +71,6 @@ export default async function PainelMembroPage({
   const shareText = encodeURIComponent(
     `Oi! Eu me arrumo com a Mi Ozorio e acho que você vai amar 💛 Conta que eu indiquei: ${linkIndicacao}`,
   );
-  const atingidoPorNivel = new Map(membro.milestones.map((m) => [m.nivel, m]));
 
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-12">
@@ -127,49 +132,54 @@ export default async function PainelMembroPage({
         </p>
       </section>
 
-      {/* Escada */}
+      {/* Pontos */}
       <section className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave">
-        <h2 className="text-2xl">Sua escada de mimos</h2>
-        <ul className="mt-4 space-y-3">
-          {settings.clubLadder.map((step) => {
-            const marco = atingidoPorNivel.get(step.nivel);
-            const faltam = step.nivel - fechadas;
-            return (
-              <li
-                key={step.nivel}
-                className={`rounded-mi border p-4 ${
-                  marco
-                    ? "border-mi-marrom bg-mi-bege/50"
-                    : "border-mi-cinza"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
-                    {step.nivel}ª indicação realizada
-                  </p>
-                  {marco ? (
-                    <span className="rounded-full bg-emerald-100 px-3 py-0.5 font-corpo text-xs text-emerald-900">
-                      {marco.resgatadoEm ? "mimo entregue 💛" : "mimo liberado!"}
-                    </span>
-                  ) : (
-                    <span className="font-corpo text-xs text-mi-texto/50">
-                      {faltam === 1 ? "falta 1" : `faltam ${faltam}`}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 font-corpo text-sm text-mi-texto/80">
-                  {step.beneficio}
-                </p>
-                {marco && !marco.resgatadoEm && (
-                  <p className="mt-2 font-corpo text-xs text-mi-texto/60">
-                    Combine com a Mi na sua próxima visita 💛
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <h2 className="text-2xl">Seus pontos</h2>
+        <p className="mt-2 font-corpo text-4xl text-mi-marrom-escuro">
+          {saldo}{" "}
+          <span className="font-corpo text-base text-mi-texto/60">pontos</span>
+        </p>
+        <p className="mt-2 font-corpo text-sm text-mi-texto/70">
+          Você ganha pontos a cada atendimento e quando uma indicação sua faz o
+          primeiro atendimento. Acumule e troque pelas recompensas abaixo. 💛
+        </p>
       </section>
+
+      {/* Recompensas */}
+      {recompensas.length > 0 && (
+        <section className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave">
+          <h2 className="text-2xl">Recompensas</h2>
+          <ul className="mt-4 space-y-3">
+            {recompensas.map((r) => {
+              const podeResgatar = saldo >= r.custoPontos;
+              return (
+                <li
+                  key={r.id}
+                  className={`flex items-center justify-between gap-2 rounded-mi border p-4 ${
+                    podeResgatar ? "border-mi-marrom bg-mi-bege/50" : "border-mi-cinza"
+                  }`}
+                >
+                  <div>
+                    <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
+                      {r.nome}
+                    </p>
+                    <p className="font-corpo text-xs text-mi-texto/60">
+                      {r.tipo === "servico" ? "Serviço" : "Prêmio"} ·{" "}
+                      {r.custoPontos} pontos
+                    </p>
+                  </div>
+                  <span className="font-corpo text-xs text-mi-texto/60">
+                    {podeResgatar ? "disponível 💛" : `faltam ${r.custoPontos - saldo}`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-4 font-corpo text-xs text-mi-texto/60">
+            Para resgatar, é só combinar com a Mi na sua próxima visita. 💛
+          </p>
+        </section>
+      )}
     </main>
   );
 }
