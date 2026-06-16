@@ -249,8 +249,7 @@ export default async function Home() {
             Noivas & Debutantes
           </h2>
           <p className="mt-2 font-corpo text-mi-marrom">
-            Atendimentos exclusivos, com reunião, prévia e todo o cuidado do
-            grande dia.
+            {content["home.especiais.subtitle"]}
           </p>
         </header>
         <div className="grid gap-6 sm:grid-cols-2">
@@ -291,16 +290,16 @@ export default async function Home() {
       {/* CTA FINAL */}
       <section className="mx-auto max-w-3xl px-5 py-20 text-center">
         <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro sm:text-5xl">
-          Vamos cuidar da sua beleza?
+          {content["home.cta.title"]}
         </h2>
         <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          Escolha o seu horário em poucos toques. Estou te esperando 💛
+          {content["home.cta.subtitle"]}
         </p>
         <Link
           href="/agendar"
           className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
         >
-          Agendar meu horário
+          {content["home.cta.button"]}
         </Link>
       </section>
     </main>

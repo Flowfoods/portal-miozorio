@@ -86,6 +86,47 @@ export const CONTENT_FIELDS: ContentField[] = [
     default: "Rua Ipoméia, 5 — Vila Maria, Santíssimo, Rio de Janeiro",
     grupo: "Sobre a Mi",
   },
+  {
+    key: "home.especiais.subtitle",
+    label: "Home · subtítulo de Noivas & Debutantes",
+    default:
+      "Atendimentos exclusivos, com reunião, prévia e todo o cuidado do grande dia.",
+    multiline: true,
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.title",
+    label: "Home · chamada final (título)",
+    default: "Vamos cuidar da sua beleza?",
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.subtitle",
+    label: "Home · chamada final (texto)",
+    default: "Escolha o seu horário em poucos toques. Estou te esperando 💛",
+    multiline: true,
+    grupo: "Início",
+  },
+  {
+    key: "home.cta.button",
+    label: "Home · chamada final (botão)",
+    default: "Agendar meu horário",
+    grupo: "Início",
+  },
+  {
+    key: "diaadia.intro.title",
+    label: "Dia a dia · título",
+    default: "Dia a dia",
+    grupo: "Dia a dia",
+  },
+  {
+    key: "diaadia.intro.subtitle",
+    label: "Dia a dia · texto de introdução",
+    default:
+      "Cuidado de perto, no seu ritmo. Cabelo e sobrancelhas para você se sentir bem todos os dias — não só nas ocasiões especiais. 💛",
+    multiline: true,
+    grupo: "Dia a dia",
+  },
 ];
 
 const DEFAULTS: Record<string, string> = Object.fromEntries(
