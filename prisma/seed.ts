@@ -49,7 +49,7 @@ const businessSettings: Record<string, Prisma.InputJsonValue> = {
 type SeedService = {
   code: string;
   name: string;
-  category: "social" | "sobrancelha" | "curso" | "noiva" | "debutante";
+  category: "social" | "sobrancelha" | "cabelo" | "curso" | "noiva" | "debutante";
   durationMin: number;
   bufferMin: number;
   priceCents: number;
@@ -150,6 +150,53 @@ const services: SeedService[] = [
     name: "Brow lamination",
     category: "sobrancelha",
     durationMin: 60, // ~confirmar
+    bufferMin: 15,
+    priceCents: 0,
+    priceHomeCents: null,
+    bookableOnline: true,
+    pendingPrice: true,
+  },
+  // ── Cabelo · Dia a Dia (M9) — preços/durações/dias A CONFIRMAR COM A MI ──
+  // <!-- APROVAR COM A MI: durações são estimativas; dias/horários definidos
+  //      por serviço em service_availability (admin); preço pendente. -->
+  {
+    code: "escova",
+    name: "Escova",
+    category: "cabelo",
+    durationMin: 60, // ~confirmar
+    bufferMin: 15,
+    priceCents: 0,
+    priceHomeCents: null,
+    bookableOnline: true,
+    pendingPrice: true,
+  },
+  {
+    code: "hidratacao",
+    name: "Hidratação",
+    category: "cabelo",
+    durationMin: 60, // ~confirmar
+    bufferMin: 15,
+    priceCents: 0,
+    priceHomeCents: null,
+    bookableOnline: true,
+    pendingPrice: true,
+  },
+  {
+    code: "reconstrucao",
+    name: "Reconstrução",
+    category: "cabelo",
+    durationMin: 90, // ~confirmar
+    bufferMin: 15,
+    priceCents: 0,
+    priceHomeCents: null,
+    bookableOnline: true,
+    pendingPrice: true,
+  },
+  {
+    code: "cronograma-capilar",
+    name: "Cronograma capilar",
+    category: "cabelo",
+    durationMin: 90, // ~confirmar
     bufferMin: 15,
     priceCents: 0,
     priceHomeCents: null,

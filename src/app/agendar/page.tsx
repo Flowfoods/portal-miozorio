@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { pageMeta } from "@/lib/seo";
 import AgendarWizard from "@/components/agendar/AgendarWizard";
 
@@ -13,7 +14,9 @@ export const metadata: Metadata = pageMeta({
 export default function AgendarPage() {
   return (
     <main className="min-h-screen">
-      <AgendarWizard />
+      <Suspense>
+        <AgendarWizard />
+      </Suspense>
     </main>
   );
 }

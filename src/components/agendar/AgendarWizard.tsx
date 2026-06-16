@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   formatBRL,
   formatDuration,
@@ -65,12 +66,28 @@ export default function AgendarWizard() {
   } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
+  const search = useSearchParams();
+  const preselectCode = search.get("servico");
+  const preselectDone = useRef(false);
+
   useEffect(() => {
     fetch("/api/services")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { services: ApiService[] }) => setServices(d.services))
       .catch(() => setLoadError(true));
   }, []);
+
+  // M9 — pré-seleção via /agendar?servico=<code> (vindo do catálogo Dia a Dia).
+  // Aplica uma única vez, quando os serviços chegam.
+  useEffect(() => {
+    if (preselectDone.current || !services || !preselectCode) return;
+    const found = services.find((s) => s.code === preselectCode);
+    if (found) {
+      setService(found);
+      setStep(2);
+    }
+    preselectDone.current = true;
+  }, [services, preselectCode]);
 
   const priceForLocation = (s: ApiService): number | null =>
     location === "home" ? s.priceHomeCents : s.priceCents;

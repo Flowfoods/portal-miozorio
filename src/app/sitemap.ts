@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
     "/agendar",
+    "/dia-a-dia",
     "/noivas",
     "/debutantes",
     "/clube",
