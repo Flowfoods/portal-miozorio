@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
 import { ensureClubMember } from "@/lib/clube";
+import { dispatchEvent } from "@/lib/notify";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import {
@@ -110,8 +111,31 @@ export async function adminCreateManualBooking(
   });
   if (!r.ok) fail(r.message);
 
-  // TODO(M4): se "notify" ligado, disparar confirmação no WhatsApp via Evolution.
-  // A integração n8n/Evolution é o M4 (ainda não construído) — não simular envio.
+  // "Avisar no WhatsApp": emite confirmação ao n8n (env-gated, idempotente por
+  // booking). Sem N8N_WEBHOOK_URL nada é enviado — não simula.
+  if (formData.get("notify") === "on") {
+    const b = await prisma.booking.findUnique({
+      where: { id: r.id },
+      select: {
+        startsAt: true,
+        customer: { select: { name: true, phoneE164: true } },
+        service: { select: { name: true } },
+      },
+    });
+    if (b) {
+      await dispatchEvent({
+        kind: "booking_confirmation",
+        dedupKey: `booking_confirmation:${r.id}`,
+        data: {
+          nome: b.customer.name,
+          telefone: b.customer.phoneE164,
+          servico: b.service.name,
+          inicio: b.startsAt.toISOString(),
+        },
+      });
+    }
+  }
+
   refreshAgenda();
 }
 
