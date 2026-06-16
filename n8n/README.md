@@ -49,21 +49,35 @@ A idempotência (não reenviar o mesmo evento) já é garantida **no app**
 
 ---
 
-## Fluxos por TEMPO — ainda a construir (cron no n8n)
+## `mi-ozorio-crons-clube.workflow.json` — fluxos por TEMPO
 
-Estes não passam pelo app: são **Schedule Triggers** no n8n consultando o
-Postgres (`pg-miozorio`) e enviando via o mesmo nó Evolution. Descritos aqui
-como especificação; implementar depois (precisam de credencial Postgres no n8n).
+Estes não passam pelo app: um **Schedule Trigger** diário (09:00) consulta o
+Postgres (`pg-miozorio`) e envia via o mesmo nó Evolution.
 
-| Fluxo | Cron | Query (alto nível) | Mensagem |
-|-------|------|--------------------|----------|
-| **Aniversário** | diário 09:00 | `customers` com `birth_date` (dia/mês = hoje) e `club_joined_at` not null | Parabéns + convite/mimo (APROVAR COM A MI) |
-| **+1 ano de cliente** | diário | 1º `booking` `completed` faz exatamente 12 meses | "Faz 1 ano que a gente se conheceu…" |
-| **Pós-atendimento D+1** | diário | `booking` `completed` ontem | Agradecimento + pedido de avaliação/foto (respeitar `photo_consent`, R18) |
-| **Reconexão >12m** | semanal | membros do clube cujo último `completed` foi há > 12 meses (`segmentoDe` = EM_RECONEXAO) | "Saudades! Que tal remarcar?" |
+Fluxo: **Schedule (diário)** → **Postgres** (`SELECT` dos "devidos hoje", já
+excluindo o que está em `notification_log`) → **Code** (monta texto por `kind`)
+→ **Evolution `sendText`** → **Postgres** (grava `notification_log` = idempotência).
 
-> Para idempotência destes, gravar em `notification_log` com `dedup_key` por
-> (cliente, tipo, período) — ex.: `aniversario:<customerId>:2026`.
+Cobre os 4 fluxos numa única query `UNION ALL`:
+
+| `kind` | Quem | Regra |
+|--------|------|-------|
+| `aniversario` | membro do clube | `birth_date` (dia/mês) = hoje |
+| `aniversario_cliente` | qualquer cliente | 1º `completed` faz exatamente 1 ano hoje |
+| `pos_atendimento` | quem foi atendido | `completed` ontem (D+1; respeitar `photo_consent`, R18) |
+| `reconexao` | membro do clube | último `completed` há > 12 meses |
+
+Idempotência: `dedup_key` por (cliente, tipo, período) — ex.:
+`aniversario:<id>:2026`, `reconexao:<id>:2026-06`. Rodar o cron de novo no mesmo
+dia não reenvia.
+
+### Antes de ativar (precisa de validação)
+- ⚠️ **Criar a credencial Postgres** no n8n apontando para `pg-miozorio` e
+  substituir `REPLACE_PG_CRED_ID` nos 2 nós Postgres.
+- ⚠️ **Revisar o SQL** contra o banco real (foi escrito a partir do schema, não
+  testado em produção) e as **mensagens** (`APROVAR COM A MI`).
+- Reconexão entra na query diária mas o `dedup_key` mensal evita repetição;
+  ajuste a régua de tempo com a Mi se quiser.
 
 ### Combo recomendado de skills
 `engine-data-sync-pro` (schema do banco) → `n8n-workflow-architect` (gerar os
