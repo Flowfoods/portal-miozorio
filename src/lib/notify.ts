@@ -18,8 +18,8 @@ import { prisma } from "./prisma";
  *   { kind, dedupKey, ...dados do evento }
  */
 
-export interface ClubEventInput {
-  /** Tipo do evento, ex.: "club_milestone". Vira notification_log.kind. */
+export interface EventInput {
+  /** Tipo do evento, ex.: "club_milestone" | "booking_confirmation". Vira notification_log.kind. */
   kind: string;
   /** Chave única do evento (R10). Ex.: "club_milestone:<embaixadoraId>:<nivel>". */
   dedupKey: string;
@@ -28,7 +28,7 @@ export interface ClubEventInput {
 }
 
 /** Emite um evento ao n8n (best-effort, idempotente, env-gated). */
-export async function dispatchClubEvent(input: ClubEventInput): Promise<void> {
+export async function dispatchEvent(input: EventInput): Promise<void> {
   const url = process.env.N8N_WEBHOOK_URL;
   if (!url) return; // n8n ainda não configurado: não envia nada.
 

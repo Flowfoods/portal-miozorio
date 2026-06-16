@@ -6,7 +6,7 @@ import {
   DEFAULT_CLUB_LADDER,
   type ClubLadderStep,
 } from "./settings";
-import { dispatchClubEvent } from "./notify";
+import { dispatchEvent } from "./notify";
 
 /**
  * Clube de Fidelidade & Indicação — motor de indicação + ciclo de vida.
@@ -191,7 +191,7 @@ export async function avaliarEscadaIndicacao(
     });
     if (embaixadora) {
       for (const marco of novos) {
-        await dispatchClubEvent({
+        await dispatchEvent({
           kind: "club_milestone",
           dedupKey: `club_milestone:${embaixadoraId}:${marco.nivel}`,
           data: {
