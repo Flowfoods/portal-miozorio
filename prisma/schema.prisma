@@ -347,6 +347,41 @@ model SiteContent {
   @@map("site_content")
 }
 
+/// Vitrine editável de noiva/debutante (Onda B). categoria = noiva | debutante.
+/// Preço/parcela são texto livre (vitrine, não agendável — R14). Sem linhas para
+/// uma categoria, a página cai no fallback do código.
+model Pacote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria String
+  nome      String
+  preco     String
+  parcela   String?
+  itens     String[] @default([])
+  rodape    String? // "Cortesia: ..." (noiva)
+  destaque  Boolean  @default(false)
+  sort      Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([categoria, ativo])
+  @@map("pacotes")
+}
+
+/// Perguntas frequentes editáveis por categoria (noiva | debutante). Alimentam
+/// a página e o JSON-LD FAQPage. Sem linhas → fallback do código.
+model Faq {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria String
+  pergunta  String
+  resposta  String
+  sort      Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([categoria, ativo])
+  @@map("faqs")
+}
+
 /// Idempotência de webhooks/notificações (R10). dedup_key único por evento.
 model NotificationLog {
   id        BigInt   @id @default(autoincrement())
