@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
+import { getSiteContent } from "@/lib/content";
 
 export const metadata: Metadata = pageMeta({
   path: "/debutantes",
@@ -73,20 +74,20 @@ const FAQ = [
   },
 ];
 
-export default function DebutantesPage() {
+export default async function DebutantesPage() {
+  const content = await getSiteContent();
   return (
     <main>
       <JsonLd data={faqSchema(FAQ)} />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
-          15 anos
+          {content["debutantes.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
-          O brilho da debutante, do nosso jeito
+          {content["debutantes.hero.title"]}
         </h1>
         <p className="mx-auto mt-5 max-w-xl font-corpo text-lg font-light text-mi-texto">
-          Da reunião criativa ao acompanhamento na festa — com todo o cuidado
-          que esse dia tão especial merece. 💛
+          {content["debutantes.hero.subtitle"]}
         </p>
       </section>
 
@@ -181,16 +182,16 @@ export default function DebutantesPage() {
       {/* CTA WhatsApp (R1) */}
       <section className="mx-auto max-w-2xl px-5 pb-20 text-center">
         <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
-          Bora planejar essa festa?
+          {content["debutantes.cta.title"]}
         </h2>
         <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          Me chama no WhatsApp que eu preparo uma proposta sob medida 💛
+          {content["debutantes.cta.subtitle"]}
         </p>
         <a
           href={WA}
           className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
         >
-          Falar com a Mi
+          {content["debutantes.cta.button"]}
         </a>
       </section>
     </main>
