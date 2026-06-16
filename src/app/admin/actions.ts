@@ -763,3 +763,38 @@ export async function adminDeleteTestimonial(id: string): Promise<void> {
   await prisma.testimonial.delete({ where: { id } }).catch(() => null);
   refreshDepoimentos();
 }
+
+// ── Disponibilidade por serviço (M9.5 — dias/horas próprios do dia a dia) ─────
+
+const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export async function adminAddServiceAvailability(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+  const serviceId = String(formData.get("serviceId") ?? "");
+  const weekday = Number(formData.get("weekday") ?? 0);
+  const startTime = String(formData.get("startTime") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
+  if (weekday < 1 || weekday > 7) fail("Dia da semana inválido.");
+  if (!HHMM_RE.test(startTime) || !HHMM_RE.test(endTime)) {
+    fail("Use o formato HH:MM (ex.: 09:00).");
+  }
+  if (endTime <= startTime) fail("O fim precisa ser depois do início.");
+
+  const svc = await prisma.service.findUnique({ where: { id: serviceId } });
+  if (!svc) fail("Serviço não encontrado.");
+
+  await prisma.serviceAvailability.create({
+    data: { serviceId, weekday, startTime, endTime },
+  });
+  revalidatePath("/admin/servicos");
+}
+
+export async function adminRemoveServiceAvailability(
+  id: string,
+): Promise<void> {
+  await requireAdmin();
+  await prisma.serviceAvailability.delete({ where: { id } }).catch(() => null);
+  revalidatePath("/admin/servicos");
+}

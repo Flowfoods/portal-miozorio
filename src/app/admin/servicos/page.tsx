@@ -4,6 +4,8 @@ import {
   adminUpdateService,
   adminCreateService,
   adminDeleteService,
+  adminAddServiceAvailability,
+  adminRemoveServiceAvailability,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +13,20 @@ export const dynamic = "force-dynamic";
 const CATEGORY_LABEL: Record<string, string> = {
   social: "Social",
   sobrancelha: "Sobrancelha",
+  cabelo: "Cabelo (dia a dia)",
   curso: "Curso",
   noiva: "Noiva (vitrine)",
   debutante: "Debutante (vitrine)",
+};
+
+const WD_LABEL: Record<number, string> = {
+  1: "Seg",
+  2: "Ter",
+  3: "Qua",
+  4: "Qui",
+  5: "Sex",
+  6: "Sáb",
+  7: "Dom",
 };
 
 const centsToReais = (cents: number) =>
@@ -24,6 +37,7 @@ export default async function AdminServicosPage() {
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
+      availability: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
     },
   });
 
@@ -56,6 +70,7 @@ export default async function AdminServicosPage() {
               <select className="input-mi mt-1 !py-2" name="category" required>
                 <option value="social">Social</option>
                 <option value="sobrancelha">Sobrancelha</option>
+                <option value="cabelo">Cabelo (dia a dia)</option>
                 <option value="curso">Curso</option>
                 <option value="noiva">Noiva (vitrine)</option>
                 <option value="debutante">Debutante (vitrine)</option>
@@ -227,6 +242,78 @@ export default async function AdminServicosPage() {
                 </button>
               </div>
             </form>
+
+            {/* M9.5 — horários próprios do serviço (dia a dia) */}
+            <details className="mt-3 border-t border-mi-cinza/60 pt-3">
+              <summary className="cursor-pointer text-sm text-mi-marrom">
+                Horários próprios ({s.availability.length}) ·{" "}
+                {s.availability.length === 0
+                  ? "usa o horário padrão"
+                  : "agenda separada"}
+              </summary>
+              <p className="mt-2 text-xs text-mi-texto/60">
+                Sem janelas, esse serviço segue o horário padrão do estúdio.
+                Adicione janelas para dar dias/horas próprios (ex.: cabelo nos
+                dias de semana).
+              </p>
+              {s.availability.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {s.availability.map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex items-center gap-3 text-sm"
+                    >
+                      <span className="min-w-32">
+                        {WD_LABEL[a.weekday]} · {a.startTime}–{a.endTime}
+                      </span>
+                      <form
+                        action={adminRemoveServiceAvailability.bind(null, a.id)}
+                      >
+                        <button className="text-xs text-red-800 underline-offset-2 hover:underline">
+                          remover
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <form
+                action={adminAddServiceAvailability}
+                className="mt-3 flex flex-wrap items-end gap-2"
+              >
+                <input type="hidden" name="serviceId" value={s.id} />
+                <label className="text-xs">
+                  Dia
+                  <select name="weekday" className="input-mi mt-1 !py-2">
+                    {Object.entries(WD_LABEL).map(([n, l]) => (
+                      <option key={n} value={n}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs">
+                  Início
+                  <input
+                    name="startTime"
+                    placeholder="09:00"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Fim
+                  <input
+                    name="endTime"
+                    placeholder="18:00"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <button className="rounded-mi border border-mi-cinza px-3 py-2 text-sm">
+                  Adicionar janela
+                </button>
+              </form>
+            </details>
+
             {deletable && (
               <form
                 action={adminDeleteService.bind(null, s.id)}
