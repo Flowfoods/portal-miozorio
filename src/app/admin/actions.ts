@@ -405,6 +405,31 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   revalidatePath("/admin/usuarias");
 }
 
+export async function adminUpdateUser(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (name.length < 2) fail("Informe o nome.");
+  if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
+
+  const user = await prisma.adminUser.findUnique({ where: { id } });
+  if (!user) fail("Conta não encontrada.");
+
+  // Trocar e-mail: só se não colidir com outra conta.
+  if (email !== user.email) {
+    const exists = await prisma.adminUser.findUnique({ where: { email } });
+    if (exists) fail("Já existe uma conta com esse e-mail.");
+  }
+
+  await prisma.adminUser.update({
+    where: { id },
+    data: { name, email },
+  });
+  revalidatePath("/admin/usuarias");
+}
+
 export async function adminToggleUser(id: string): Promise<void> {
   const session = await requireAdmin();
 
