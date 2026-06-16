@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api"],
+      // /indicar e /clube/painel são links pessoais (por código) — fora do índice.
+      disallow: ["/admin", "/api", "/indicar", "/clube/painel"],
     },
     sitemap: `${BASE}/sitemap.xml`,
   };

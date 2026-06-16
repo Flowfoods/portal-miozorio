@@ -86,12 +86,53 @@ model Customer {
   notes           String? // anotações privadas da Mi — nunca aparecem no site
   photoConsent    Boolean   @default(false) @map("photo_consent") // foto da cliente só com isto (R18)
   photoConsentAt  DateTime? @map("photo_consent_at") @db.Timestamptz // quando o consentimento mudou
+  // Clube de Fidelidade — extensão do cliente (não há tabela de "membro";
+  // ocasiões = bookings completed). club_joined_at null = não entrou no clube.
+  referralCode    String?   @unique @map("referral_code") // link /indicar/<code>
+  referredById    String?   @map("referred_by_id") @db.Uuid
+  clubJoinedAt    DateTime? @map("club_joined_at") @db.Timestamptz
+  clubInterest    String?   @map("club_interest") // ocasião desejada/referência da indicada
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  bookings Booking[]
-  waitlist Waitlist[]
+  bookings    Booking[]
+  waitlist    Waitlist[]
+  referredBy  Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
+  referrals   Customer[]          @relation("Indicacoes")
+  milestones  ReferralMilestone[]
+  redemptions ClubRedemption[]
 
+  @@index([referredById])
   @@map("customers")
+}
+
+/// Marcos da escada de indicação: nasce quando a N-ésima indicada realiza um
+/// atendimento (booking completed). UNIQUE (customer, nivel) = idempotente (R10).
+model ReferralMilestone {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId  String    @map("customer_id") @db.Uuid
+  nivel       Int // 1, 3, 5 indicações que fecharam
+  beneficio   String // snapshot do texto do benefício na hora do marco
+  liberadoEm  DateTime  @default(now()) @map("liberado_em") @db.Timestamptz
+  resgatadoEm DateTime? @map("resgatado_em") @db.Timestamptz // Mi marca quando entrega
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@unique([customerId, nivel])
+  @@map("referral_milestones")
+}
+
+/// Brindes entregues fora da escada (aniversário, cortesias) — registro manual.
+model ClubRedemption {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId  String   @map("customer_id") @db.Uuid
+  beneficio   String
+  origem      String   @default("manual") // manual | aniversario | ...
+  resgatadoEm DateTime @default(now()) @map("resgatado_em") @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("club_redemptions")
 }
 
 model Booking {

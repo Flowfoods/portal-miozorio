@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
+import { ensureClubMember } from "@/lib/clube";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import {
   confirmBooking,
@@ -622,6 +623,48 @@ export async function adminUpdateCustomerCare(
     },
   });
   refreshFicha(id);
+}
+
+// ── Clube de Fidelidade ─────────────────────────────────────────────────────
+
+/** Inclui a cliente no clube pelo painel (gera código de indicação). */
+export async function adminEnrollCustomer(customerId: string): Promise<void> {
+  await requireAdmin();
+  const member = await ensureClubMember(customerId);
+  if (!member) fail("Cliente não encontrada.");
+  revalidatePath(`/admin/clientes/${customerId}`);
+  revalidatePath("/admin/clube");
+}
+
+/** Mi marca o mimo da escada como entregue. */
+export async function adminRedeemMilestone(id: string): Promise<void> {
+  await requireAdmin();
+  const marco = await prisma.referralMilestone.findUnique({ where: { id } });
+  if (!marco) fail("Marco não encontrado.");
+  if (marco.resgatadoEm) fail("Esse mimo já foi marcado como entregue.");
+  await prisma.referralMilestone.update({
+    where: { id },
+    data: { resgatadoEm: new Date() },
+  });
+  revalidatePath("/admin/clube");
+  revalidatePath(`/admin/clientes/${marco.customerId}`);
+}
+
+/** Registra um brinde avulso entregue (aniversário, cortesia). */
+export async function adminAddRedemption(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const customerId = String(formData.get("customerId") ?? "");
+  const beneficio = String(formData.get("beneficio") ?? "").trim();
+  if (beneficio.length < 3) fail("Descreva o brinde entregue.");
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+  });
+  if (!customer) fail("Cliente não encontrada.");
+  await prisma.clubRedemption.create({
+    data: { customerId, beneficio, origem: "manual" },
+  });
+  revalidatePath("/admin/clube");
+  revalidatePath(`/admin/clientes/${customerId}`);
 }
 
 /** R18: foto da cliente só com autorização registrada (com data da mudança). */

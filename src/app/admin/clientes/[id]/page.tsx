@@ -8,12 +8,17 @@ import { lerAnamnese } from "@/lib/anamnesis";
 import AdminNav from "@/components/admin/AdminNav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
+import { contarIndicacoesFechadas } from "@/lib/clube";
 import {
   adminUpdateCustomer,
   adminUpdateCustomerCare,
   adminSetPhotoConsent,
   adminResetStrikes,
+  adminEnrollCustomer,
+  adminAddRedemption,
 } from "../../actions";
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +43,19 @@ export default async function FichaClientePage({
             orderBy: { startsAt: "desc" },
             take: 60,
           },
+          milestones: { orderBy: { nivel: "asc" } },
+          redemptions: { orderBy: { resgatadoEm: "desc" }, take: 10 },
+          referredBy: { select: { id: true, name: true } },
+          _count: { select: { referrals: true } },
         },
       })
       .catch(() => null), // id fora do formato uuid → 404, não erro 500
   ]);
   if (!customer) notFound();
+
+  const indicacoesFechadas = customer.clubJoinedAt
+    ? await contarIndicacoesFechadas(customer.id)
+    : 0;
 
   const tz = settings.timezone;
   const now = DateTime.now().setZone(tz);
@@ -284,6 +297,98 @@ export default async function FichaClientePage({
             >
               <button className="rounded-mi border border-mi-cinza px-4 py-2 text-sm">
                 Perdoar (zerar e liberar)
+              </button>
+            </form>
+          )}
+        </section>
+
+        {/* Clube de Fidelidade */}
+        <section className="rounded-mi bg-mi-branco p-5 shadow-suave lg:col-span-2">
+          <h2 className="mb-2 text-xl">Clube</h2>
+          {customer.referredBy && (
+            <p className="mb-2 text-sm text-mi-texto/70">
+              Indicada por{" "}
+              <Link
+                href={`/admin/clientes/${customer.referredBy.id}`}
+                className="underline underline-offset-4"
+              >
+                {customer.referredBy.name}
+              </Link>
+              {customer.clubInterest && <> · {customer.clubInterest}</>}
+            </p>
+          )}
+          {customer.clubJoinedAt ? (
+            <div className="space-y-3 text-sm">
+              <p className="text-mi-texto/70">
+                Membro desde{" "}
+                {DateTime.fromJSDate(customer.clubJoinedAt)
+                  .setZone(tz)
+                  .toFormat("dd/LL/yyyy")}{" "}
+                · {indicacoesFechadas} indicação(ões) realizadas
+                {customer._count.referrals > indicacoesFechadas && (
+                  <>
+                    {" "}
+                    · {customer._count.referrals - indicacoesFechadas} aguardando
+                    atendimento
+                  </>
+                )}
+              </p>
+              <p className="break-all rounded-mi bg-mi-bege/60 px-3 py-2 text-xs text-mi-texto/80">
+                Link de indicação: {SITE}/indicar/{customer.referralCode}
+              </p>
+              {customer.milestones.length > 0 && (
+                <ul className="space-y-1 text-xs text-mi-texto/80">
+                  {customer.milestones.map((m) => (
+                    <li key={m.id}>
+                      {m.nivel}ª indicação · {m.beneficio} ·{" "}
+                      {m.resgatadoEm ? (
+                        <span className="text-emerald-900">entregue</span>
+                      ) : (
+                        <span className="text-amber-900">a entregar</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {customer.redemptions.length > 0 && (
+                <div className="text-xs text-mi-texto/60">
+                  Brindes avulsos:{" "}
+                  {customer.redemptions
+                    .map(
+                      (r) =>
+                        `${r.beneficio} (${DateTime.fromJSDate(r.resgatadoEm)
+                          .setZone(tz)
+                          .toFormat("dd/LL/yy")})`,
+                    )
+                    .join(" · ")}
+                </div>
+              )}
+              <form
+                action={adminAddRedemption}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <input type="hidden" name="customerId" value={customer.id} />
+                <input
+                  name="beneficio"
+                  placeholder="Registrar brinde entregue (ex.: mimo de aniversário)"
+                  className="input-mi !w-auto flex-1 !py-2 text-sm"
+                />
+                <SubmitButton
+                  pendingLabel="Salvando…"
+                  className="rounded-mi border border-mi-cinza px-4 py-2 text-sm"
+                >
+                  Registrar
+                </SubmitButton>
+              </form>
+            </div>
+          ) : (
+            <form action={adminEnrollCustomer.bind(null, customer.id)}>
+              <p className="mb-3 text-sm text-mi-texto/70">
+                Ainda não participa. Incluir gera o código e o link de indicação
+                dela.
+              </p>
+              <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+                Incluir no clube
               </button>
             </form>
           )}
