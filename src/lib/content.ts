@@ -50,6 +50,42 @@ export const CONTENT_FIELDS: ContentField[] = [
     default: "Sou noiva ou debutante 💛",
     grupo: "Início",
   },
+  {
+    key: "sobre.hero.title",
+    label: "Sobre · título",
+    default: "12 anos realçando belezas",
+    grupo: "Sobre a Mi",
+  },
+  {
+    key: "sobre.hero.p1",
+    label: "Sobre · primeiro parágrafo",
+    default:
+      "Sou a Milene — Mi, pra você. Há mais de uma década cuido da beleza de noivas, debutantes e mulheres em seus momentos mais especiais, com técnica, sensibilidade e muito carinho.",
+    multiline: true,
+    grupo: "Sobre a Mi",
+  },
+  {
+    key: "sobre.hero.p2",
+    label: "Sobre · segundo parágrafo",
+    default:
+      "Acredito que maquiagem boa é aquela que realça quem você já é — então cada produção começa te ouvindo, entendendo a sua história e a ocasião.",
+    multiline: true,
+    grupo: "Sobre a Mi",
+  },
+  {
+    key: "sobre.estudio.texto",
+    label: "Sobre · texto do estúdio",
+    default:
+      "Um ambiente familiar e climatizado, com manequim para o vestido e capacidade para até 6 pessoas (incluindo as profissionais de beleza). O lugar perfeito para a sua prévia e o seu grande dia.",
+    multiline: true,
+    grupo: "Sobre a Mi",
+  },
+  {
+    key: "sobre.estudio.endereco",
+    label: "Sobre · endereço do estúdio",
+    default: "Rua Ipoméia, 5 — Vila Maria, Santíssimo, Rio de Janeiro",
+    grupo: "Sobre a Mi",
+  },
 ];
 
 const DEFAULTS: Record<string, string> = Object.fromEntries(

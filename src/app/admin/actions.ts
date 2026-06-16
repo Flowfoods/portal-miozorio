@@ -937,6 +937,5 @@ export async function adminSetContent(formData: FormData): Promise<void> {
     }
   }
   invalidateContentCache();
-  revalidatePath("/");
-  revalidatePath("/admin/conteudo");
+  revalidatePath("/", "layout"); // textos aparecem em todas as páginas
 }
