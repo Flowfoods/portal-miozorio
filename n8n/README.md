@@ -19,8 +19,10 @@ Fluxo: **Webhook** → **Code (valida token + monta texto por `kind`)** →
 
 | `kind` | Payload | Quando |
 |--------|---------|--------|
-| `club_milestone` | `{ kind, nome, telefone, nivel, beneficio }` | Indicada realiza atendimento e a embaixadora bate um degrau da escada |
+| `club_points` | `{ kind, nome, telefone, pontos, motivo }` | Cliente ganha pontos no Clube (ex.: indicação concretizada) |
 | `booking_confirmation` | `{ kind, nome, telefone, servico, inicio }` (`inicio` = ISO) | Mi cria encaixe manual com "Avisar no WhatsApp" |
+
+> Obs.: o Clube migrou para PONTOS — o evento antigo `club_milestone` (escada) foi substituído por `club_points`.
 
 ### Como importar
 
