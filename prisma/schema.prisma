@@ -67,8 +67,25 @@ model Service {
   bookings      Booking[]
   eventSessions EventSession[]
   waitlist      Waitlist[]
+  availability  ServiceAvailability[]
 
   @@map("services")
+}
+
+/// M9 — disponibilidade própria de um serviço (linha Dia a Dia: cabelo/sobrancelha
+/// rodam em dias/horas diferentes da agenda social de fim de semana). Sem linhas
+/// para um serviço = ele usa o working_hours global (retrocompatível).
+model ServiceAvailability {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  weekday   Int // 1=seg … 7=dom (igual ao weekday do Luxon)
+  startTime String @map("start_time") // "09:00"
+  endTime   String @map("end_time") // "18:00"
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@map("service_availability")
 }
 
 model Customer {

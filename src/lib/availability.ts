@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { prisma } from "./prisma";
-import { getSettings } from "./settings";
+import { getSettings, type WeeklyHours } from "./settings";
 import {
   generateSlots,
   slotsToHHmm,
@@ -17,6 +17,26 @@ const WEEKDAY: Record<number, string> = {
   6: "sat",
   7: "sun",
 };
+
+/**
+ * M9 — monta o WeeklyHours de um serviço a partir das linhas de
+ * service_availability. Lista vazia → {} (o chamador cai no working_hours
+ * global). Função pura, testável.
+ */
+export function buildServiceHours(
+  rows: { weekday: number; startTime: string; endTime: string }[],
+): WeeklyHours {
+  const wh: WeeklyHours = {};
+  for (const r of rows) {
+    const key = WEEKDAY[r.weekday];
+    if (!key) continue;
+    (wh[key] ??= []).push([r.startTime, r.endTime]);
+  }
+  for (const k of Object.keys(wh)) {
+    wh[k]!.sort((a, b) => a[0].localeCompare(b[0]));
+  }
+  return wh;
+}
 
 /**
  * Disponibilidade de um serviço num dia: monta os ocupados a partir do banco
@@ -36,9 +56,17 @@ export async function getAvailability(
   const day = DateTime.fromISO(dateISO, { zone: tz });
   if (!day.isValid) return [];
 
-  const hoursTable = service.isCourse
-    ? settings.courseWorkingHours
-    : settings.workingHours;
+  // M9 — disponibilidade própria do serviço tem prioridade; sem ela, cai no
+  // working_hours global (social) ou no de cursos.
+  const availRows = await prisma.serviceAvailability.findMany({
+    where: { serviceId },
+    select: { weekday: true, startTime: true, endTime: true },
+  });
+  const hoursTable = availRows.length
+    ? buildServiceHours(availRows)
+    : service.isCourse
+      ? settings.courseWorkingHours
+      : settings.workingHours;
   const workingHours = hoursTable[WEEKDAY[day.weekday] ?? ""] ?? [];
   if (workingHours.length === 0) return [];
 
