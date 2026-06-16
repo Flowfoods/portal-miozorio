@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { beautySalonSchema, pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
 import { getPublishedTestimonials } from "@/lib/testimonials";
+import { getSiteContent } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
 
 // ISR: as fotos vêm do banco (media_assets). Mudanças no painel chamam
@@ -77,6 +78,7 @@ export default async function Home() {
   const [heroFoto] = await getPublishedMedia("hero", 1);
   const portfolio = await getPublishedMedia("portfolio", 6);
   const depoimentos = await getPublishedTestimonials(6);
+  const content = await getSiteContent();
   return (
     <main>
       <JsonLd data={beautySalonSchema} />
@@ -84,27 +86,26 @@ export default async function Home() {
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>
           <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
-            Milene Ozorio · Beauty Artist · RJ
+            {content["home.hero.eyebrow"]}
           </p>
           <h1 className="mt-5 text-balance font-titulo text-5xl leading-[1.05] text-mi-marrom-escuro sm:text-6xl">
-            Sua beleza, realçada com cuidado e arte
+            {content["home.hero.title"]}
           </h1>
           <p className="mt-5 max-w-md font-corpo text-lg font-light text-mi-texto">
-            Maquiagem e penteado para noivas, debutantes e os seus momentos mais
-            especiais, no coração do Rio de Janeiro. 💛
+            {content["home.hero.subtitle"]}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/agendar"
               className="inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-7 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
             >
-              Agendar meu horário
+              {content["home.hero.cta_primary"]}
             </Link>
             <Link
               href="/#especiais"
               className="inline-flex min-h-[52px] items-center justify-center rounded-mi border border-mi-marrom px-7 font-corpo text-base text-mi-marrom-escuro transition-colors hover:bg-mi-cinza"
             >
-              Sou noiva ou debutante 💛
+              {content["home.hero.cta_secondary"]}
             </Link>
           </div>
         </div>

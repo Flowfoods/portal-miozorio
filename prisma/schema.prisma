@@ -337,6 +337,16 @@ model Testimonial {
   @@map("testimonials")
 }
 
+/// CMS leve (Onda B): textos editáveis das páginas, por chave. Default no
+/// código (registry em src/lib/content.ts); a linha aqui é só o override da Mi.
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("site_content")
+}
+
 /// Idempotência de webhooks/notificações (R10). dedup_key único por evento.
 model NotificationLog {
   id        BigInt   @id @default(autoincrement())

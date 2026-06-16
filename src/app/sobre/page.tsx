@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
+import { getSiteContent } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
 
 // ISR: retrato vem de media_assets; o painel revalida na hora ao publicar.
@@ -30,6 +31,7 @@ const MAPA =
 
 export default async function SobrePage() {
   const [retrato] = await getPublishedMedia("sobre", 1);
+  const content = await getSiteContent();
   return (
     <main>
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
@@ -38,17 +40,13 @@ export default async function SobrePage() {
             Sobre a Mi
           </p>
           <h1 className="mt-5 font-titulo text-5xl leading-tight text-mi-marrom-escuro">
-            12 anos realçando belezas
+            {content["sobre.hero.title"]}
           </h1>
           <p className="mt-5 font-corpo text-lg font-light text-mi-texto">
-            Sou a Milene — Mi, pra você. Há mais de uma década cuido da beleza de
-            noivas, debutantes e mulheres em seus momentos mais especiais, com
-            técnica, sensibilidade e muito carinho.
+            {content["sobre.hero.p1"]}
           </p>
           <p className="mt-4 font-corpo text-mi-texto">
-            Acredito que maquiagem boa é aquela que realça quem você já é — então
-            cada produção começa te ouvindo, entendendo a sua história e a
-            ocasião.
+            {content["sobre.hero.p2"]}
           </p>
         </div>
         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-mi bg-mi-bege shadow-suave">
@@ -94,12 +92,10 @@ export default async function SobrePage() {
               O estúdio
             </h2>
             <p className="mt-4 font-corpo text-mi-texto">
-              Um ambiente familiar e climatizado, com manequim para o vestido e
-              capacidade para até 6 pessoas (incluindo as profissionais de
-              beleza). O lugar perfeito para a sua prévia e o seu grande dia.
+              {content["sobre.estudio.texto"]}
             </p>
             <p className="mt-4 font-corpo text-mi-marrom-escuro">
-              Rua Ipoméia, 5 — Vila Maria, Santíssimo, Rio de Janeiro
+              {content["sobre.estudio.endereco"]}
             </p>
           </div>
           <div className="aspect-video w-full overflow-hidden rounded-mi border border-mi-cinza shadow-suave">
