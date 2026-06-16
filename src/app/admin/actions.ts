@@ -8,6 +8,10 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
 import { ensureClubMember } from "@/lib/clube";
+import {
+  resgatarRecompensa,
+  ajustarPontosManual,
+} from "@/lib/clube-pontos";
 import { dispatchEvent } from "@/lib/notify";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
@@ -193,6 +197,7 @@ export async function adminUpdateService(
       priceHomeCents,
       durationMin,
       bufferMin: Number.isInteger(bufferMin) && bufferMin >= 0 ? bufferMin : 15,
+      clubPoints: Math.max(0, Math.trunc(Number(formData.get("clubPoints")) || 0)),
       active: formData.get("active") === "on",
       pendingPrice: formData.get("pendingPrice") === "on",
       bookableOnline: lockedOffline
@@ -272,6 +277,7 @@ export async function adminCreateService(formData: FormData): Promise<void> {
       pendingPrice,
       requiresDeposit: formData.get("requiresDeposit") === "on",
       isCourse: category === "curso",
+      clubPoints: Math.max(0, Math.trunc(Number(formData.get("clubPoints")) || 0)),
       active: true,
     },
   });
@@ -821,4 +827,91 @@ export async function adminRemoveServiceAvailability(
   await requireAdmin();
   await prisma.serviceAvailability.delete({ where: { id } }).catch(() => null);
   revalidatePath("/admin/servicos");
+}
+
+// ── Clube por pontos: recompensas, config e operações (Anexo 1) ──────────────
+
+const REWARD_TIPOS = ["premio", "servico"] as const;
+
+export async function adminCreateReward(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const nome = String(formData.get("nome") ?? "").trim();
+  const tipo = String(formData.get("tipo") ?? "premio");
+  const custoPontos = Math.trunc(Number(formData.get("custoPontos")) || 0);
+  if (nome.length < 2) fail("Dê um nome à recompensa.");
+  if (!REWARD_TIPOS.includes(tipo as never)) fail("Tipo inválido.");
+  if (custoPontos <= 0) fail("O custo em pontos precisa ser maior que zero.");
+  await prisma.clubReward.create({
+    data: {
+      nome,
+      tipo,
+      custoPontos,
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  revalidatePath("/admin/clube");
+}
+
+export async function adminUpdateReward(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+  const tipo = String(formData.get("tipo") ?? "premio");
+  const custoPontos = Math.trunc(Number(formData.get("custoPontos")) || 0);
+  if (nome.length < 2) fail("Dê um nome à recompensa.");
+  if (!REWARD_TIPOS.includes(tipo as never)) fail("Tipo inválido.");
+  if (custoPontos <= 0) fail("O custo em pontos precisa ser maior que zero.");
+  const r = await prisma.clubReward.findUnique({ where: { id } });
+  if (!r) fail("Recompensa não encontrada.");
+  await prisma.clubReward.update({
+    where: { id },
+    data: {
+      nome,
+      tipo,
+      custoPontos,
+      ativo: formData.get("ativo") === "on",
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  revalidatePath("/admin/clube");
+}
+
+export async function adminDeleteReward(id: string): Promise<void> {
+  await requireAdmin();
+  await prisma.clubReward.delete({ where: { id } }).catch(() => null);
+  revalidatePath("/admin/clube");
+}
+
+export async function adminSetPointsPerReferral(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+  const valor = Math.max(0, Math.trunc(Number(formData.get("pontos")) || 0));
+  await prisma.businessSetting.upsert({
+    where: { key: "club_points_per_referral" },
+    update: { value: valor },
+    create: { key: "club_points_per_referral", value: valor },
+  });
+  invalidateSettingsCache();
+  revalidatePath("/admin/clube");
+}
+
+export async function adminAdjustPoints(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const customerId = String(formData.get("customerId") ?? "");
+  const pontos = Math.trunc(Number(formData.get("pontos")) || 0);
+  const descricao = String(formData.get("descricao") ?? "").trim();
+  if (pontos === 0) fail("Informe quantos pontos (positivo credita, negativo tira).");
+  if (descricao.length < 2) fail("Diga o motivo do ajuste.");
+  await ajustarPontosManual(customerId, pontos, descricao);
+  revalidatePath(`/admin/clientes/${customerId}`);
+}
+
+export async function adminRedeemReward(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const customerId = String(formData.get("customerId") ?? "");
+  const rewardId = String(formData.get("rewardId") ?? "");
+  const r = await resgatarRecompensa(customerId, rewardId);
+  if (!r.ok) fail(r.message ?? "Não foi possível resgatar.");
+  revalidatePath(`/admin/clientes/${customerId}`);
 }
