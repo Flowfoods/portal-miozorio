@@ -13,6 +13,7 @@ import {
   ajustarPontosManual,
 } from "@/lib/clube-pontos";
 import { dispatchEvent } from "@/lib/notify";
+import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import {
@@ -914,4 +915,28 @@ export async function adminRedeemReward(formData: FormData): Promise<void> {
   const r = await resgatarRecompensa(customerId, rewardId);
   if (!r.ok) fail(r.message ?? "Não foi possível resgatar.");
   revalidatePath(`/admin/clientes/${customerId}`);
+}
+
+// ── CMS de textos (Onda B) ───────────────────────────────────────────────────
+
+export async function adminSetContent(formData: FormData): Promise<void> {
+  await requireAdmin();
+  for (const f of CONTENT_FIELDS) {
+    const raw = formData.get(f.key);
+    if (raw === null) continue;
+    const value = String(raw).trim();
+    // Vazio ou igual ao padrão → remove o override (volta ao texto de fábrica).
+    if (!value || value === f.default) {
+      await prisma.siteContent.delete({ where: { key: f.key } }).catch(() => null);
+    } else {
+      await prisma.siteContent.upsert({
+        where: { key: f.key },
+        update: { value },
+        create: { key: f.key, value },
+      });
+    }
+  }
+  invalidateContentCache();
+  revalidatePath("/");
+  revalidatePath("/admin/conteudo");
 }
