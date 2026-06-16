@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { MIN_SENHA } from "@/lib/security";
 import AdminNav from "@/components/admin/AdminNav";
 import {
   adminCreateUser,
@@ -47,12 +48,12 @@ export default async function AdminUsuariasPage() {
             />
           </label>
           <label className="text-xs">
-            Senha (mín. 8)
+            Senha (mín. {MIN_SENHA})
             <input
               className="input-mi mt-1 !py-2"
               name="password"
               type="password"
-              minLength={8}
+              minLength={MIN_SENHA}
               required
             />
           </label>
@@ -105,12 +106,12 @@ export default async function AdminUsuariasPage() {
               >
                 <input type="hidden" name="id" value={u.id} />
                 <label className="text-xs">
-                  Nova senha (mín. 8)
+                  Nova senha (mín. {MIN_SENHA})
                   <input
                     className="input-mi mt-1 !py-2"
                     name="password"
                     type="password"
-                    minLength={8}
+                    minLength={MIN_SENHA}
                     required
                   />
                 </label>

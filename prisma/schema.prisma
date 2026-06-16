@@ -228,12 +228,15 @@ model Waitlist {
 /// Usuárias do painel /admin (M5). Senha = hash bcrypt; bootstrap via seed
 /// com ADMIN_EMAIL/ADMIN_PASSWORD (segredos só no Dokploy — R9).
 model AdminUser {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique
-  name         String
-  passwordHash String   @map("password_hash")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique
+  name           String
+  passwordHash   String    @map("password_hash")
+  active         Boolean   @default(true)
+  // M13.2 — bloqueio progressivo de login (anti brute-force, por conta).
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("admin_users")
 }

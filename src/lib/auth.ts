@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { lockoutMs } from "./security";
 
 /**
  * Autenticação do painel /admin (M5): credentials (e-mail + senha bcrypt)
@@ -23,7 +24,31 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.adminUser.findUnique({ where: { email } });
         if (!user || !user.active) return null;
-        if (!bcrypt.compareSync(password, user.passwordHash)) return null;
+
+        // M13.2 — conta travada por brute-force: recusa sem nem checar a senha.
+        if (user.lockedUntil && user.lockedUntil > new Date()) return null;
+
+        if (!bcrypt.compareSync(password, user.passwordHash)) {
+          // Falhou: incrementa e, passando do limite, trava com backoff.
+          const failedAttempts = user.failedAttempts + 1;
+          const ms = lockoutMs(failedAttempts);
+          await prisma.adminUser.update({
+            where: { id: user.id },
+            data: {
+              failedAttempts,
+              lockedUntil: ms > 0 ? new Date(Date.now() + ms) : user.lockedUntil,
+            },
+          });
+          return null;
+        }
+
+        // Sucesso: zera o contador (só escreve se havia o que limpar).
+        if (user.failedAttempts > 0 || user.lockedUntil) {
+          await prisma.adminUser.update({
+            where: { id: user.id },
+            data: { failedAttempts: 0, lockedUntil: null },
+          });
+        }
 
         return { id: user.id, email: user.email, name: user.name };
       },
