@@ -709,3 +709,57 @@ export async function adminSetPhotoConsent(
   });
   refreshFicha(customerId);
 }
+
+// ── Depoimentos (M12) ────────────────────────────────────────────────────────
+
+function refreshDepoimentos() {
+  revalidatePath("/admin/depoimentos");
+  revalidatePath("/"); // a home exibe os depoimentos publicados
+}
+
+export async function adminCreateTestimonial(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const quote = String(formData.get("quote") ?? "").trim();
+  const author = String(formData.get("author") ?? "").trim();
+  const sort = Number(formData.get("sort") ?? 0) || 0;
+  if (quote.length < 5) fail("Escreva o depoimento.");
+  if (author.length < 2) fail("Informe quem disse (ex.: Ana · madrinha).");
+
+  await prisma.testimonial.create({ data: { quote, author, sort } });
+  refreshDepoimentos();
+}
+
+export async function adminUpdateTestimonial(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const quote = String(formData.get("quote") ?? "").trim();
+  const author = String(formData.get("author") ?? "").trim();
+  const sort = Number(formData.get("sort") ?? 0) || 0;
+  if (quote.length < 5) fail("Escreva o depoimento.");
+  if (author.length < 2) fail("Informe quem disse (ex.: Ana · madrinha).");
+
+  const t = await prisma.testimonial.findUnique({ where: { id } });
+  if (!t) fail("Depoimento não encontrado.");
+  await prisma.testimonial.update({
+    where: { id },
+    data: { quote, author, sort },
+  });
+  refreshDepoimentos();
+}
+
+export async function adminToggleTestimonial(id: string): Promise<void> {
+  await requireAdmin();
+  const t = await prisma.testimonial.findUnique({ where: { id } });
+  if (!t) fail("Depoimento não encontrado.");
+  await prisma.testimonial.update({
+    where: { id },
+    data: { published: !t.published },
+  });
+  refreshDepoimentos();
+}
+
+export async function adminDeleteTestimonial(id: string): Promise<void> {
+  await requireAdmin();
+  await prisma.testimonial.delete({ where: { id } }).catch(() => null);
+  refreshDepoimentos();
+}

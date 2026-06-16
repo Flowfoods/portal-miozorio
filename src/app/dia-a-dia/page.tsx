@@ -4,7 +4,9 @@ import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { formatBRL, formatDuration } from "@/lib/format";
 
-export const revalidate = 3600;
+// Catálogo vem do banco e não tem hook de revalidação (preços/serviços mudam
+// no admin). Dinâmico garante frescor; a query é pequena e o SSR mantém o SEO.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = pageMeta({
   path: "/dia-a-dia",

@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "",
     "/agendar",
     "/dia-a-dia",
+    "/galeria",
     "/noivas",
     "/debutantes",
     "/clube",
