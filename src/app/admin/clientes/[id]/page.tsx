@@ -16,7 +16,10 @@ import {
   adminResetStrikes,
   adminEnrollCustomer,
   adminAddRedemption,
+  adminRedeemReward,
+  adminAdjustPoints,
 } from "../../actions";
+import { getSaldoExtrato } from "@/lib/clube-pontos";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
@@ -56,6 +59,17 @@ export default async function FichaClientePage({
   const indicacoesFechadas = customer.clubJoinedAt
     ? await contarIndicacoesFechadas(customer.id)
     : 0;
+
+  // Clube por pontos: saldo + extrato + recompensas disponíveis.
+  const [clube, recompensas] = customer.clubJoinedAt
+    ? await Promise.all([
+        getSaldoExtrato(customer.id),
+        prisma.clubReward.findMany({
+          where: { ativo: true },
+          orderBy: [{ sort: "asc" }, { custoPontos: "asc" }],
+        }),
+      ])
+    : [{ saldo: 0, extrato: [] as Awaited<ReturnType<typeof getSaldoExtrato>>["extrato"] }, []];
 
   const tz = settings.timezone;
   const now = DateTime.now().setZone(tz);
@@ -336,6 +350,73 @@ export default async function FichaClientePage({
               <p className="break-all rounded-mi bg-mi-bege/60 px-3 py-2 text-xs text-mi-texto/80">
                 Link de indicação: {SITE}/indicar/{customer.referralCode}
               </p>
+
+              {/* Pontos (Anexo 1) */}
+              <div className="rounded-mi bg-mi-bege/40 p-3">
+                <p className="font-medium text-mi-marrom-escuro">
+                  Saldo: {clube.saldo} pontos
+                </p>
+                {recompensas.length > 0 && (
+                  <form
+                    action={adminRedeemReward}
+                    className="mt-2 flex flex-wrap items-end gap-2"
+                  >
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <select
+                      name="rewardId"
+                      className="input-mi !w-auto flex-1 !py-2 text-sm"
+                    >
+                      {recompensas.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.nome} — {r.custoPontos} pts
+                        </option>
+                      ))}
+                    </select>
+                    <SubmitButton
+                      pendingLabel="Resgatando…"
+                      className="rounded-mi border border-mi-cinza px-4 py-2 text-sm"
+                    >
+                      Resgatar
+                    </SubmitButton>
+                  </form>
+                )}
+                <form
+                  action={adminAdjustPoints}
+                  className="mt-2 flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="customerId" value={customer.id} />
+                  <input
+                    name="pontos"
+                    type="number"
+                    placeholder="±pts"
+                    className="input-mi w-20 !py-2 text-sm"
+                  />
+                  <input
+                    name="descricao"
+                    placeholder="motivo do ajuste"
+                    className="input-mi !w-auto flex-1 !py-2 text-sm"
+                  />
+                  <SubmitButton
+                    pendingLabel="Salvando…"
+                    className="rounded-mi border border-mi-cinza px-4 py-2 text-sm"
+                  >
+                    Ajustar
+                  </SubmitButton>
+                </form>
+                {clube.extrato.length > 0 && (
+                  <ul className="mt-2 space-y-0.5 text-xs text-mi-texto/70">
+                    {clube.extrato.slice(0, 8).map((t) => (
+                      <li key={t.id}>
+                        {t.pontos > 0 ? "+" : ""}
+                        {t.pontos} · {t.descricao} ·{" "}
+                        {DateTime.fromJSDate(t.createdAt)
+                          .setZone(tz)
+                          .toFormat("dd/LL/yy")}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               {customer.milestones.length > 0 && (
                 <ul className="space-y-1 text-xs text-mi-texto/80">
                   {customer.milestones.map((m) => (

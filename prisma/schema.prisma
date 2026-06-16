@@ -61,6 +61,7 @@ model Service {
   requiresDeposit Boolean  @default(false) @map("requires_deposit")
   pendingPrice    Boolean  @default(false) @map("pending_price") // sobrancelha a confirmar
   isCourse        Boolean  @default(false) @map("is_course") // usa event_sessions
+  clubPoints      Int      @default(0) @map("club_points") // pontos do Clube por atendimento (configurável pela Mi)
   active          Boolean  @default(true)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -111,12 +112,13 @@ model Customer {
   clubInterest    String?   @map("club_interest") // ocasião desejada/referência da indicada
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  bookings    Booking[]
-  waitlist    Waitlist[]
-  referredBy  Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
-  referrals   Customer[]          @relation("Indicacoes")
-  milestones  ReferralMilestone[]
-  redemptions ClubRedemption[]
+  bookings     Booking[]
+  waitlist     Waitlist[]
+  referredBy   Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
+  referrals    Customer[]          @relation("Indicacoes")
+  milestones   ReferralMilestone[]
+  redemptions  ClubRedemption[]
+  clubTxns     ClubTransaction[]
 
   @@index([referredById])
   @@map("customers")
@@ -150,6 +152,38 @@ model ClubRedemption {
 
   @@index([customerId])
   @@map("club_redemptions")
+}
+
+/// Clube por PONTOS (Anexo 1). Catálogo de recompensas configurável pela Mi:
+/// prêmio (brinde) ou serviço, cada um com custo em pontos.
+model ClubReward {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome        String
+  tipo        String   @default("premio") // premio | servico
+  custoPontos Int      @map("custo_pontos")
+  ativo       Boolean  @default(true)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("club_rewards")
+}
+
+/// Extrato auditável de pontos. Saldo = SUM(pontos). pontos > 0 ganha,
+/// pontos < 0 resgata. dedup_key único garante crédito idempotente (R10)
+/// — service:<bookingId>, referral:<indicadaId>. Resgate/manual sem dedup.
+model ClubTransaction {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  pontos     Int
+  tipo       String // service | referral | redemption | manual
+  descricao  String
+  dedupKey   String?  @unique @map("dedup_key")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("club_transactions")
 }
 
 model Booking {
@@ -301,6 +335,16 @@ model Testimonial {
 
   @@index([published])
   @@map("testimonials")
+}
+
+/// CMS leve (Onda B): textos editáveis das páginas, por chave. Default no
+/// código (registry em src/lib/content.ts); a linha aqui é só o override da Mi.
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("site_content")
 }
 
 /// Idempotência de webhooks/notificações (R10). dedup_key único por evento.

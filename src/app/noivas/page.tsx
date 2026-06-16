@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
+import { getSiteContent } from "@/lib/content";
 
 export const metadata: Metadata = pageMeta({
   path: "/noivas",
@@ -85,20 +86,20 @@ const FAQ = [
   },
 ];
 
-export default function NoivasPage() {
+export default async function NoivasPage() {
+  const content = await getSiteContent();
   return (
     <main>
       <JsonLd data={faqSchema(FAQ)} />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
-          La Mariée
+          {content["noivas.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
-          O seu dia merece exclusividade
+          {content["noivas.hero.title"]}
         </h1>
         <p className="mx-auto mt-5 max-w-xl font-corpo text-lg font-light text-mi-texto">
-          Uma experiência pensada nos mínimos detalhes — da primeira conversa ao
-          último retoque antes do “sim”. 💛
+          {content["noivas.hero.subtitle"]}
         </p>
       </section>
 
@@ -208,17 +209,16 @@ export default function NoivasPage() {
       {/* CTA único — WhatsApp (R1) */}
       <section className="mx-auto max-w-2xl px-5 py-20 text-center">
         <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
-          Vamos criar a sua produção dos sonhos?
+          {content["noivas.cta.title"]}
         </h2>
         <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          Cada noiva é única, então preparo uma proposta personalizada pra você.
-          Me chama no WhatsApp 💛
+          {content["noivas.cta.subtitle"]}
         </p>
         <a
           href={WA}
           className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
         >
-          Quero uma proposta
+          {content["noivas.cta.button"]}
         </a>
       </section>
     </main>

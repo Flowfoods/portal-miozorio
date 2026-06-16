@@ -118,6 +118,17 @@ export default async function AdminServicosPage() {
                 defaultValue={15}
               />
             </label>
+            <label className="text-xs">
+              Pontos do clube
+              <input
+                className="input-mi mt-1 !py-2"
+                name="clubPoints"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={0}
+              />
+            </label>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="flex items-center gap-1.5">
@@ -202,6 +213,17 @@ export default async function AdminServicosPage() {
                     min={0}
                     step={5}
                     defaultValue={s.bufferMin}
+                  />
+                </label>
+                <label className="text-xs">
+                  Pontos do clube
+                  <input
+                    className="input-mi mt-1 !py-2"
+                    name="clubPoints"
+                    type="number"
+                    min={0}
+                    step={1}
+                    defaultValue={s.clubPoints}
                   />
                 </label>
               </div>

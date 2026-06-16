@@ -22,6 +22,7 @@ export interface BusinessSettings {
   timezone: string;
   depositPolicy: { default: string; on_strikes: boolean };
   clubLadder: ClubLadderStep[];
+  clubPointsPerReferral: number;
 }
 
 /** Fallback da escada do Clube (a migration insere a versão oficial no banco). */
@@ -48,6 +49,7 @@ const DEFAULTS: BusinessSettings = {
   timezone: "America/Sao_Paulo",
   depositPolicy: { default: "none", on_strikes: true },
   clubLadder: DEFAULT_CLUB_LADDER,
+  clubPointsPerReferral: 100,
 };
 
 const TTL_MS = 60_000;
@@ -92,6 +94,10 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
     clubLadder:
       (m.get("club_ladder") as unknown as ClubLadderStep[] | undefined) ??
       DEFAULTS.clubLadder,
+    clubPointsPerReferral: num(
+      "club_points_per_referral",
+      DEFAULTS.clubPointsPerReferral,
+    ),
   };
 
   cache = { at: Date.now(), data };

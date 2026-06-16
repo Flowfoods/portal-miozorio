@@ -3,6 +3,7 @@ import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { formatBRL, formatDuration } from "@/lib/format";
+import { getSiteContent } from "@/lib/content";
 
 // Catálogo vem do banco e não tem hook de revalidação (preços/serviços mudam
 // no admin). Dinâmico garante frescor; a query é pequena e o SSR mantém o SEO.
@@ -98,16 +99,17 @@ function Lista({ titulo, itens }: { titulo: string; itens: Servico[] }) {
 
 export default async function DiaADiaPage() {
   const { cabelo, sobrancelha } = await getDiaADia();
+  const content = await getSiteContent();
   const vazio = cabelo.length === 0 && sobrancelha.length === 0;
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-16">
       <header className="mb-12">
-        <h1 className="font-titulo text-5xl text-mi-marrom-escuro">Dia a dia</h1>
-        {/* APROVAR COM A MI: copy do dia a dia */}
+        <h1 className="font-titulo text-5xl text-mi-marrom-escuro">
+          {content["diaadia.intro.title"]}
+        </h1>
         <p className="mt-4 max-w-2xl font-corpo text-lg text-mi-texto/80">
-          Cuidado de perto, no seu ritmo. Cabelo e sobrancelhas para você se
-          sentir bem todos os dias — não só nas ocasiões especiais. 💛
+          {content["diaadia.intro.subtitle"]}
         </p>
       </header>
 
