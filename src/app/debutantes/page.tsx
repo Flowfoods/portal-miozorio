@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
-import { getSiteContent } from "@/lib/content";
+import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
 
 export const metadata: Metadata = pageMeta({
@@ -15,19 +15,13 @@ export const metadata: Metadata = pageMeta({
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Quero%20saber%20dos%20pacotes%20de%20debutante%20%F0%9F%92%9B";
 
-const ENSAIO = [
-  { o: "Maquiagem", v: "R$ 380" },
-  { o: "Cabelo", v: "R$ 450" },
-  { o: "Pacote (maquiagem + cabelo)", v: "R$ 630" },
-  { o: "Acompanhamento exclusivo no ensaio", v: "R$ 1.500" },
-];
-
 export default async function DebutantesPage() {
   const [content, pacotes, faqs] = await Promise.all([
     getSiteContent(),
     getPacotes("debutante"),
     getFaqs("debutante"),
   ]);
+  const ensaio = parseTabela(content["debutantes.ensaio.tabela"] ?? "");
   return (
     <main>
       <JsonLd
@@ -94,7 +88,7 @@ export default async function DebutantesPage() {
             </p>
           </header>
           <div className="mx-auto max-w-md divide-y divide-mi-cinza rounded-mi border border-mi-cinza bg-mi-branco">
-            {ENSAIO.map((e) => (
+            {ensaio.map((e) => (
               <div
                 key={e.o}
                 className="flex items-center justify-between px-5 py-4 font-corpo text-mi-texto"

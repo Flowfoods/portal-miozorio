@@ -208,7 +208,28 @@ export const CONTENT_FIELDS: ContentField[] = [
     default: "Falar com a Mi",
     grupo: "Debutantes",
   },
+  {
+    key: "debutantes.ensaio.tabela",
+    label: "Debutantes · tabela de ensaio externo (um item por linha: Nome | Preço)",
+    default:
+      "Maquiagem | R$ 380\nCabelo | R$ 450\nPacote (maquiagem + cabelo) | R$ 630\nAcompanhamento exclusivo no ensaio | R$ 1.500",
+    multiline: true,
+    grupo: "Debutantes",
+  },
 ];
+
+/**
+ * Parser de "Rótulo | Valor" por linha → [{ o, v }]. Linhas sem "|" são
+ * ignoradas. Usado na tabela de ensaio externo (debutantes).
+ */
+export function parseTabela(texto: string): { o: string; v: string }[] {
+  return texto
+    .split("\n")
+    .map((l) => l.split("|"))
+    .filter((p) => p.length >= 2)
+    .map((p) => ({ o: p[0]!.trim(), v: p.slice(1).join("|").trim() }))
+    .filter((r) => r.o && r.v);
+}
 
 const DEFAULTS: Record<string, string> = Object.fromEntries(
   CONTENT_FIELDS.map((f) => [f.key, f.default]),
