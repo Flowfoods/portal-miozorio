@@ -1,0 +1,179 @@
+{
+  "name": "Mi Ozorio — Crons do Clube (aniversário/+1ano/pós-D+1/reconexão)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "name": "Todo dia 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH devidos AS (\n  -- Aniversário (membro do clube faz aniversário hoje)\n  SELECT c.phone_e164 AS telefone, c.name AS nome, 'aniversario' AS kind,\n         'aniversario:' || c.id || ':' || EXTRACT(YEAR FROM now())::text AS dedup_key,\n         NULL::text AS servico, NULL::timestamptz AS inicio\n  FROM customers c\n  WHERE c.club_joined_at IS NOT NULL AND c.birth_date IS NOT NULL\n    AND EXTRACT(MONTH FROM c.birth_date) = EXTRACT(MONTH FROM now())\n    AND EXTRACT(DAY   FROM c.birth_date) = EXTRACT(DAY   FROM now())\n\n  UNION ALL\n  -- +1 ano de cliente (1º atendimento concluído faz 1 ano hoje)\n  SELECT c.phone_e164, c.name, 'aniversario_cliente',\n         'aniversario_cliente:' || c.id || ':' || EXTRACT(YEAR FROM now())::text,\n         NULL, NULL\n  FROM customers c\n  JOIN (SELECT customer_id, MIN(starts_at) AS primeiro\n          FROM bookings WHERE status = 'completed' GROUP BY customer_id) b ON b.customer_id = c.id\n  WHERE (b.primeiro AT TIME ZONE 'America/Sao_Paulo')::date\n      = (now() AT TIME ZONE 'America/Sao_Paulo')::date - INTERVAL '1 year'\n\n  UNION ALL\n  -- Pós-atendimento D+1 (atendimento concluído ontem)\n  SELECT c.phone_e164, c.name, 'pos_atendimento',\n         'pos_atendimento:' || bk.id,\n         s.name, bk.starts_at\n  FROM bookings bk\n  JOIN customers c ON c.id = bk.customer_id\n  JOIN services  s ON s.id = bk.service_id\n  WHERE bk.status = 'completed'\n    AND (bk.starts_at AT TIME ZONE 'America/Sao_Paulo')::date\n      = (now() AT TIME ZONE 'America/Sao_Paulo')::date - INTERVAL '1 day'\n\n  UNION ALL\n  -- Reconexão (membro do clube sem atendimento há mais de 12 meses)\n  SELECT c.phone_e164, c.name, 'reconexao',\n         'reconexao:' || c.id || ':' || to_char(now(), 'YYYY-MM'),\n         NULL, NULL\n  FROM customers c\n  JOIN (SELECT customer_id, MAX(starts_at) AS ultimo\n          FROM bookings WHERE status = 'completed' GROUP BY customer_id) b ON b.customer_id = c.id\n  WHERE c.club_joined_at IS NOT NULL AND b.ultimo < now() - INTERVAL '12 months'\n)\nSELECT d.* FROM devidos d\nLEFT JOIN notification_log n ON n.dedup_key = d.dedup_key\nWHERE n.dedup_key IS NULL;",
+        "options": {}
+      },
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "name": "Postgres · devidos hoje",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_PG_CRED_ID",
+          "name": "pg-miozorio"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta a mensagem por kind (voz da Mi). Telefone E.164 -> só dígitos.\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json;\n  const number = String(d.telefone || '').replace(/\\D/g, '');\n  if (!number) continue;\n  const nome = d.nome || '';\n  let text;\n  switch (d.kind) {\n    case 'aniversario': // <!-- APROVAR COM A MI -->\n      text = `Feliz aniversário, ${nome}! 💛\\n\\nQue seu dia seja tão lindo quanto você. Passa aqui pra gente comemorar com um cuidado especial. 💛`;\n      break;\n    case 'aniversario_cliente': // <!-- APROVAR COM A MI -->\n      text = `Oi, ${nome}! 💛\\n\\nFaz 1 ano que a gente se conheceu — obrigada pela confiança desde então. Bora marcar um próximo encontro?`;\n      break;\n    case 'pos_atendimento': { // <!-- APROVAR COM A MI -->\n      const svc = d.servico ? ` de ${d.servico}` : '';\n      text = `Oi, ${nome}! 💛\\n\\nFoi um prazer te atender${svc} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização). 💛`;\n      break;\n    }\n    case 'reconexao': // <!-- APROVAR COM A MI -->\n      text = `Oi, ${nome}! 💛\\n\\nFaz um tempinho que a gente não se vê — saudades! Que tal remarcar um cuidado pra você? É só me chamar por aqui.`;\n      break;\n    default:\n      continue;\n  }\n  out.push({ json: { number, text, kind: d.kind, dedup_key: d.dedup_key } });\n}\nreturn out;\n"
+      },
+      "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      "name": "Montar mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.EVOLUTION_API_URL}}/message/sendText/{{$env.EVOLUTION_INSTANCE}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.EVOLUTION_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"number\": $json.number, \"text\": $json.text } }}",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      "name": "Evolution · sendText",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "notification_log",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kind": "={{$json.kind}}",
+            "dedup_key": "={{$json.dedup_key}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "name": "Postgres · registrar envio",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_PG_CRED_ID",
+          "name": "pg-miozorio"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Todo dia 09:00": {
+      "main": [
+        [
+          {
+            "node": "Postgres · devidos hoje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres · devidos hoje": {
+      "main": [
+        [
+          {
+            "node": "Montar mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar mensagem": {
+      "main": [
+        [
+          {
+            "node": "Evolution · sendText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution · sendText": {
+      "main": [
+        [
+          {
+            "node": "Postgres · registrar envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false
+}
