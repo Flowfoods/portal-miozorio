@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import "../styles/tokens.css";
 import "./globals.css";
@@ -21,6 +21,10 @@ const jost = Jost({
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
+
+export const viewport: Viewport = {
+  themeColor: "#8A7361", // marrom da marca — barra do navegador no mobile
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
