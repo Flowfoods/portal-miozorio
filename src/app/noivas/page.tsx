@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
 import { getSiteContent } from "@/lib/content";
+import { getPacotes, getFaqs } from "@/lib/pacotes";
 
 export const metadata: Metadata = pageMeta({
   path: "/noivas",
@@ -32,65 +33,17 @@ const JORNADA = [
   },
 ];
 
-const PACOTES = [
-  {
-    nome: "Pacote Exclusivo",
-    preco: "R$ 3.287",
-    parcela: "à vista · ou sinal de R$ 300 + 12x R$ 291,60",
-    inclui: [
-      "Exclusividade do dia (do preparo até a cerimônia)",
-      "Preparação do cabelo + maquiagem à prova d'água",
-      "Estruturação do penteado e colocação de véu, vestido e grinalda",
-      "Prévia de maquiagem e penteado (1 mês antes, no estúdio, 3h)",
-      "Deslocamento incluído (RJ)",
-      "Produção de 2 acompanhantes (maquiagem + penteado)",
-    ],
-    cortesia: "Cabelo + maquiagem do ensaio pré-wedding",
-  },
-  {
-    nome: "Pacote Estúdio",
-    preco: "R$ 2.365",
-    parcela: "à vista · ou sinal de R$ 300 + 12x R$ 217,68",
-    inclui: [
-      "Day Use de 6h no estúdio",
-      "Preparação do cabelo + maquiagem à prova d'água",
-      "Estruturação do penteado e colocação de véu, vestido e grinalda",
-      "Prévia de maquiagem e penteado (1 mês antes, no estúdio, 3h)",
-      "Deslocamento incluído (RJ)",
-      "Produção de 1 acompanhante (maquiagem + penteado)",
-    ],
-    cortesia: "Lanche + espumante",
-  },
-];
-
-const FAQ = [
-  {
-    q: "Como funciona a prévia da noiva?",
-    a: "A prévia acontece um mês antes do casamento, no estúdio, com 3h de duração — testamos maquiagem e penteado exatamente como serão no grande dia.",
-  },
-  {
-    q: "Preciso pagar sinal para reservar a data?",
-    a: "A reserva da data é feita com R$ 300, que são abatidos do valor total do pacote, seguidos do alinhamento e da assinatura do contrato.",
-  },
-  {
-    q: "O deslocamento está incluído?",
-    a: "Sim, o deslocamento está incluído dentro do Rio de Janeiro. Para outras cidades ou estados, combinamos taxa e hospedagem.",
-  },
-  {
-    q: "Quantos ajustes a prévia inclui?",
-    a: "Até 3 ajustes de maquiagem estão inclusos. Acima disso, há uma taxa adicional de R$ 120.",
-  },
-  {
-    q: "Posso levar acompanhantes para se produzirem?",
-    a: "Sim! O Pacote Exclusivo inclui a produção de 2 acompanhantes e o Pacote Estúdio inclui 1 acompanhante (maquiagem e penteado).",
-  },
-];
-
 export default async function NoivasPage() {
-  const content = await getSiteContent();
+  const [content, pacotes, faqs] = await Promise.all([
+    getSiteContent(),
+    getPacotes("noiva"),
+    getFaqs("noiva"),
+  ]);
   return (
     <main>
-      <JsonLd data={faqSchema(FAQ)} />
+      <JsonLd
+        data={faqSchema(faqs.map((f) => ({ q: f.pergunta, a: f.resposta })))}
+      />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           {content["noivas.hero.eyebrow"]}
@@ -126,10 +79,12 @@ export default async function NoivasPage() {
           </h2>
         </header>
         <div className="grid gap-6 md:grid-cols-2">
-          {PACOTES.map((p) => (
+          {pacotes.map((p) => (
             <article
               key={p.nome}
-              className="flex flex-col rounded-mi border border-mi-cinza bg-mi-branco p-8 shadow-suave"
+              className={`flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
+                p.destaque ? "border-mi-marrom" : "border-mi-cinza"
+              }`}
             >
               <h3 className="font-titulo text-3xl text-mi-marrom-escuro">
                 {p.nome}
@@ -137,11 +92,13 @@ export default async function NoivasPage() {
               <p className="mt-3 font-titulo text-4xl text-mi-marrom">
                 {p.preco}
               </p>
-              <p className="mt-1 font-corpo text-xs text-mi-marrom">
-                {p.parcela}
-              </p>
+              {p.parcela && (
+                <p className="mt-1 font-corpo text-xs text-mi-marrom">
+                  {p.parcela}
+                </p>
+              )}
               <ul className="mt-6 flex-1 space-y-2">
-                {p.inclui.map((i) => (
+                {p.itens.map((i) => (
                   <li
                     key={i}
                     className="flex gap-2 font-corpo text-sm text-mi-texto"
@@ -151,9 +108,11 @@ export default async function NoivasPage() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-5 rounded-mi bg-mi-bege px-4 py-3 font-corpo text-sm text-mi-marrom-escuro">
-                <span className="font-medium">Cortesia:</span> {p.cortesia}
-              </p>
+              {p.rodape && (
+                <p className="mt-5 rounded-mi bg-mi-bege px-4 py-3 font-corpo text-sm text-mi-marrom-escuro">
+                  {p.rodape}
+                </p>
+              )}
             </article>
           ))}
         </div>
@@ -192,15 +151,17 @@ export default async function NoivasPage() {
           Perguntas frequentes
         </h2>
         <div className="mt-8 space-y-3">
-          {FAQ.map((f) => (
+          {faqs.map((f) => (
             <details
-              key={f.q}
+              key={f.pergunta}
               className="rounded-mi border border-mi-cinza bg-mi-branco p-5"
             >
               <summary className="cursor-pointer font-corpo font-medium text-mi-marrom-escuro">
-                {f.q}
+                {f.pergunta}
               </summary>
-              <p className="mt-2 font-corpo text-sm text-mi-texto">{f.a}</p>
+              <p className="mt-2 font-corpo text-sm text-mi-texto">
+                {f.resposta}
+              </p>
             </details>
           ))}
         </div>

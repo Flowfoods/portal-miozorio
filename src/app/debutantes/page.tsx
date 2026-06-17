@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
-import { getSiteContent } from "@/lib/content";
+import { getSiteContent, parseTabela } from "@/lib/content";
+import { getPacotes, getFaqs } from "@/lib/pacotes";
 
 export const metadata: Metadata = pageMeta({
   path: "/debutantes",
@@ -14,71 +15,18 @@ export const metadata: Metadata = pageMeta({
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Quero%20saber%20dos%20pacotes%20de%20debutante%20%F0%9F%92%9B";
 
-const PACOTES = [
-  {
-    nome: "Pacote Básico",
-    preco: "R$ 2.979",
-    parcela: "ou 10x R$ 297,90",
-    inclui: [
-      "Reunião criativa (online ou presencial)",
-      "Prévia de maquiagem (até 2 testes)",
-      "Prévia de penteado (até 2 testes)",
-      "Maquiagem e penteado no dia, conforme planejado",
-      "Assistência com vestido, sapato e acessórios",
-      "Assessoria durante o making of fotográfico",
-      "Deslocamento incluído",
-    ],
-  },
-  {
-    nome: "Pacote Master",
-    preco: "R$ 4.679",
-    parcela: "ou 10x R$ 467,90",
-    inclui: [
-      "Tudo do Básico, com até 3 testes em cada prévia",
-      "Maquiagem e cabelo para ensaio externo",
-      "Kit de emergência completo",
-      "Produção de 1 acompanhante",
-      "Acompanhamento de 4h na festa, com 2 retoques",
-    ],
-    destaque: true,
-  },
-];
-
-const ENSAIO = [
-  { o: "Maquiagem", v: "R$ 380" },
-  { o: "Cabelo", v: "R$ 450" },
-  { o: "Pacote (maquiagem + cabelo)", v: "R$ 630" },
-  { o: "Acompanhamento exclusivo no ensaio", v: "R$ 1.500" },
-];
-
-const FAQ = [
-  {
-    q: "A debutante precisa estar acompanhada?",
-    a: "Sim. Como ela é menor de idade, a comunicação e o contrato são sempre com o responsável, e a prévia é acompanhada por ele.",
-  },
-  {
-    q: "Quantos testes a prévia inclui?",
-    a: "No Pacote Básico são até 2 testes em cada prévia (maquiagem e penteado); no Master, até 3 testes em cada.",
-  },
-  {
-    q: "Vocês fazem ensaio externo?",
-    a: "Sim! O ensaio externo pode ser contratado avulso (a partir de R$ 380) ou já vem incluso no Pacote Master.",
-  },
-  {
-    q: "Como funciona o pagamento?",
-    a: "20% na assinatura do contrato e o restante até 3 dias antes da festa. No cartão, em até 10x sem juros; no PIX, parcelado sem juros.",
-  },
-  {
-    q: "O deslocamento está incluído?",
-    a: "Sim, o deslocamento está incluído nos dois pacotes.",
-  },
-];
-
 export default async function DebutantesPage() {
-  const content = await getSiteContent();
+  const [content, pacotes, faqs] = await Promise.all([
+    getSiteContent(),
+    getPacotes("debutante"),
+    getFaqs("debutante"),
+  ]);
+  const ensaio = parseTabela(content["debutantes.ensaio.tabela"] ?? "");
   return (
     <main>
-      <JsonLd data={faqSchema(FAQ)} />
+      <JsonLd
+        data={faqSchema(faqs.map((f) => ({ q: f.pergunta, a: f.resposta })))}
+      />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
         <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           {content["debutantes.hero.eyebrow"]}
@@ -94,7 +42,7 @@ export default async function DebutantesPage() {
       {/* Pacotes */}
       <section className="mx-auto max-w-5xl px-5 py-8">
         <div className="grid gap-6 md:grid-cols-2">
-          {PACOTES.map((p) => (
+          {pacotes.map((p) => (
             <article
               key={p.nome}
               className={`flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
@@ -107,11 +55,13 @@ export default async function DebutantesPage() {
               <p className="mt-3 font-titulo text-4xl text-mi-marrom">
                 {p.preco}
               </p>
-              <p className="mt-1 font-corpo text-xs text-mi-marrom">
-                {p.parcela}
-              </p>
+              {p.parcela && (
+                <p className="mt-1 font-corpo text-xs text-mi-marrom">
+                  {p.parcela}
+                </p>
+              )}
               <ul className="mt-6 flex-1 space-y-2">
-                {p.inclui.map((i) => (
+                {p.itens.map((i) => (
                   <li
                     key={i}
                     className="flex gap-2 font-corpo text-sm text-mi-texto"
@@ -138,7 +88,7 @@ export default async function DebutantesPage() {
             </p>
           </header>
           <div className="mx-auto max-w-md divide-y divide-mi-cinza rounded-mi border border-mi-cinza bg-mi-branco">
-            {ENSAIO.map((e) => (
+            {ensaio.map((e) => (
               <div
                 key={e.o}
                 className="flex items-center justify-between px-5 py-4 font-corpo text-mi-texto"
@@ -165,15 +115,17 @@ export default async function DebutantesPage() {
           Perguntas frequentes
         </h2>
         <div className="mt-8 space-y-3">
-          {FAQ.map((f) => (
+          {faqs.map((f) => (
             <details
-              key={f.q}
+              key={f.pergunta}
               className="rounded-mi border border-mi-cinza bg-mi-branco p-5"
             >
               <summary className="cursor-pointer font-corpo font-medium text-mi-marrom-escuro">
-                {f.q}
+                {f.pergunta}
               </summary>
-              <p className="mt-2 font-corpo text-sm text-mi-texto">{f.a}</p>
+              <p className="mt-2 font-corpo text-sm text-mi-texto">
+                {f.resposta}
+              </p>
             </details>
           ))}
         </div>

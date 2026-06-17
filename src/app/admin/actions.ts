@@ -917,6 +917,122 @@ export async function adminRedeemReward(formData: FormData): Promise<void> {
   revalidatePath(`/admin/clientes/${customerId}`);
 }
 
+// ── Vitrine editável: pacotes e FAQs de noiva/debutante (Onda B) ─────────────
+
+const CATEGORIAS_VITRINE = ["noiva", "debutante"] as const;
+
+function refreshVitrines() {
+  revalidatePath("/noivas");
+  revalidatePath("/debutantes");
+  revalidatePath("/admin/pacotes");
+}
+
+/** "linha1\nlinha2" → ["linha1","linha2"] (sem vazias). */
+function linhas(v: FormDataEntryValue | null): string[] {
+  return String(v ?? "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export async function adminCreatePacote(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const categoria = String(formData.get("categoria") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+  const preco = String(formData.get("preco") ?? "").trim();
+  if (!CATEGORIAS_VITRINE.includes(categoria as never)) fail("Categoria inválida.");
+  if (nome.length < 2) fail("Dê um nome ao pacote.");
+  if (!preco) fail("Informe o preço (texto livre, ex.: R$ 2.979).");
+  await prisma.pacote.create({
+    data: {
+      categoria,
+      nome,
+      preco,
+      parcela: String(formData.get("parcela") ?? "").trim() || null,
+      itens: linhas(formData.get("itens")),
+      rodape: String(formData.get("rodape") ?? "").trim() || null,
+      destaque: formData.get("destaque") === "on",
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  refreshVitrines();
+}
+
+export async function adminUpdatePacote(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+  const preco = String(formData.get("preco") ?? "").trim();
+  if (nome.length < 2) fail("Dê um nome ao pacote.");
+  if (!preco) fail("Informe o preço.");
+  const p = await prisma.pacote.findUnique({ where: { id } });
+  if (!p) fail("Pacote não encontrado.");
+  await prisma.pacote.update({
+    where: { id },
+    data: {
+      nome,
+      preco,
+      parcela: String(formData.get("parcela") ?? "").trim() || null,
+      itens: linhas(formData.get("itens")),
+      rodape: String(formData.get("rodape") ?? "").trim() || null,
+      destaque: formData.get("destaque") === "on",
+      ativo: formData.get("ativo") === "on",
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  refreshVitrines();
+}
+
+export async function adminDeletePacote(id: string): Promise<void> {
+  await requireAdmin();
+  await prisma.pacote.delete({ where: { id } }).catch(() => null);
+  refreshVitrines();
+}
+
+export async function adminCreateFaq(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const categoria = String(formData.get("categoria") ?? "");
+  const pergunta = String(formData.get("pergunta") ?? "").trim();
+  const resposta = String(formData.get("resposta") ?? "").trim();
+  if (!CATEGORIAS_VITRINE.includes(categoria as never)) fail("Categoria inválida.");
+  if (pergunta.length < 3 || resposta.length < 3) fail("Preencha pergunta e resposta.");
+  await prisma.faq.create({
+    data: {
+      categoria,
+      pergunta,
+      resposta,
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  refreshVitrines();
+}
+
+export async function adminUpdateFaq(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const pergunta = String(formData.get("pergunta") ?? "").trim();
+  const resposta = String(formData.get("resposta") ?? "").trim();
+  if (pergunta.length < 3 || resposta.length < 3) fail("Preencha pergunta e resposta.");
+  const f = await prisma.faq.findUnique({ where: { id } });
+  if (!f) fail("Pergunta não encontrada.");
+  await prisma.faq.update({
+    where: { id },
+    data: {
+      pergunta,
+      resposta,
+      ativo: formData.get("ativo") === "on",
+      sort: Math.trunc(Number(formData.get("sort")) || 0),
+    },
+  });
+  refreshVitrines();
+}
+
+export async function adminDeleteFaq(id: string): Promise<void> {
+  await requireAdmin();
+  await prisma.faq.delete({ where: { id } }).catch(() => null);
+  refreshVitrines();
+}
+
 // ── CMS de textos (Onda B) ───────────────────────────────────────────────────
 
 export async function adminSetContent(formData: FormData): Promise<void> {

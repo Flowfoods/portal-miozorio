@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/admin/servicos", label: "Serviços" },
   { href: "/admin/fotos", label: "Fotos" },
   { href: "/admin/conteudo", label: "Textos" },
+  { href: "/admin/pacotes", label: "Pacotes" },
   { href: "/admin/depoimentos", label: "Depoimentos" },
   { href: "/admin/bloqueios", label: "Bloqueios" },
   { href: "/admin/clientes", label: "Clientes" },
