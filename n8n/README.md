@@ -60,14 +60,19 @@ Fluxo: **Schedule (diário)** → **Postgres** (`SELECT` dos "devidos hoje", já
 excluindo o que está em `notification_log`) → **Code** (monta texto por `kind`)
 → **Evolution `sendText`** → **Postgres** (grava `notification_log` = idempotência).
 
-Cobre os 4 fluxos numa única query `UNION ALL`:
+Cobre os 5 fluxos numa única query `UNION ALL`:
 
 | `kind` | Quem | Regra |
 |--------|------|-------|
+| `lembrete_24h` | quem tem agendamento | `booking.status = confirmed` com `starts_at` **amanhã** (lembrete da véspera) |
 | `aniversario` | membro do clube | `birth_date` (dia/mês) = hoje |
 | `aniversario_cliente` | qualquer cliente | 1º `completed` faz exatamente 1 ano hoje |
 | `pos_atendimento` | quem foi atendido | `completed` ontem (D+1; respeitar `photo_consent`, R18) |
 | `reconexao` | membro do clube | último `completed` há > 12 meses |
+
+> **`lembrete_24h`**: o cron roda 1×/dia (09:00), então é o lembrete da **véspera**
+> (não 24h exatas). `dedup_key = lembrete_24h:<booking_id>` — não reenvia se rodar 2× no dia.
+> Só dispara para agendamentos **confirmados** (pending/cancelled não entram).
 
 Idempotência: `dedup_key` por (cliente, tipo, período) — ex.:
 `aniversario:<id>:2026`, `reconexao:<id>:2026-06`. Rodar o cron de novo no mesmo
