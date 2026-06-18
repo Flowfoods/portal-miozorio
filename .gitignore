@@ -42,3 +42,4 @@ seed-dist/
 
 # helpers locais com segredos (token Dokploy) - R9, nunca versionar
 /.claude/*.py
+/infra/evo-miozorio/docker-compose.yml
