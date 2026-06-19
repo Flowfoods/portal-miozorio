@@ -78,11 +78,23 @@ Idempotência: `dedup_key` por (cliente, tipo, período) — ex.:
 `aniversario:<id>:2026`, `reconexao:<id>:2026-06`. Rodar o cron de novo no mesmo
 dia não reenvia.
 
+### Textos editáveis pela Mi (sem mexer no n8n)
+As mensagens **não são mais hardcoded** no Code node. A query `devidos hoje` traz a
+coluna `template` via `LEFT JOIN site_content` na chave `msg.<kind>`, com
+`COALESCE` para um default embutido no `CASE`. O nó **Montar mensagem** apenas
+**interpola os placeholders** `{nome}` / `{servico}` / `{data}`.
+
+➡️ A Mi edita os textos em **`/admin → Textos → grupo "Mensagens de WhatsApp"`**
+(tabela `site_content`). O que ela salvar passa a valer no próximo envio, sem tocar
+no workflow. ⚠️ Os defaults do `CASE` no SQL espelham `src/lib/content.ts`; se mudar
+lá, atualize aqui também (ou apenas confie no override que a Mi salvar).
+
 ### Antes de ativar (precisa de validação)
 - ⚠️ **Criar a credencial Postgres** no n8n apontando para `pg-miozorio` e
   substituir `REPLACE_PG_CRED_ID` nos 2 nós Postgres.
 - ⚠️ **Revisar o SQL** contra o banco real (foi escrito a partir do schema, não
-  testado em produção) e as **mensagens** (`APROVAR COM A MI`).
+  testado em produção). As **mensagens** já saem prontas, mas a Mi pode ajustá-las
+  no `/admin` (ver acima).
 - Reconexão entra na query diária mas o `dedup_key` mensal evita repetição;
   ajuste a régua de tempo com a Mi se quiser.
 

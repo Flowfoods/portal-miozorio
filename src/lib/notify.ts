@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { getSiteContent, aplicarTemplate } from "./content";
 
 /**
  * Envio de WhatsApp do Clube/encaixe (M4) — direto na Evolution dedicada da Mi.
@@ -22,22 +23,39 @@ export interface EventInput {
   data: Record<string, unknown>;
 }
 
-/** Texto na voz da Mi por tipo de evento. <!-- APROVAR COM A MI --> */
-function montarTexto(kind: string, d: Record<string, unknown>): string | null {
+/**
+ * Texto por tipo de evento, a partir dos templates editáveis pela Mi no
+ * /admin (CMS, chaves "msg.*"). Placeholders {nome}/{servico}/{data}/{pontos}/
+ * {motivo} são interpolados aqui. Default fiel mora no registry (content.ts).
+ */
+async function montarTexto(
+  kind: string,
+  d: Record<string, unknown>,
+): Promise<string | null> {
+  const content = await getSiteContent();
   const nome = String(d.nome ?? "");
+
   if (kind === "club_points") {
     const motivo = d.motivo ? ` (${String(d.motivo)})` : "";
-    return `Oi, ${nome}! 💛\n\nVocê ganhou ${d.pontos} pontos no Clube Mi Ozorio${motivo}! Acompanhe seu saldo e troque por mimos quando quiser. 💛`;
+    return aplicarTemplate(content["msg.club_points"] ?? "", {
+      nome,
+      pontos: String(d.pontos ?? ""),
+      motivo,
+    });
   }
   if (kind === "booking_confirmation") {
-    const inicio = d.inicio
+    const data = d.inicio
       ? new Date(String(d.inicio)).toLocaleString("pt-BR", {
           timeZone: "America/Sao_Paulo",
           dateStyle: "short",
           timeStyle: "short",
         })
       : "";
-    return `Oi, ${nome}! 💛\n\nSeu horário de ${String(d.servico)} está confirmado para ${inicio}. Qualquer coisa, é só me chamar por aqui. Até logo! 💛`;
+    return aplicarTemplate(content["msg.booking_confirmation"] ?? "", {
+      nome,
+      servico: String(d.servico ?? ""),
+      data,
+    });
   }
   return null;
 }
@@ -57,7 +75,7 @@ export async function dispatchEvent(input: EventInput): Promise<void> {
     if (exists) return;
 
     const number = String(input.data.telefone ?? "").replace(/\D/g, "");
-    const text = montarTexto(input.kind, input.data);
+    const text = await montarTexto(input.kind, input.data);
     if (!number || !text) return;
 
     const res = await fetch(
