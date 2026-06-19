@@ -79,8 +79,10 @@ container `n8n_n8n` no Dokploy) e **reinicie o n8n** se editar no container:
 1. Abra o nó **Postgres · devidos hoje** → **Execute node** (execução manual, não envia
    nada ainda) → confira se as colunas voltam certas e se os "devidos de hoje" fazem sentido.
    - O SQL foi escrito a partir do schema; rode uma vez e confira contra o banco real.
-2. Abra o nó **Montar mensagem** → revise os textos de cada `kind`. Eles estão marcados
-   `APROVAR COM A MI` — **ajuste a copy na voz da Mi antes de ativar.**
+2. **Textos:** as mensagens são editáveis pela Mi em **`/admin → Textos → grupo
+   "Mensagens de WhatsApp"`** (não precisa mexer no n8n). O nó **Montar mensagem** só
+   interpola os placeholders `{nome}` / `{servico}` / `{data}`. Revise/aprovem a copy
+   por lá antes de ativar.
 
 ## Passo 6 — Teste de ponta (1 envio controlado)
 - A forma mais segura: garanta que exista **1 caso real devido hoje** (ex.: um agendamento

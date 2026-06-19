@@ -56,6 +56,11 @@ export default async function AdminConteudoPage() {
                         className="input-mi mt-1 w-full !py-2 text-sm"
                       />
                     )}
+                    {f.ajuda && (
+                      <span className="mt-1 block text-[11px] text-mi-texto/55">
+                        {f.ajuda}
+                      </span>
+                    )}
                   </label>
                 );
               })}

@@ -14,6 +14,8 @@ export interface ContentField {
   multiline?: boolean;
   /** Agrupa no editor do admin. */
   grupo: string;
+  /** Dica exibida abaixo do campo (ex.: placeholders disponíveis). */
+  ajuda?: string;
 }
 
 /** Registry — fonte da verdade dos textos editáveis. Adicione chaves aqui. */
@@ -216,7 +218,89 @@ export const CONTENT_FIELDS: ContentField[] = [
     multiline: true,
     grupo: "Debutantes",
   },
+  // ── Mensagens automáticas de WhatsApp ──
+  // As chaves "msg.*" alimentam as mensagens enviadas pela Mi:
+  //  • club_points e booking_confirmation → enviadas pelo app (src/lib/notify.ts).
+  //  • lembrete_24h, aniversario, aniversario_cliente, pos_atendimento, reconexao
+  //    → enviadas pelo cron do n8n (lê site_content; ver n8n/README.md).
+  // Placeholders entre chaves são trocados na hora do envio. {data} = data/hora.
+  {
+    key: "msg.club_points",
+    label: "WhatsApp · pontos do Clube",
+    default:
+      "Oi, {nome}! 💛\n\nVocê ganhou {pontos} pontos no Clube Mi Ozorio{motivo}! Acompanhe seu saldo e troque por mimos quando quiser. 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}, {pontos}, {motivo} (opcional, já vem entre parênteses).",
+  },
+  {
+    key: "msg.booking_confirmation",
+    label: "WhatsApp · confirmação de horário",
+    default:
+      "Oi, {nome}! 💛\n\nSeu horário de {servico} está confirmado para {data}. Qualquer coisa, é só me chamar por aqui. Até logo! 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora).",
+  },
+  {
+    key: "msg.lembrete_24h",
+    label: "WhatsApp · lembrete da véspera",
+    default:
+      "Oi, {nome}! 💛\n\nPassando pra lembrar do seu horário de {servico} amanhã ({data}). Te espero! Se precisar remarcar, é só me chamar por aqui. 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora). Enviado pelo n8n.",
+  },
+  {
+    key: "msg.aniversario",
+    label: "WhatsApp · aniversário (membro do Clube)",
+    default:
+      "Feliz aniversário, {nome}! 💛\n\nQue seu dia seja tão lindo quanto você. Passa aqui pra gente comemorar com um cuidado especial. 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+  },
+  {
+    key: "msg.aniversario_cliente",
+    label: "WhatsApp · 1 ano de cliente",
+    default:
+      "Oi, {nome}! 💛\n\nFaz 1 ano que a gente se conheceu — obrigada pela confiança desde então. Bora marcar um próximo encontro?",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+  },
+  {
+    key: "msg.pos_atendimento",
+    label: "WhatsApp · pós-atendimento (dia seguinte)",
+    default:
+      "Oi, {nome}! 💛\n\nFoi um prazer te atender de {servico} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização). 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}, {servico}. Enviado pelo n8n.",
+  },
+  {
+    key: "msg.reconexao",
+    label: "WhatsApp · reconexão (sem visita há mais de 1 ano)",
+    default:
+      "Oi, {nome}! 💛\n\nFaz um tempinho que a gente não se vê — saudades! Que tal remarcar um cuidado pra você? É só me chamar por aqui.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+  },
 ];
+
+/**
+ * Interpola um template de mensagem: troca {chave} pelo valor em `vars`.
+ * Placeholders sem valor correspondente são removidos (não vazam "{xxx}").
+ */
+export function aplicarTemplate(
+  tpl: string,
+  vars: Record<string, string>,
+): string {
+  return tpl.replace(/\{(\w+)\}/g, (_m, k: string) =>
+    k in vars ? vars[k]! : "",
+  );
+}
 
 /**
  * Parser de "Rótulo | Valor" por linha → [{ o, v }]. Linhas sem "|" são
