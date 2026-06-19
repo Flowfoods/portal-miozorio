@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseTabela, aplicarTemplate, CONTENT_FIELDS } from "@/lib/content";
+import {
+  parseTabela,
+  parseServicos,
+  aplicarTemplate,
+  CONTENT_FIELDS,
+} from "@/lib/content";
 
 describe("parseTabela (tabela editável 'Rótulo | Valor')", () => {
   it("converte linhas em pares { o, v }", () => {
@@ -21,6 +26,25 @@ describe("parseTabela (tabela editável 'Rótulo | Valor')", () => {
 
   it("preserva '|' que faça parte do valor", () => {
     expect(parseTabela("Combo | A | B")).toEqual([{ o: "Combo", v: "A | B" }]);
+  });
+});
+
+describe("parseServicos (cards de serviço da home 'Nome | Desc | Preço')", () => {
+  it("converte linhas de 3 colunas", () => {
+    expect(parseServicos("Maquiagem | Para festas | R$ 250")).toEqual([
+      { nome: "Maquiagem", desc: "Para festas", preco: "R$ 250" },
+    ]);
+  });
+
+  it("ignora linhas com menos de 3 colunas", () => {
+    expect(parseServicos("Só nome | desc\nA | B | C")).toEqual([
+      { nome: "A", desc: "B", preco: "C" },
+    ]);
+  });
+
+  it("default do registry tem pelo menos 1 serviço válido", () => {
+    const f = CONTENT_FIELDS.find((x) => x.key === "home.servicos.lista")!;
+    expect(parseServicos(f.default).length).toBeGreaterThanOrEqual(3);
   });
 });
 
