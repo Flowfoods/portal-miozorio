@@ -4,7 +4,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { beautySalonSchema, pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
 import { getPublishedTestimonials } from "@/lib/testimonials";
-import { getSiteContent } from "@/lib/content";
+import { getSiteContent, parseServicos, parseTabela } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
 
 // ISR: as fotos vêm do banco (media_assets). Mudanças no painel chamam
@@ -19,66 +19,13 @@ export const metadata = pageMeta({
   ogTitle: "Maquiagem & Penteado no RJ",
 });
 
-const SERVICOS = [
-  {
-    nome: "Maquiagem social",
-    desc: "Madrinha, formanda, ensaio ou aquele evento que pede um brilho especial.",
-    preco: "a partir de R$ 250",
-  },
-  {
-    nome: "Penteado",
-    desc: "Do clássico ao moderno, modelado do seu jeito e pra durar a festa toda.",
-    preco: "a partir de R$ 350",
-  },
-  {
-    nome: "Pacote completo",
-    desc: "Maquiagem e penteado juntos — você pronta pra brilhar, sem correria.",
-    preco: "a partir de R$ 550",
-  },
-  {
-    nome: "Sobrancelhas",
-    desc: "Design, henna e brow lamination para emoldurar o seu olhar.",
-    preco: "sob consulta",
-  },
-  {
-    nome: "Curso de automaquiagem",
-    desc: "Uma aula individual de 2h para você aprender a se maquiar com confiança.",
-    preco: "R$ 280",
-  },
-];
-
-const DIFERENCIAIS = [
-  {
-    t: "12 anos de experiência",
-    d: "Mãos firmes, olhar treinado e muita história cuidando da beleza de cada cliente.",
-  },
-  {
-    t: "Maquiagem HD à prova d'água",
-    d: "Acabamento perfeito em foto e vídeo, resistente ao calor, à emoção e às lágrimas.",
-  },
-  {
-    t: "Cruelty-free 🐰",
-    d: "Produtos de alta qualidade, com benefícios para a pele e nunca testados em animais.",
-  },
-  {
-    t: "Cílios de fios naturais",
-    d: "Aplicados em todas as produções, para um olhar marcante e leve ao mesmo tempo.",
-  },
-  {
-    t: "Visagismo & colorimetria",
-    d: "Cada produção pensada para o seu rosto, seu tom de pele e a sua ocasião.",
-  },
-  {
-    t: "Exclusividade no grande dia",
-    d: "Noivas e debutantes têm a atenção total da Mi — uma cliente por vez.",
-  },
-];
-
 export default async function Home() {
   const [heroFoto] = await getPublishedMedia("hero", 1);
   const portfolio = await getPublishedMedia("portfolio", 6);
   const depoimentos = await getPublishedTestimonials(6);
   const content = await getSiteContent();
+  const servicos = parseServicos(content["home.servicos.lista"] ?? "");
+  const diferenciais = parseTabela(content["home.diferenciais.lista"] ?? "");
   return (
     <main>
       <JsonLd data={beautySalonSchema} />
@@ -130,14 +77,14 @@ export default async function Home() {
       <section id="servicos" className="mx-auto max-w-5xl px-5 py-16">
         <header className="mb-10 text-center">
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
-            Serviços
+            {content["home.servicos.title"]}
           </h2>
           <p className="mt-2 font-corpo text-mi-marrom">
-            Escolha o seu e agende em poucos toques.
+            {content["home.servicos.subtitle"]}
           </p>
         </header>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICOS.map((s) => (
+          {servicos.map((s) => (
             <Link
               key={s.nome}
               href="/agendar"
@@ -162,16 +109,16 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl px-5">
           <header className="mb-10 text-center">
             <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
-              Por que a Mi
+              {content["home.diferenciais.title"]}
             </h2>
           </header>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {DIFERENCIAIS.map((d) => (
-              <div key={d.t}>
+            {diferenciais.map((d) => (
+              <div key={d.o}>
                 <h3 className="font-titulo text-xl text-mi-marrom-escuro">
-                  {d.t}
+                  {d.o}
                 </h3>
-                <p className="mt-2 font-corpo text-sm text-mi-texto">{d.d}</p>
+                <p className="mt-2 font-corpo text-sm text-mi-texto">{d.v}</p>
               </div>
             ))}
           </div>
@@ -182,10 +129,10 @@ export default async function Home() {
       <section className="mx-auto max-w-5xl px-5 py-16">
         <header className="mb-10 text-center">
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
-            Portfólio
+            {content["home.portfolio.title"]}
           </h2>
           <p className="mt-2 font-corpo text-mi-marrom">
-            Um pouquinho do que a gente cria junto.
+            {content["home.portfolio.subtitle"]}
           </p>
         </header>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -221,7 +168,7 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl px-5">
           <header className="mb-10 text-center">
             <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
-              Quem já viveu
+              {content["home.depoimentos.title"]}
             </h2>
           </header>
           <div className="grid gap-6 sm:grid-cols-3">
@@ -246,7 +193,7 @@ export default async function Home() {
       <section id="especiais" className="mx-auto max-w-5xl px-5 py-16">
         <header className="mb-10 text-center">
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
-            Noivas & Debutantes
+            {content["home.especiais.title"]}
           </h2>
           <p className="mt-2 font-corpo text-mi-marrom">
             {content["home.especiais.subtitle"]}
@@ -257,13 +204,13 @@ export default async function Home() {
             {
               titulo: "La Mariée",
               sub: "Para noivas",
-              desc: "Uma experiência completa, da reunião criativa à prévia e ao dia do “sim”.",
+              desc: content["home.especiais.noivas.desc"],
               href: "/noivas",
             },
             {
               titulo: "Debutantes",
               sub: "Para os 15 anos",
-              desc: "Pacotes pensados para a debutante brilhar — com carinho e atenção aos pais.",
+              desc: content["home.especiais.debutantes.desc"],
               href: "/debutantes",
             },
           ].map((c) => (

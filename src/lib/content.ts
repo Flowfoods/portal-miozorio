@@ -115,6 +115,83 @@ export const CONTENT_FIELDS: ContentField[] = [
     default: "Agendar meu horário",
     grupo: "Início",
   },
+  // ── Home: listas e títulos de seção ──
+  {
+    key: "home.servicos.title",
+    label: "Home · título da seção Serviços",
+    default: "Serviços",
+    grupo: "Início · Serviços",
+  },
+  {
+    key: "home.servicos.subtitle",
+    label: "Home · subtítulo da seção Serviços",
+    default: "Escolha o seu e agende em poucos toques.",
+    grupo: "Início · Serviços",
+  },
+  {
+    key: "home.servicos.lista",
+    label: "Home · cards de Serviços",
+    default:
+      "Maquiagem social | Madrinha, formanda, ensaio ou aquele evento que pede um brilho especial. | a partir de R$ 250\nPenteado | Do clássico ao moderno, modelado do seu jeito e pra durar a festa toda. | a partir de R$ 350\nPacote completo | Maquiagem e penteado juntos — você pronta pra brilhar, sem correria. | a partir de R$ 550\nSobrancelhas | Design, henna e brow lamination para emoldurar o seu olhar. | sob consulta\nCurso de automaquiagem | Uma aula individual de 2h para você aprender a se maquiar com confiança. | R$ 280",
+    multiline: true,
+    grupo: "Início · Serviços",
+    ajuda: "Um serviço por linha, no formato: Nome | Descrição | Preço",
+  },
+  {
+    key: "home.diferenciais.title",
+    label: "Home · título da seção Diferenciais",
+    default: "Por que a Mi",
+    grupo: "Início · Diferenciais",
+  },
+  {
+    key: "home.diferenciais.lista",
+    label: "Home · cards de Diferenciais",
+    default:
+      "12 anos de experiência | Mãos firmes, olhar treinado e muita história cuidando da beleza de cada cliente.\nMaquiagem HD à prova d'água | Acabamento perfeito em foto e vídeo, resistente ao calor, à emoção e às lágrimas.\nCruelty-free 🐰 | Produtos de alta qualidade, com benefícios para a pele e nunca testados em animais.\nVisagismo & colorimetria | Cada produção pensada para o seu rosto, seu tom de pele e a sua ocasião.\nExclusividade no grande dia | Noivas e debutantes têm a atenção total da Mi — uma cliente por vez.",
+    multiline: true,
+    grupo: "Início · Diferenciais",
+    ajuda: "Um diferencial por linha, no formato: Título | Descrição",
+  },
+  {
+    key: "home.portfolio.title",
+    label: "Home · título do Portfólio",
+    default: "Portfólio",
+    grupo: "Início · Outras seções",
+  },
+  {
+    key: "home.portfolio.subtitle",
+    label: "Home · subtítulo do Portfólio",
+    default: "Um pouquinho do que a gente cria junto.",
+    grupo: "Início · Outras seções",
+  },
+  {
+    key: "home.depoimentos.title",
+    label: "Home · título dos Depoimentos",
+    default: "Quem já viveu",
+    grupo: "Início · Outras seções",
+  },
+  {
+    key: "home.especiais.title",
+    label: "Home · título de Noivas & Debutantes",
+    default: "Noivas & Debutantes",
+    grupo: "Início · Outras seções",
+  },
+  {
+    key: "home.especiais.noivas.desc",
+    label: "Home · card Noivas (descrição)",
+    default:
+      "Uma experiência completa, da reunião criativa à prévia e ao dia do “sim”.",
+    multiline: true,
+    grupo: "Início · Outras seções",
+  },
+  {
+    key: "home.especiais.debutantes.desc",
+    label: "Home · card Debutantes (descrição)",
+    default:
+      "Pacotes pensados para a debutante brilhar — com carinho e atenção aos pais.",
+    multiline: true,
+    grupo: "Início · Outras seções",
+  },
   {
     key: "diaadia.intro.title",
     label: "Dia a dia · título",
@@ -303,8 +380,23 @@ export function aplicarTemplate(
 }
 
 /**
+ * Parser de "Nome | Descrição | Preço" por linha → cards de serviço da home.
+ * Linhas com menos de 3 colunas são ignoradas.
+ */
+export function parseServicos(
+  texto: string,
+): { nome: string; desc: string; preco: string }[] {
+  return texto
+    .split("\n")
+    .map((l) => l.split("|").map((s) => s.trim()))
+    .filter((p) => p.length >= 3 && p[0])
+    .map((p) => ({ nome: p[0]!, desc: p[1]!, preco: p.slice(2).join("|").trim() }));
+}
+
+/**
  * Parser de "Rótulo | Valor" por linha → [{ o, v }]. Linhas sem "|" são
- * ignoradas. Usado na tabela de ensaio externo (debutantes).
+ * ignoradas. Usado na tabela de ensaio externo (debutantes) e nos
+ * diferenciais da home (Título | Descrição).
  */
 export function parseTabela(texto: string): { o: string; v: string }[] {
   return texto
