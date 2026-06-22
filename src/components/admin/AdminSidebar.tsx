@@ -133,8 +133,8 @@ export default function AdminSidebar() {
         className="group fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-mi-cinza/60 bg-mi-bege transition-transform duration-200 data-[open=true]:translate-x-0 motion-reduce:transition-none md:static md:z-auto md:w-16 md:translate-x-0 lg:w-60 data-[collapsed=true]:lg:w-16"
       >
         {/* Cabeçalho: marca + recolher (lg) */}
-        <div className="flex h-[57px] items-center gap-2 border-b border-mi-cinza/60 px-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-mi bg-mi-marrom font-titulo text-sm text-mi-branco">
+        <div className="flex h-[57px] items-center gap-2 border-b border-mi-cinza/60 px-3 md:justify-center lg:justify-between group-data-[collapsed=true]:lg:justify-center">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-mi bg-mi-marrom font-titulo text-sm text-mi-branco group-data-[collapsed=true]:lg:hidden">
             Mi
           </span>
           <span className="flex-1 truncate font-titulo text-base text-mi-marrom-escuro inline md:hidden lg:inline group-data-[collapsed=true]:lg:hidden">
@@ -146,9 +146,20 @@ export default function AdminSidebar() {
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
             aria-expanded={!collapsed}
             title={collapsed ? "Expandir" : "Recolher"}
-            className="hidden h-8 w-8 items-center justify-center rounded-mi text-mi-marrom transition-colors hover:bg-mi-cinza/50 lg:inline-flex group-data-[collapsed=true]:lg:hidden"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-mi text-mi-marrom transition-colors hover:bg-mi-cinza/50 lg:inline-flex"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="transition-transform group-data-[collapsed=true]:rotate-180 motion-reduce:transition-none"
+            >
               <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
             </svg>
           </button>
