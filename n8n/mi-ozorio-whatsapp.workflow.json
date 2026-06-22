@@ -35,20 +35,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.EVOLUTION_API_URL}}/message/sendText/{{$env.EVOLUTION_INSTANCE}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{$env.EVOLUTION_API_KEY}}"
-            }
-          ]
-        },
+        "url": "https://evo.miozorio.com.br/message/sendText/miozorio",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"number\": $json.number, \"text\": $json.text } }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "33333333-3333-4333-8333-333333333333",
       "name": "Evolution · sendText",
@@ -60,7 +53,13 @@
       ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 2000
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_EVOLUTION_CRED_ID",
+          "name": "Evolution apikey"
+        }
+      }
     }
   ],
   "connections": {
