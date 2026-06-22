@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
-import { getSiteContent } from "@/lib/content";
+import { getSiteContent, parseLinhas } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
 
 // ISR: retrato vem de media_assets; o painel revalida na hora ao publicar.
@@ -16,22 +16,13 @@ export const metadata: Metadata = pageMeta({
   ogTitle: "Sobre a Mi",
 });
 
-const FORMACOES = [
-  "Maquiagem HD (foto e TV)",
-  "Maquiagem à prova d'água",
-  "Colorimetria",
-  "Pele negra",
-  "Visagismo",
-  "Penteados",
-  "Assessoria a noivas e debutantes",
-];
-
 const MAPA =
   "https://www.google.com/maps?q=Rua+Ipom%C3%A9ia,+5,+Sant%C3%ADssimo,+Rio+de+Janeiro&output=embed";
 
 export default async function SobrePage() {
   const [retrato] = await getPublishedMedia("sobre", 1);
   const content = await getSiteContent();
+  const formacoes = parseLinhas(content["sobre.formacoes.lista"] ?? "");
   return (
     <main>
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
@@ -69,10 +60,10 @@ export default async function SobrePage() {
       <section className="bg-mi-branco/50 py-16">
         <div className="mx-auto max-w-5xl px-5">
           <h2 className="text-center font-titulo text-3xl text-mi-marrom-escuro">
-            Formações
+            {content["sobre.formacoes.title"]}
           </h2>
           <ul className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-3">
-            {FORMACOES.map((f) => (
+            {formacoes.map((f) => (
               <li
                 key={f}
                 className="rounded-mi border border-mi-cinza bg-mi-branco px-4 py-2 font-corpo text-sm text-mi-texto"

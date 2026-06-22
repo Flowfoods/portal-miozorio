@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseTabela,
   parseServicos,
+  parseLinhas,
   aplicarTemplate,
   CONTENT_FIELDS,
 } from "@/lib/content";
@@ -45,6 +46,20 @@ describe("parseServicos (cards de serviço da home 'Nome | Desc | Preço')", () 
   it("default do registry tem pelo menos 1 serviço válido", () => {
     const f = CONTENT_FIELDS.find((x) => x.key === "home.servicos.lista")!;
     expect(parseServicos(f.default).length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("parseLinhas (listas simples, uma por linha)", () => {
+  it("retorna linhas não-vazias com trim", () => {
+    expect(parseLinhas("  Colorimetria \n\nVisagismo\n   ")).toEqual([
+      "Colorimetria",
+      "Visagismo",
+    ]);
+  });
+
+  it("default de formações tem itens", () => {
+    const f = CONTENT_FIELDS.find((x) => x.key === "sobre.formacoes.lista")!;
+    expect(parseLinhas(f.default).length).toBeGreaterThanOrEqual(5);
   });
 });
 

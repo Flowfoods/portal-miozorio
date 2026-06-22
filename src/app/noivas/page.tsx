@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
-import { getSiteContent } from "@/lib/content";
+import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
 
 export const metadata: Metadata = pageMeta({
@@ -15,30 +15,13 @@ export const metadata: Metadata = pageMeta({
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta%20%F0%9F%92%9B";
 
-const JORNADA = [
-  {
-    n: "01",
-    t: "Reunião criativa",
-    d: "A gente conversa sobre o estilo da festa, suas referências, o vestido e a sua personalidade — para desenhar a produção perfeita pra você.",
-  },
-  {
-    n: "02",
-    t: "Prévia",
-    d: "Um mês antes, no estúdio, 3h dedicadas a testar maquiagem e penteado exatamente como serão no dia. Você sai segura e encantada.",
-  },
-  {
-    n: "03",
-    t: "O grande dia",
-    d: "Exclusividade total: chego antes de você e só saio quando você partir para a cerimônia. Cada detalhe no lugar, com calma e carinho.",
-  },
-];
-
 export default async function NoivasPage() {
   const [content, pacotes, faqs] = await Promise.all([
     getSiteContent(),
     getPacotes("noiva"),
     getFaqs("noiva"),
   ]);
+  const jornada = parseTabela(content["noivas.jornada.lista"] ?? "");
   return (
     <main>
       <JsonLd
@@ -59,13 +42,15 @@ export default async function NoivasPage() {
       {/* Jornada */}
       <section className="mx-auto max-w-5xl px-5 py-8">
         <div className="grid gap-8 sm:grid-cols-3">
-          {JORNADA.map((j) => (
-            <div key={j.n}>
-              <span className="font-titulo text-3xl text-mi-marrom">{j.n}</span>
+          {jornada.map((j, i) => (
+            <div key={j.o}>
+              <span className="font-titulo text-3xl text-mi-marrom">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <h2 className="mt-2 font-titulo text-2xl text-mi-marrom-escuro">
-                {j.t}
+                {j.o}
               </h2>
-              <p className="mt-2 font-corpo text-sm text-mi-texto">{j.d}</p>
+              <p className="mt-2 font-corpo text-sm text-mi-texto">{j.v}</p>
             </div>
           ))}
         </div>

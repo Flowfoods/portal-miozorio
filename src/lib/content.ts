@@ -295,6 +295,30 @@ export const CONTENT_FIELDS: ContentField[] = [
     multiline: true,
     grupo: "Debutantes",
   },
+  {
+    key: "sobre.formacoes.title",
+    label: "Sobre · título da seção Formações",
+    default: "Formações",
+    grupo: "Sobre a Mi",
+  },
+  {
+    key: "sobre.formacoes.lista",
+    label: "Sobre · formações (uma por linha)",
+    default:
+      "Maquiagem HD (foto e TV)\nMaquiagem à prova d'água\nColorimetria\nPele negra\nVisagismo\nPenteados\nAssessoria a noivas e debutantes",
+    multiline: true,
+    grupo: "Sobre a Mi",
+    ajuda: "Uma formação por linha.",
+  },
+  {
+    key: "noivas.jornada.lista",
+    label: "Noivas · etapas da jornada",
+    default:
+      "Reunião criativa | A gente conversa sobre o estilo da festa, suas referências, o vestido e a sua personalidade — para desenhar a produção perfeita pra você.\nPrévia | Um mês antes, no estúdio, 3h dedicadas a testar maquiagem e penteado exatamente como serão no dia. Você sai segura e encantada.\nO grande dia | Exclusividade total: chego antes de você e só saio quando você partir para a cerimônia. Cada detalhe no lugar, com calma e carinho.",
+    multiline: true,
+    grupo: "Noivas",
+    ajuda: "Uma etapa por linha, no formato: Título | Descrição. A numeração é automática.",
+  },
   // ── Mensagens automáticas de WhatsApp ──
   // As chaves "msg.*" alimentam as mensagens enviadas pela Mi:
   //  • club_points e booking_confirmation → enviadas pelo app (src/lib/notify.ts).
@@ -377,6 +401,14 @@ export function aplicarTemplate(
   return tpl.replace(/\{(\w+)\}/g, (_m, k: string) =>
     k in vars ? vars[k]! : "",
   );
+}
+
+/** Linhas não-vazias (trim), uma por item. Usado em listas simples (formações). */
+export function parseLinhas(texto: string): string[] {
+  return texto
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 /**
