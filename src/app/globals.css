@@ -30,3 +30,33 @@
     @apply border-mi-marrom;
   }
 }
+
+/* Drawer mobile (MobileNav) — entrada suave; respeita prefers-reduced-motion. */
+@keyframes miDrawerIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes miFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.mi-drawer-in {
+  animation: miDrawerIn 0.25s ease-out;
+}
+.mi-fade-in {
+  animation: miFadeIn 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mi-drawer-in,
+  .mi-fade-in {
+    animation: none;
+  }
+}
