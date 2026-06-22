@@ -8,10 +8,10 @@ Legenda: ✅ OK · 🟡 Parcial · ❌ Faltando
 | Rotas públicas | ✅ | Todas 200, sem quebra |
 | Agendamento (wizard) | ✅ | 5 passos; `?servico=`; slots do motor |
 | Painel admin | ✅ | Agenda dia/semana, encaixe, remarcar, CRUD completo |
-| CMS (Mi edita conteúdo) | ✅ | Textos, pacotes, FAQs, ensaio, serviços, fotos, depoimentos |
+| CMS (Mi edita conteúdo) | ✅ | Textos, listas de serviços/diferenciais/formações, jornada, pacotes, FAQs, ensaio, serviços, fotos, depoimentos **e os textos das mensagens de WhatsApp** — home/sobre/noivas/debutantes 100% editáveis |
 | Clube de fidelidade | ✅ | Pontos por serviço + indicação, recompensas, saldo/extrato |
-| WhatsApp (Evolution) | 🟡 | Conectado e envio testado; reconexão pós-rotação pendente de re-scan |
-| Lembrete 24h / pós-atendimento | ❌ | Crons n8n não construídos |
+| WhatsApp (Evolution) | ✅ | Instância `miozorio` conectada; **E2E comprovado** (envio chega). Evolution dedicada e isolada |
+| Lembrete véspera / pós-atendimento | ✅ | Crons n8n **construídos** (lembrete véspera, pós-D+1, aniversário, +1ano, reconexão); falta só **ativar** no n8n (runbook pronto) |
 
 ## Validação contra a `miespecialista`
 - ✅ Noiva (La Mariée) e Debutante **não agendáveis** → vitrine + CTA WhatsApp (R1)
@@ -32,11 +32,16 @@ Legenda: ✅ OK · 🟡 Parcial · ❌ Faltando
   bloqueio progressivo; reset por e-mail; LGPD (anamnese autenticada, foto só com consentimento).
 - SEO: JSON-LD BeautySalon/FAQPage, sitemap, robots, OG dinâmico, canonical; imagens WebP.
 
-## Pontos fracos / gaps
-- 🟡 **Automações por tempo (n8n)** não construídas: lembrete 24h, pós-atendimento
-  (avaliação Google/foto), aniversário/+1ano/reconexão.
-- 🟡 **WhatsApp** depende da instância Evolution conectada (re-scan após redeploys).
-- 🟡 **Anexo A pendente com a Mi:** preços/dias reais do dia a dia, depoimentos e fotos reais, Resend (reset).
-- 🟡 **Segurança:** API key da Evolution antiga vazou no histórico do git (rotacionada;
-  histórico não purgado). Chave do Bibi e senha foram expostas em suporte → rotacionar.
-- 🟡 **Validação mobile 390px**: herdada do design mobile-first; sem re-teste formal dedicado.
+## Pontos fracos / gaps (atualizado — restam só itens operacionais)
+- 🟡 **Ativar** as automações por tempo no n8n: os workflows estão **construídos e
+  versionados** (`n8n/`), falta importar + credencial Postgres + envs (runbook
+  `docs/RUNBOOK-n8n-ativacao.md`). Operação da Mi/infra.
+- 🟡 **Anexo A pendente com a Mi:** preços/dias reais do dia a dia, depoimentos e
+  fotos reais, conta Resend (reset por e-mail). Tudo editável no `/admin`.
+- 🟡 **Segurança:** senha pessoal do Rodolfo exposta em chat → trocar; (opcional)
+  purgar histórico git do segredo antigo já rotacionado. *(A chave `9944…`/`bibi-principal`
+  é da infra compartilhada/projeto Bibi — fora do escopo deste portal.)*
+
+> ✅ **Resolvidos nesta rodada:** automações por tempo construídas (inclui lembrete
+> da véspera); WhatsApp conectado + E2E comprovado; mobile 390px re-validado;
+> mensagens e todo o conteúdo público editáveis pela Mi.
