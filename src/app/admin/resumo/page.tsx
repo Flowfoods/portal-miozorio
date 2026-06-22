@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import AdminNav from "@/components/admin/AdminNav";
 import { getResumo } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +47,6 @@ export default async function ResumoPage({
 
   return (
     <>
-      <AdminNav />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Resumo</h1>
         <div className="flex items-center gap-2 text-sm">

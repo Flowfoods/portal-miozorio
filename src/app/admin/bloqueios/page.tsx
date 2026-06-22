@@ -1,7 +1,6 @@
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
-import AdminNav from "@/components/admin/AdminNav";
 import { adminCreateBlock, adminDeleteBlock } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +15,6 @@ export default async function AdminBloqueiosPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Bloqueios de agenda</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Férias, eventos fechados ou compromissos: o período bloqueado some dos

@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import AdminNav from "@/components/admin/AdminNav";
 import {
   adminCreateTestimonial,
   adminUpdateTestimonial,
@@ -16,7 +15,6 @@ export default async function AdminDepoimentosPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Depoimentos</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         O que suas clientes falam — aparece na página inicial. Publique só com a

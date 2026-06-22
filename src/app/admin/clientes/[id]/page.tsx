@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL, formatPhoneBR, waLink } from "@/lib/format";
 import { lerAnamnese } from "@/lib/anamnesis";
-import AdminNav from "@/components/admin/AdminNav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
 import { contarIndicacoesFechadas } from "@/lib/clube";
@@ -87,7 +86,6 @@ export default async function FichaClientePage({
 
   return (
     <>
-      <AdminNav />
       <Link
         href="/admin/clientes"
         className="text-sm text-mi-marrom underline underline-offset-4"

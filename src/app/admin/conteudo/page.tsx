@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { CONTENT_FIELDS } from "@/lib/content";
-import AdminNav from "@/components/admin/AdminNav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminSetContent } from "../actions";
 
@@ -23,7 +22,6 @@ export default async function AdminConteudoPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Textos do site</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Edite os textos das páginas. Deixe um campo igual ao original (ou vazio)

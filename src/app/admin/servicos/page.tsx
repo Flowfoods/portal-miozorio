@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import AdminNav from "@/components/admin/AdminNav";
 import {
   adminUpdateService,
   adminCreateService,
@@ -43,7 +42,6 @@ export default async function AdminServicosPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Serviços</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Preços em reais (ex.: 250,00). Duração e intervalo em minutos. Noiva e

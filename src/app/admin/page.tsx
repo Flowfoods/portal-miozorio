@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
-import AdminNav from "@/components/admin/AdminNav";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import WeekAgenda from "@/components/admin/WeekAgenda";
@@ -202,7 +201,6 @@ export default async function AdminAgendaPage({
 
   return (
     <>
-      <AdminNav />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Agenda</h1>
         <p className="text-sm text-mi-texto/70">

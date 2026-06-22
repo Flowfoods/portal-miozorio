@@ -1,7 +1,6 @@
 import Image from "next/image";
 import type { MediaAsset } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import AdminNav from "@/components/admin/AdminNav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import ConfirmForm from "@/components/admin/ConfirmForm";
 import { MEDIA_CATEGORIES, type MediaCategory } from "@/lib/media";
@@ -94,7 +93,6 @@ export default async function FotosPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="font-titulo text-3xl text-mi-marrom-escuro">Fotos</h1>
       <p className="mt-1 text-sm text-mi-texto/80">
         Suba fotos direto do celular — elas entram no site na hora. Só publique
