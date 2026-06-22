@@ -27,14 +27,18 @@ Fluxo: **Webhook** → **Code (valida token + monta texto por `kind`)** →
 ### Como importar
 
 1. n8n → **Workflows → Import from File** → selecione o `.json`.
-2. Configure as **variáveis de ambiente** do n8n (não hardcode segredos — R9):
-   - `EVOLUTION_API_URL` — ex.: `https://evo.suavps…`
-   - `EVOLUTION_API_KEY` — apikey da Evolution
-   - `EVOLUTION_INSTANCE` — `evo-miozorio`
-   - `MI_WEBHOOK_TOKEN` — **mesmo valor** do `N8N_WEBHOOK_TOKEN` no Dokploy do app
-     (o Code Node rejeita requisições sem o header `x-webhook-token` correto).
-3. Abra o nó **Webhook**, copie a **Production URL** e cole no Dokploy do app em
-   `N8N_WEBHOOK_URL`. Redeploy do app (sem isso o app não emite nada — no-op).
+2. **Credencial da Evolution (sem env do host):** o nó `Evolution · sendText` usa
+   uma credencial **Header Auth** — crie em n8n → **Credentials → New → Header Auth**:
+   - **Name** (do header): `apikey`
+   - **Value**: a apikey da Evolution (pegue no Dokploy → compose `evo-miozorio`)
+   - Salve como **"Evolution apikey"** e selecione-a no nó (substitui o placeholder
+     `REPLACE_EVOLUTION_CRED_ID`).
+   > A URL e a instância (`https://evo.miozorio.com.br` / `miozorio`) são **literais**
+   > no nó (não são segredo). Só a apikey vai na credencial → **não precisa de variável
+   > de ambiente nem mexer no compose do host** (R9 mantido: a key fica na credencial).
+3. (`mi-ozorio-whatsapp` apenas) `MI_WEBHOOK_TOKEN` no Code Node — só se for usar o
+   fluxo por **webhook**. ⚠️ Na arquitetura atual o **app fala direto com a Evolution**
+   (`src/lib/notify.ts`); este workflow de webhook é **opcional/legado**.
 4. **Ative** o workflow no n8n.
 
 ### Testar (mock)
@@ -90,6 +94,9 @@ no workflow. ⚠️ Os defaults do `CASE` no SQL espelham `src/lib/content.ts`; 
 lá, atualize aqui também (ou apenas confie no override que a Mi salvar).
 
 ### Antes de ativar (precisa de validação)
+- ⚠️ **Credencial Header Auth "Evolution apikey"** (header `apikey` = key da Evolution)
+  selecionada no nó `Evolution · sendText` (substitui `REPLACE_EVOLUTION_CRED_ID`).
+  **Sem env do host** — ver "Como importar".
 - ⚠️ **Criar a credencial Postgres** no n8n apontando para `pg-miozorio` e
   substituir `REPLACE_PG_CRED_ID` nos 2 nós Postgres.
 - ⚠️ **Revisar o SQL** contra o banco real (foi escrito a partir do schema, não

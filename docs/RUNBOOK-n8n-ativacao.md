@@ -48,17 +48,18 @@ no mesmo dia **não** reenvia.
 3. O workflow abre com 5 nós: *Todo dia 09:00 → Postgres (devidos hoje) → Montar
    mensagem → Evolution sendText → Postgres (registrar envio)*.
 
-## Passo 3 — Variáveis de ambiente do n8n (NÃO hardcode — R9)
-No n8n, configure estas variáveis de ambiente (Settings → Variables, ou nas envs do
-container `n8n_n8n` no Dokploy) e **reinicie o n8n** se editar no container:
+## Passo 3 — Credencial da Evolution (Header Auth — SEM env do host)
+> O n8n roda **fora** do Dokploy (container avulso), então **não** dependemos de
+> variável de ambiente. A apikey vai numa **credencial do próprio n8n**; a URL e a
+> instância já são literais no nó (`https://evo.miozorio.com.br` / `miozorio`).
 
-| Variável | Valor |
-|----------|-------|
-| `EVOLUTION_API_URL` | `https://evo.miozorio.com.br` |
-| `EVOLUTION_API_KEY` | *(pegar no Dokploy → compose **`evo-miozorio`** → Environment → `AUTHENTICATION_API_KEY`)* |
-| `EVOLUTION_INSTANCE` | `miozorio` |
-
-> A key **não** é escrita aqui por segurança. Copie do Dokploy na hora.
+1. n8n → **Credentials → New → Header Auth**.
+2. **Name** (do header): `apikey`
+3. **Value**: a apikey da Evolution — pegue no **Dokploy → compose `evo-miozorio`
+   → Environment → `AUTHENTICATION_API_KEY`** (não cole aqui no doc).
+4. Salve como **"Evolution apikey"**.
+5. No nó **`Evolution · sendText`**, selecione essa credencial (substitui o
+   placeholder `REPLACE_EVOLUTION_CRED_ID`).
 
 ## Passo 4 — Criar a credencial Postgres (aponta para o banco do portal)
 1. n8n → **Credentials** → **New** → **Postgres**.
@@ -98,7 +99,7 @@ container `n8n_n8n` no Dokploy) e **reinicie o n8n** se editar no container:
 
 ## Checklist de aceite
 - [ ] Workflow dos crons importado
-- [ ] Envs `EVOLUTION_*` setadas no n8n
+- [ ] Credencial **Header Auth "Evolution apikey"** criada e ligada no nó `Evolution · sendText`
 - [ ] Credencial Postgres criada e ligada nos 2 nós
 - [ ] `Execute node` do SQL retorna dados coerentes
 - [ ] Mensagens revisadas/aprovadas com a Mi
