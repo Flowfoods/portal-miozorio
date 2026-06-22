@@ -1,5 +1,4 @@
 import { getSettings } from "@/lib/settings";
-import AdminNav from "@/components/admin/AdminNav";
 import { adminSaveSettings } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +47,6 @@ export default async function AdminConfigPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Configurações</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Valem na hora para novos agendamentos — sem precisar de deploy.

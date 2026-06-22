@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { MIN_SENHA } from "@/lib/security";
-import AdminNav from "@/components/admin/AdminNav";
 import {
   adminCreateUser,
   adminToggleUser,
@@ -20,7 +19,6 @@ export default async function AdminUsuariasPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Usuárias do painel</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Quem pode entrar no painel do estúdio. Não existe cadastro pelo site —

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPhoneBR } from "@/lib/format";
-import AdminNav from "@/components/admin/AdminNav";
 import { adminResetStrikes } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +31,6 @@ export default async function AdminClientesPage({
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Clientes</h1>
       <p className="mb-4 text-sm text-mi-texto/70">
         Toque no nome para abrir a ficha (contato, alergias, anotações e

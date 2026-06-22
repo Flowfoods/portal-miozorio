@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import AdminNav from "@/components/admin/AdminNav";
 import {
   adminCreatePacote,
   adminUpdatePacote,
@@ -24,7 +23,6 @@ export default async function AdminPacotesPage() {
 
   return (
     <>
-      <AdminNav />
       <h1 className="mb-2 text-3xl">Pacotes e perguntas</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Pacotes e FAQs das páginas de noiva e debutante. Enquanto uma categoria
