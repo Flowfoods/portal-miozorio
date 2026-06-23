@@ -52,7 +52,7 @@ export default async function DebutantesPage() {
               <h2 className="font-titulo text-3xl text-mi-marrom-escuro">
                 {p.nome}
               </h2>
-              <p className="mt-3 font-titulo text-4xl text-mi-marrom">
+              <p className="mt-3 font-corpo text-4xl font-medium text-mi-marrom">
                 {p.preco}
               </p>
               {p.parcela && (
@@ -104,7 +104,7 @@ export default async function DebutantesPage() {
       {/* Nota responsável (R6) */}
       <section className="mx-auto max-w-2xl px-5 py-12">
         <p className="rounded-mi border border-mi-cinza bg-mi-bege px-6 py-5 text-center font-corpo text-sm text-mi-marrom-escuro">
-          💛 Como a debutante é menor de idade, toda a combinação e o contrato
+          Como a debutante é menor de idade, toda a combinação e o contrato
           são feitos com o responsável, e a prévia é sempre acompanhada por ele.
         </p>
       </section>

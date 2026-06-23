@@ -123,7 +123,7 @@ export default async function DiaADiaPage() {
           <Lista titulo="Sobrancelhas" itens={sobrancelha} />
           <p className="mt-2 font-corpo text-sm text-mi-texto/60">
             Valores e horários de alguns serviços ainda estão sendo combinados —
-            é só chamar que a Mi te ajuda. 💛
+            é só chamar que a Mi te ajuda.
           </p>
         </>
       )}

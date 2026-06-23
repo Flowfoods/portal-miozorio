@@ -105,7 +105,7 @@ export default async function PainelMembroPage({
         </div>
       </section>
       <p className="mt-3 text-center font-corpo text-xs text-mi-texto/60">
-        Guarde o link desta página — ela é a sua carteirinha 💛
+        Guarde o link desta página — ela é a sua carteirinha
       </p>
 
       {/* Indicações */}
@@ -141,7 +141,7 @@ export default async function PainelMembroPage({
         </p>
         <p className="mt-2 font-corpo text-sm text-mi-texto/70">
           Você ganha pontos a cada atendimento e quando uma indicação sua faz o
-          primeiro atendimento. Acumule e troque pelas recompensas abaixo. 💛
+          primeiro atendimento. Acumule e troque pelas recompensas abaixo.
         </p>
       </section>
 
@@ -169,14 +169,14 @@ export default async function PainelMembroPage({
                     </p>
                   </div>
                   <span className="font-corpo text-xs text-mi-texto/60">
-                    {podeResgatar ? "disponível 💛" : `faltam ${r.custoPontos - saldo}`}
+                    {podeResgatar ? "disponível" : `faltam ${r.custoPontos - saldo}`}
                   </span>
                 </li>
               );
             })}
           </ul>
           <p className="mt-4 font-corpo text-xs text-mi-texto/60">
-            Para resgatar, é só combinar com a Mi na sua próxima visita. 💛
+            Para resgatar, é só combinar com a Mi na sua próxima visita.
           </p>
         </section>
       )}

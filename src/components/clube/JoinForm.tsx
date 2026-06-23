@@ -36,7 +36,7 @@ export default function JoinForm() {
         </label>
         <label className="block">
           <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
-            Aniversário (opcional — pra te mimar 💛)
+            Aniversário (opcional — pra te mimar)
           </span>
           <input name="birthDate" type="date" className="input-mi" />
         </label>
@@ -56,7 +56,7 @@ export default function JoinForm() {
         pendingLabel="Entrando…"
         className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro sm:w-auto"
       >
-        Quero participar 💛
+        Quero participar
       </SubmitButton>
     </form>
   );

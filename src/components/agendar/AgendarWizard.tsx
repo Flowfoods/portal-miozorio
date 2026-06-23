@@ -166,7 +166,7 @@ export default function AgendarWizard() {
         }),
       });
       if (res.status === 409) {
-        setFormError("Esse horário acabou de ser reservado 😔 Escolha outro?");
+        setFormError("Esse horário acabou de ser reservado Escolha outro?");
         setTime(null);
         setSlots(null);
         setStep(3);
@@ -247,7 +247,7 @@ export default function AgendarWizard() {
           </div>
           {location === "home" && (
             <p className="mt-2 font-corpo text-xs text-mi-marrom">
-              O atendimento em domicílio inclui a taxa de deslocamento 💛
+              O atendimento em domicílio inclui a taxa de deslocamento
             </p>
           )}
 
@@ -304,8 +304,8 @@ export default function AgendarWizard() {
           </h2>
           <p className="mt-1 font-corpo text-sm text-mi-marrom">
             {service.isCourse
-              ? "O curso pode ser em qualquer dia 💛"
-              : "Atendimentos aos sábados e domingos 💛"}
+              ? "O curso pode ser em qualquer dia"
+              : "Atendimentos aos sábados e domingos"}
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -343,7 +343,7 @@ export default function AgendarWizard() {
           {slotsLoading && <ChipsSkeleton />}
           {!slotsLoading && slots && slots.length === 0 && (
             <p className="mt-6 font-corpo text-mi-texto">
-              Poxa, esse dia já está cheio… que tal escolher outra data? 💛
+              Poxa, esse dia já está cheio… que tal escolher outra data?
             </p>
           )}
           <div className="mt-6 flex flex-wrap gap-2">
@@ -405,7 +405,7 @@ export default function AgendarWizard() {
                 value={form.allergy}
                 onChange={(e) => setForm({ ...form, allergy: e.target.value })}
                 className="input-mi min-h-[64px]"
-                placeholder="Conte aqui qualquer sensibilidade da sua pele 💛"
+                placeholder="Conte aqui qualquer sensibilidade da sua pele"
               />
             </Field>
             <Field label="Já tem referência do que quer?">
@@ -447,7 +447,7 @@ export default function AgendarWizard() {
                 <a href="/privacidade" className="underline" target="_blank">
                   política de privacidade
                 </a>
-                . Seus dados são tratados com cuidado e sigilo 💛
+                . Seus dados são tratados com cuidado e sigilo
               </span>
             </label>
 
@@ -473,7 +473,7 @@ export default function AgendarWizard() {
             Quase lá!
           </h2>
           <p className="mt-1 font-corpo text-sm text-mi-marrom">
-            Confirme os detalhes do seu horário 💛
+            Confirme os detalhes do seu horário
           </p>
 
           <dl className="mt-6 space-y-3 rounded-mi border border-mi-cinza bg-mi-branco p-5 shadow-suave">
@@ -490,7 +490,7 @@ export default function AgendarWizard() {
           <HoldCountdown
             holdExpiresAt={booking.holdExpiresAt}
             onExpire={() => {
-              setFormError("O tempo da reserva expirou. Vamos escolher de novo? 💛");
+              setFormError("O tempo da reserva expirou. Vamos escolher de novo?");
               setBooking(null);
               setConfirmed(false);
               setStep(3);
@@ -662,7 +662,7 @@ function SuccessScreen({
         Agendamento confirmado
       </p>
       <h1 className="mt-5 font-titulo text-4xl text-mi-marrom-escuro">
-        Que alegria! 💛
+        Que alegria!
       </h1>
       <p className="mt-4 font-corpo text-mi-texto">
         Seu horário de <strong>{service.name}</strong> está reservado para{" "}
@@ -670,7 +670,7 @@ function SuccessScreen({
         <strong>{time}</strong>.
       </p>
       <p className="mt-3 font-corpo text-sm text-mi-marrom">
-        Você vai receber a confirmação no WhatsApp 💛 Lembre de levar referências
+        Você vai receber a confirmação no WhatsApp Lembre de levar referências
         do que deseja!
       </p>
       <a

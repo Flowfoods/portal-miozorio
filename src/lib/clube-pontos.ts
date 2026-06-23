@@ -107,7 +107,7 @@ export async function creditarPontosIndicacao(
     customerId: indicada.referredById,
     pontos,
     tipo: "referral",
-    descricao: "Indicação concretizada 💛",
+    descricao: "Indicação concretizada",
     dedupKey: `referral:${indicadaId}`,
   });
   if (!creditou) return null;

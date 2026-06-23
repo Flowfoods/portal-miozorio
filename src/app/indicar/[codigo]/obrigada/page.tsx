@@ -13,8 +13,7 @@ const WA =
 export default function ObrigadaPage() {
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-20 text-center">
-      <p className="font-titulo text-5xl text-mi-marrom">💛</p>
-      <h1 className="mt-4 text-3xl leading-tight sm:text-4xl">
+      <h1 className="text-3xl leading-tight sm:text-4xl">
         Recebi seu pedido!
       </h1>
       <p className="mt-4 font-corpo text-mi-texto/80">

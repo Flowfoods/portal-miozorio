@@ -17,7 +17,7 @@ export default function PrivacidadePage() {
       </h1>
       <p className="mt-3 font-corpo text-sm text-mi-marrom">
         Seus dados são tratados com o mesmo cuidado que eu tenho com a sua
-        beleza. 💛
+        beleza.
       </p>
 
       <div className="mt-8 space-y-6 font-corpo text-mi-texto">

@@ -51,7 +51,7 @@ export default async function ClubePage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl font-corpo text-mi-texto/80">
           Entre no clube, junte pontos a cada atendimento e a cada amiga que você
-          indica, e troque por recompensas especiais da Mi. 💛
+          indica, e troque por recompensas especiais da Mi.
         </p>
         <a
           href="#participar"
@@ -85,7 +85,7 @@ export default async function ClubePage() {
                 key={r.id}
                 className="rounded-mi border border-mi-cinza bg-mi-branco p-6 text-center shadow-suave"
               >
-                <p className="font-titulo text-3xl text-mi-marrom-escuro">
+                <p className="font-corpo text-3xl font-medium text-mi-marrom-escuro">
                   {r.custoPontos}
                 </p>
                 <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom">
@@ -103,7 +103,7 @@ export default async function ClubePage() {
 
       <p className="mx-auto mt-10 max-w-xl text-center font-corpo text-xs text-mi-texto/60">
         Produções de noiva ou debutante são sempre combinadas direto com a Mi no
-        WhatsApp — cada grande dia é um projeto único 💛
+        WhatsApp — cada grande dia é um projeto único
       </p>
 
       {/* Participar */}
