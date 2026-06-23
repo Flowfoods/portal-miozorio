@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const WHATSAPP =
-  "https://wa.me/5521970225231?text=Oi%20Mi!%20Vim%20pelo%20site%20%F0%9F%92%9B";
+  "https://wa.me/5521970225231?text=Oi%20Mi!%20Vim%20pelo%20site";
 
 export default function Footer() {
   return (

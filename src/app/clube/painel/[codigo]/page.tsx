@@ -69,7 +69,7 @@ export default async function PainelMembroPage({
     .setLocale("pt-BR")
     .toFormat("LLLL 'de' yyyy");
   const shareText = encodeURIComponent(
-    `Oi! Eu me arrumo com a Mi Ozorio e acho que você vai amar 💛 Conta que eu indiquei: ${linkIndicacao}`,
+    `Oi! Eu me arrumo com a Mi Ozorio e acho que você vai amar Conta que eu indiquei: ${linkIndicacao}`,
   );
 
   return (

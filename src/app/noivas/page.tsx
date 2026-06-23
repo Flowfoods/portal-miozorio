@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMeta({
 });
 
 const WA =
-  "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta%20%F0%9F%92%9B";
+  "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta";
 
 export default async function NoivasPage() {
   const [content, pacotes, faqs] = await Promise.all([

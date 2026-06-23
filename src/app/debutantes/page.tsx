@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMeta({
 });
 
 const WA =
-  "https://wa.me/5521970225231?text=Oi%20Mi!%20Quero%20saber%20dos%20pacotes%20de%20debutante%20%F0%9F%92%9B";
+  "https://wa.me/5521970225231?text=Oi%20Mi!%20Quero%20saber%20dos%20pacotes%20de%20debutante";
 
 export default async function DebutantesPage() {
   const [content, pacotes, faqs] = await Promise.all([
