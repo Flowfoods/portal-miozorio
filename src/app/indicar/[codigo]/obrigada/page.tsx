@@ -7,14 +7,13 @@ export const metadata: Metadata = {
 };
 
 const WA =
-  "https://wa.me/5521970225231?text=Oi%20Mi!%20Fui%20indicada%20por%20uma%20amiga%20e%20quero%20me%20cuidar%20com%20voc%C3%AA%20%F0%9F%92%9B";
+  "https://wa.me/5521970225231?text=Oi%20Mi!%20Fui%20indicada%20por%20uma%20amiga%20e%20quero%20me%20cuidar%20com%20voc%C3%AA";
 
 /** Confirmação pós-indicação. Sem dado pessoal na URL nem na tela. */
 export default function ObrigadaPage() {
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-20 text-center">
-      <p className="font-titulo text-5xl text-mi-marrom">💛</p>
-      <h1 className="mt-4 text-3xl leading-tight sm:text-4xl">
+      <h1 className="text-3xl leading-tight sm:text-4xl">
         Recebi seu pedido!
       </h1>
       <p className="mt-4 font-corpo text-mi-texto/80">

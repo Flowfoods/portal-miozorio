@@ -36,7 +36,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "home.hero.subtitle",
     label: "Home · subtítulo",
     default:
-      "Maquiagem e penteado para noivas, debutantes e os seus momentos mais especiais, no coração do Rio de Janeiro. 💛",
+      "Maquiagem e penteado para noivas, debutantes e os seus momentos mais especiais, no coração do Rio de Janeiro.",
     multiline: true,
     grupo: "Início",
   },
@@ -49,7 +49,7 @@ export const CONTENT_FIELDS: ContentField[] = [
   {
     key: "home.hero.cta_secondary",
     label: "Home · botão secundário",
-    default: "Sou noiva ou debutante 💛",
+    default: "Sou noiva ou debutante",
     grupo: "Início",
   },
   {
@@ -105,7 +105,7 @@ export const CONTENT_FIELDS: ContentField[] = [
   {
     key: "home.cta.subtitle",
     label: "Home · chamada final (texto)",
-    default: "Escolha o seu horário em poucos toques. Estou te esperando 💛",
+    default: "Escolha o seu horário em poucos toques. Estou te esperando",
     multiline: true,
     grupo: "Início",
   },
@@ -147,7 +147,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "home.diferenciais.lista",
     label: "Home · cards de Diferenciais",
     default:
-      "12 anos de experiência | Mãos firmes, olhar treinado e muita história cuidando da beleza de cada cliente.\nMaquiagem HD à prova d'água | Acabamento perfeito em foto e vídeo, resistente ao calor, à emoção e às lágrimas.\nCruelty-free 🐰 | Produtos de alta qualidade, com benefícios para a pele e nunca testados em animais.\nVisagismo & colorimetria | Cada produção pensada para o seu rosto, seu tom de pele e a sua ocasião.\nExclusividade no grande dia | Noivas e debutantes têm a atenção total da Mi — uma cliente por vez.",
+      "12 anos de experiência | Mãos firmes, olhar treinado e muita história cuidando da beleza de cada cliente.\nMaquiagem HD à prova d'água | Acabamento perfeito em foto e vídeo, resistente ao calor, à emoção e às lágrimas.\nCruelty-free | Produtos de alta qualidade, com benefícios para a pele e nunca testados em animais.\nVisagismo & colorimetria | Cada produção pensada para o seu rosto, seu tom de pele e a sua ocasião.\nExclusividade no grande dia | Noivas e debutantes têm a atenção total da Mi — uma cliente por vez.",
     multiline: true,
     grupo: "Início · Diferenciais",
     ajuda: "Um diferencial por linha, no formato: Título | Descrição",
@@ -202,7 +202,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "diaadia.intro.subtitle",
     label: "Dia a dia · texto de introdução",
     default:
-      "Cuidado de perto, no seu ritmo. Cabelo e sobrancelhas para você se sentir bem todos os dias — não só nas ocasiões especiais. 💛",
+      "Cuidado de perto, no seu ritmo. Cabelo e sobrancelhas para você se sentir bem todos os dias — não só nas ocasiões especiais.",
     multiline: true,
     grupo: "Dia a dia",
   },
@@ -223,7 +223,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "noivas.hero.subtitle",
     label: "Noivas · subtítulo",
     default:
-      "Uma experiência pensada nos mínimos detalhes — da primeira conversa ao último retoque antes do “sim”. 💛",
+      "Uma experiência pensada nos mínimos detalhes — da primeira conversa ao último retoque antes do “sim”.",
     multiline: true,
     grupo: "Noivas",
   },
@@ -237,7 +237,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "noivas.cta.subtitle",
     label: "Noivas · chamada final (texto)",
     default:
-      "Cada noiva é única, então preparo uma proposta personalizada pra você. Me chama no WhatsApp 💛",
+      "Cada noiva é única, então preparo uma proposta personalizada pra você. Me chama no WhatsApp",
     multiline: true,
     grupo: "Noivas",
   },
@@ -264,7 +264,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "debutantes.hero.subtitle",
     label: "Debutantes · subtítulo",
     default:
-      "Da reunião criativa ao acompanhamento na festa — com todo o cuidado que esse dia tão especial merece. 💛",
+      "Da reunião criativa ao acompanhamento na festa — com todo o cuidado que esse dia tão especial merece.",
     multiline: true,
     grupo: "Debutantes",
   },
@@ -277,7 +277,7 @@ export const CONTENT_FIELDS: ContentField[] = [
   {
     key: "debutantes.cta.subtitle",
     label: "Debutantes · chamada final (texto)",
-    default: "Me chama no WhatsApp que eu preparo uma proposta sob medida 💛",
+    default: "Me chama no WhatsApp que eu preparo uma proposta sob medida",
     multiline: true,
     grupo: "Debutantes",
   },
@@ -329,7 +329,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.club_points",
     label: "WhatsApp · pontos do Clube",
     default:
-      "Oi, {nome}! 💛\n\nVocê ganhou {pontos} pontos no Clube Mi Ozorio{motivo}! Acompanhe seu saldo e troque por mimos quando quiser. 💛",
+      "Oi, {nome}!\n\nVocê ganhou {pontos} pontos no Clube Mi Ozorio{motivo}! Acompanhe seu saldo e troque por mimos quando quiser.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}, {pontos}, {motivo} (opcional, já vem entre parênteses).",
@@ -338,7 +338,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.booking_confirmation",
     label: "WhatsApp · confirmação de horário",
     default:
-      "Oi, {nome}! 💛\n\nSeu horário de {servico} está confirmado para {data}. Qualquer coisa, é só me chamar por aqui. Até logo! 💛",
+      "Oi, {nome}!\n\nSeu horário de {servico} está confirmado para {data}. Qualquer coisa, é só me chamar por aqui. Até logo!",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}, {servico}, {data} (data e hora).",
@@ -347,7 +347,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.lembrete_24h",
     label: "WhatsApp · lembrete da véspera",
     default:
-      "Oi, {nome}! 💛\n\nPassando pra lembrar do seu horário de {servico} amanhã ({data}). Te espero! Se precisar remarcar, é só me chamar por aqui. 💛",
+      "Oi, {nome}!\n\nPassando pra lembrar do seu horário de {servico} amanhã ({data}). Te espero! Se precisar remarcar, é só me chamar por aqui.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}, {servico}, {data} (data e hora). Enviado pelo n8n.",
@@ -356,7 +356,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.aniversario",
     label: "WhatsApp · aniversário (membro do Clube)",
     default:
-      "Feliz aniversário, {nome}! 💛\n\nQue seu dia seja tão lindo quanto você. Passa aqui pra gente comemorar com um cuidado especial. 💛",
+      "Feliz aniversário, {nome}!\n\nQue seu dia seja tão lindo quanto você. Passa aqui pra gente comemorar com um cuidado especial.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}. Enviado pelo n8n.",
@@ -365,7 +365,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.aniversario_cliente",
     label: "WhatsApp · 1 ano de cliente",
     default:
-      "Oi, {nome}! 💛\n\nFaz 1 ano que a gente se conheceu — obrigada pela confiança desde então. Bora marcar um próximo encontro?",
+      "Oi, {nome}!\n\nFaz 1 ano que a gente se conheceu — obrigada pela confiança desde então. Bora marcar um próximo encontro?",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}. Enviado pelo n8n.",
@@ -374,7 +374,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.pos_atendimento",
     label: "WhatsApp · pós-atendimento (dia seguinte)",
     default:
-      "Oi, {nome}! 💛\n\nFoi um prazer te atender de {servico} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização). 💛",
+      "Oi, {nome}!\n\nFoi um prazer te atender de {servico} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização).",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}, {servico}. Enviado pelo n8n.",
@@ -383,7 +383,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.reconexao",
     label: "WhatsApp · reconexão (sem visita há mais de 1 ano)",
     default:
-      "Oi, {nome}! 💛\n\nFaz um tempinho que a gente não se vê — saudades! Que tal remarcar um cuidado pra você? É só me chamar por aqui.",
+      "Oi, {nome}!\n\nFaz um tempinho que a gente não se vê — saudades! Que tal remarcar um cuidado pra você? É só me chamar por aqui.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}. Enviado pelo n8n.",

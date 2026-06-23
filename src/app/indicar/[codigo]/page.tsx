@@ -36,7 +36,7 @@ export default async function IndicarPage({
         Clube Mi Ozorio
       </p>
       <h1 className="mt-3 text-center text-3xl leading-tight sm:text-4xl">
-        {primeiroNome} indicou você 💛
+        {primeiroNome} indicou você
       </h1>
       <p className="mt-4 text-center font-corpo text-mi-texto/80">
         Maquiagem e penteado com produtos de alta qualidade — e o carinho que

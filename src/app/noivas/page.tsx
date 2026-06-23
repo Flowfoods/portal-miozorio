@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMeta({
 });
 
 const WA =
-  "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta%20%F0%9F%92%9B";
+  "https://wa.me/5521970225231?text=Oi%20Mi!%20Sou%20noiva%20e%20quero%20uma%20proposta";
 
 export default async function NoivasPage() {
   const [content, pacotes, faqs] = await Promise.all([
@@ -74,7 +74,7 @@ export default async function NoivasPage() {
               <h3 className="font-titulo text-3xl text-mi-marrom-escuro">
                 {p.nome}
               </h3>
-              <p className="mt-3 font-titulo text-4xl text-mi-marrom">
+              <p className="mt-3 font-corpo text-4xl font-medium text-mi-marrom">
                 {p.preco}
               </p>
               {p.parcela && (
@@ -110,21 +110,45 @@ export default async function NoivasPage() {
             Pra tudo sair perfeito
           </h2>
           <ul className="mx-auto mt-8 max-w-xl space-y-3 font-corpo text-sm text-mi-texto">
-            <li>
-              ✦ A prévia inclui até <strong>3 ajustes</strong> de maquiagem;
-              acima disso, há uma taxa de R$ 120.
+            <li className="flex gap-2.5">
+              <span
+                aria-hidden
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mi-marrom"
+              />
+              <span>
+                A prévia inclui até <strong>3 ajustes</strong> de maquiagem;
+                acima disso, há uma taxa de R$ 120.
+              </span>
             </li>
-            <li>
-              ✦ Venha decidida quanto a cores e estilo, com suas referências
-              separadas.
+            <li className="flex gap-2.5">
+              <span
+                aria-hidden
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mi-marrom"
+              />
+              <span>
+                Venha decidida quanto a cores e estilo, com suas referências
+                separadas.
+              </span>
             </li>
-            <li>
-              ✦ Sem celular durante a prévia e no dia — sua atenção (e a minha)
-              toda no momento.
+            <li className="flex gap-2.5">
+              <span
+                aria-hidden
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mi-marrom"
+              />
+              <span>
+                Sem celular durante a prévia e no dia — sua atenção (e a minha)
+                toda no momento.
+              </span>
             </li>
-            <li>
-              ✦ O deslocamento está incluído dentro do Rio de Janeiro. Outras
-              cidades: combinamos taxa e hospedagem.
+            <li className="flex gap-2.5">
+              <span
+                aria-hidden
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mi-marrom"
+              />
+              <span>
+                O deslocamento está incluído dentro do Rio de Janeiro. Outras
+                cidades: combinamos taxa e hospedagem.
+              </span>
             </li>
           </ul>
         </div>

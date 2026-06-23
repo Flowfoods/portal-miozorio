@@ -22,7 +22,7 @@ export default async function GaleriaPage() {
       <header className="mb-10">
         <h1 className="font-titulo text-5xl text-mi-marrom-escuro">Galeria</h1>
         <p className="mt-4 max-w-2xl font-corpo text-lg text-mi-texto/80">
-          Cada rosto, uma história. Alguns dos trabalhos da Mi. 💛
+          Cada rosto, uma história. Alguns dos trabalhos da Mi.
         </p>
       </header>
 

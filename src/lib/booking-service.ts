@@ -74,7 +74,7 @@ export async function createBooking(
     return {
       ok: false,
       code: "not_bookable",
-      message: "Esse atendimento é combinado direto com a Mi no WhatsApp 💛",
+      message: "Esse atendimento é combinado direto com a Mi no WhatsApp",
     };
   }
 
@@ -169,7 +169,7 @@ export async function createBooking(
       return {
         ok: false,
         code: "slot_taken",
-        message: "Esse horário acabou de ser reservado 😔",
+        message: "Esse horário acabou de ser reservado",
       };
     }
     throw e;
@@ -423,7 +423,7 @@ export async function rescheduleBooking(
       return {
         ok: false,
         code: "slot_taken",
-        message: "Esse horário já está ocupado. Escolha outro 💛",
+        message: "Esse horário já está ocupado. Escolha outro",
       };
     }
     throw e;
@@ -466,7 +466,7 @@ export async function confirmBooking(
     return {
       ok: false,
       code: "hold_expired",
-      message: "O tempo da reserva expirou. Tente escolher o horário de novo 💛",
+      message: "O tempo da reserva expirou. Tente escolher o horário de novo",
     };
   }
   // Sinal recebido por fora (PIX direto pra Mi) não passa pelo sistema:
