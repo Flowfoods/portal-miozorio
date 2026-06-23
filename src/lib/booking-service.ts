@@ -178,8 +178,18 @@ export async function createBooking(
 
 // ── Encaixe manual pela Mi (M10) ─────────────────────────────────────────────
 
-export interface ManualBookingInput {
+/** Um serviço do agendamento (multi-serviço). preço cobrado em centavos. */
+export interface ManualBookingItemInput {
   serviceId: string;
+  /** Valor final cobrado (centavos) — editável por particularidade. */
+  precoCobradoCents: number;
+  /** Motivo do ajuste quando difere do catálogo (opcional). */
+  motivoAjuste?: string;
+}
+
+export interface ManualBookingInput {
+  /** 1..N serviços; a duração total bloqueia o slot (buffer só entre clientes). */
+  items: ManualBookingItemInput[];
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   location: "studio" | "home";
@@ -219,16 +229,39 @@ export async function createManualBooking(
   const settings = await getSettings();
   const tz = settings.timezone;
 
-  const service = await prisma.service.findUnique({
-    where: { id: input.serviceId },
-  });
-  if (!service || !service.active) {
-    return {
-      ok: false,
-      code: "invalid_service",
-      message: "Serviço não encontrado.",
-    };
+  // Multi-serviço: valida itens, carrega os serviços e monta os snapshots.
+  const items = input.items ?? [];
+  if (items.length === 0) {
+    return { ok: false, code: "invalid_service", message: "Escolha ao menos um serviço." };
   }
+  const services = await prisma.service.findMany({
+    where: { id: { in: items.map((i) => i.serviceId) } },
+  });
+  const byId = new Map(services.map((s) => [s.id, s]));
+  const resolved = items.map((it) => {
+    const s = byId.get(it.serviceId);
+    if (!s || !s.active) return null;
+    const precoTabelaCents =
+      input.location === "home" && s.priceHomeCents != null
+        ? s.priceHomeCents
+        : s.priceCents;
+    const precoCobradoCents =
+      Number.isFinite(it.precoCobradoCents) && it.precoCobradoCents >= 0
+        ? Math.round(it.precoCobradoCents)
+        : precoTabelaCents;
+    return {
+      service: s,
+      durationMin: s.durationMin,
+      precoTabelaCents,
+      precoCobradoCents,
+      motivoAjuste: it.motivoAjuste?.trim() || null,
+    };
+  });
+  if (resolved.some((r) => r === null)) {
+    return { ok: false, code: "invalid_service", message: "Serviço não encontrado." };
+  }
+  const rows = resolved as NonNullable<(typeof resolved)[number]>[];
+  const primary = rows[0]!.service;
 
   const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, { zone: tz });
   if (!startsAt.isValid) {
@@ -238,9 +271,10 @@ export async function createManualBooking(
       message: "Data ou horário inválido.",
     };
   }
-  const endsAt = startsAt.plus({
-    minutes: service.durationMin + service.bufferMin,
-  });
+  // Duração TOTAL (soma dos itens) + buffer ÚNICO entre clientes (R2/buffer).
+  const totalDuration = rows.reduce((sum, r) => sum + r.durationMin, 0);
+  const bufferMin = Math.max(...rows.map((r) => r.service.bufferMin));
+  const endsAt = startsAt.plus({ minutes: totalDuration + bufferMin });
 
   // Cliente: existente por id, ou cadastro rápido (upsert por telefone).
   let customerId = input.customerId ?? null;
@@ -280,10 +314,8 @@ export async function createManualBooking(
     }
   }
 
-  const priceCents =
-    input.location === "home" && service.priceHomeCents != null
-      ? service.priceHomeCents
-      : service.priceCents;
+  // Valor total = soma dos preços cobrados (snapshot no booking p/ retrocompat).
+  const priceCents = rows.reduce((sum, r) => sum + r.precoCobradoCents, 0);
 
   const professional = await prisma.professional.findFirst({
     where: { active: true },
@@ -294,7 +326,7 @@ export async function createManualBooking(
       const created = await tx.booking.create({
         data: {
           customerId,
-          serviceId: service.id,
+          serviceId: primary.id, // serviço primário (retrocompat)
           professionalId: professional?.id ?? null,
           startsAt: startsAt.toJSDate(),
           endsAt: endsAt.toJSDate(),
@@ -307,6 +339,17 @@ export async function createManualBooking(
             : {}),
           source: input.source,
         },
+      });
+      await tx.bookingItem.createMany({
+        data: rows.map((r, idx) => ({
+          bookingId: created.id,
+          serviceId: r.service.id,
+          durationMin: r.durationMin,
+          priceTabelaCents: r.precoTabelaCents,
+          priceCobradoCents: r.precoCobradoCents,
+          motivoAjuste: r.motivoAjuste,
+          sort: idx,
+        })),
       });
       await tx.bookingEvent.create({
         data: {

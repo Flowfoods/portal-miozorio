@@ -45,6 +45,7 @@ export function buildServiceHours(
 export async function getAvailability(
   serviceId: string,
   dateISO: string,
+  durationOverride?: number,
 ): Promise<string[]> {
   const settings = await getSettings();
   const service = await prisma.service.findUnique({ where: { id: serviceId } });
@@ -112,7 +113,12 @@ export async function getAvailability(
     date: dateISO,
     tz,
     workingHours,
-    durationMin: service.durationMin,
+    // Multi-serviço: o slot precisa caber a duração SOMADA dos itens; o buffer
+    // segue sendo só entre clientes (uma vez, não por item).
+    durationMin:
+      durationOverride && durationOverride > 0
+        ? durationOverride
+        : service.durationMin,
     bufferMin: service.bufferMin,
     stepMin: settings.slotStepMin,
     busy,

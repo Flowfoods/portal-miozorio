@@ -180,6 +180,8 @@ export default async function AdminAgendaPage({
           id: true,
           name: true,
           durationMin: true,
+          priceCents: true,
+          priceHomeCents: true,
           bookableOnline: true,
           isCourse: true,
         },

@@ -69,6 +69,7 @@ model Service {
   eventSessions EventSession[]
   waitlist      Waitlist[]
   availability  ServiceAvailability[]
+  bookingItems  BookingItem[]
 
   @@map("services")
 }
@@ -210,12 +211,34 @@ model Booking {
   eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
   events        BookingEvent[]
   notifications NotificationLog[]
+  items         BookingItem[]
   // ⚠️ CHECK (ends_at > starts_at) + constraint no_overlap EXCLUDE USING gist
   //    na migration SQL manual — ver migration.sql.
 
   @@index([startsAt])
   @@index([customerId])
   @@map("bookings")
+}
+
+/// Itens de um agendamento (multi-serviço). Um booking tem 1..N itens; cada um
+/// guarda o snapshot da duração e do preço de tabela + o preço efetivamente
+/// cobrado (editável por particularidade) e o motivo do ajuste. Base p/ BI.
+/// booking.serviceId/priceCents seguem como "primário/total" (retrocompat).
+model BookingItem {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId         String  @map("booking_id") @db.Uuid
+  serviceId         String  @map("service_id") @db.Uuid
+  durationMin       Int     @map("duration_min") // snapshot do catálogo
+  priceTabelaCents  Int     @map("price_tabela_cents") // snapshot do catálogo
+  priceCobradoCents Int     @map("price_cobrado_cents") // valor final cobrado
+  motivoAjuste      String? @map("motivo_ajuste") // ex.: "cabelo longo", "desconto"
+  sort              Int     @default(0)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_items")
 }
 
 /// Bloqueios de agenda (férias, evento fechado, compromisso). professional_id
