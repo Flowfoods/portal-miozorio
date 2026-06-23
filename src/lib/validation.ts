@@ -10,6 +10,9 @@ export const availabilityQuery = z.object({
   serviceId: z.string().regex(UUID_RE),
   date: z.string().regex(DATE_RE),
   location: z.enum(["studio", "home"]).optional(),
+  // Multi-serviço (encaixe admin): soma das durações dos itens. Ausente → usa a
+  // duração do próprio serviço. Cap defensivo de 12h.
+  durationMin: z.coerce.number().int().min(1).max(720).optional(),
 });
 
 export const createBookingBody = z.object({

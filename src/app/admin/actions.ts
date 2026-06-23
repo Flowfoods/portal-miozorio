@@ -92,6 +92,87 @@ function anamnesisFrom(formData: FormData): Record<string, string> | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+/** Lê os itens (multi-serviço) do FormData (JSON string). Defensivo. */
+function parseBookingItems(raw: FormDataEntryValue | null): {
+  serviceId: string;
+  precoCobradoCents: number;
+  motivoAjuste?: string;
+}[] {
+  if (typeof raw !== "string" || !raw) return [];
+  try {
+    const arr: unknown = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter(
+        (x): x is { serviceId: string; precoCobradoCents?: unknown; motivoAjuste?: unknown } =>
+          !!x && typeof (x as { serviceId?: unknown }).serviceId === "string",
+      )
+      .map((x) => {
+        const motivo =
+          typeof x.motivoAjuste === "string" && x.motivoAjuste.trim()
+            ? x.motivoAjuste.trim().slice(0, 200)
+            : undefined;
+        return {
+          serviceId: x.serviceId,
+          precoCobradoCents: Math.max(0, Math.round(Number(x.precoCobradoCents) || 0)),
+          ...(motivo ? { motivoAjuste: motivo } : {}),
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Cadastro rápido de cliente (feature 4): cria a partir de nome + telefone,
+ * checando duplicidade por telefone (se já existe, devolve a existente).
+ * Chamado direto pelo NovoAgendamento (client) — por isso retorna a cliente.
+ */
+export async function adminQuickCreateCustomer(
+  name: string,
+  phone: string,
+): Promise<
+  | {
+      ok: true;
+      existed: boolean;
+      customer: { id: string; name: string; phoneE164: string; strikes: number };
+    }
+  | { ok: false; message: string }
+> {
+  await requireAdmin();
+  const nome = name.trim();
+  if (nome.length < 2) {
+    return { ok: false, message: "Informe o nome da cliente." };
+  }
+  const e164 = normalizeE164BR(phone);
+  if (!e164) {
+    return { ok: false, message: "WhatsApp inválido — use DDD + número." };
+  }
+  const existing = await prisma.customer.findUnique({
+    where: { phoneE164: e164 },
+  });
+  if (existing) {
+    return {
+      ok: true,
+      existed: true,
+      customer: {
+        id: existing.id,
+        name: existing.name,
+        phoneE164: existing.phoneE164,
+        strikes: existing.strikes,
+      },
+    };
+  }
+  const c = await prisma.customer.create({
+    data: { name: nome, phoneE164: e164 },
+  });
+  return {
+    ok: true,
+    existed: false,
+    customer: { id: c.id, name: c.name, phoneE164: c.phoneE164, strikes: c.strikes },
+  };
+}
+
 export async function adminCreateManualBooking(
   formData: FormData,
 ): Promise<void> {
@@ -103,8 +184,11 @@ export async function adminCreateManualBooking(
   }
   const location = formData.get("location") === "home" ? "home" : "studio";
 
+  const items = parseBookingItems(formData.get("items"));
+  if (items.length === 0) fail("Escolha ao menos um serviço.");
+
   const r = await createManualBooking({
-    serviceId: String(formData.get("serviceId") ?? ""),
+    items,
     date: String(formData.get("date") ?? ""),
     time: String(formData.get("time") ?? ""),
     location,
@@ -125,16 +209,25 @@ export async function adminCreateManualBooking(
         startsAt: true,
         customer: { select: { name: true, phoneE164: true } },
         service: { select: { name: true } },
+        items: {
+          orderBy: { sort: "asc" },
+          select: { service: { select: { name: true } } },
+        },
       },
     });
     if (b) {
+      // Multi-serviço: lista os nomes ("A + B"); fallback no serviço primário.
+      const servico =
+        b.items.length > 0
+          ? b.items.map((i) => i.service.name).join(" + ")
+          : b.service.name;
       await dispatchEvent({
         kind: "booking_confirmation",
         dedupKey: `booking_confirmation:${r.id}`,
         data: {
           nome: b.customer.name,
           telefone: b.customer.phoneE164,
-          servico: b.service.name,
+          servico,
           inicio: b.startsAt.toISOString(),
         },
       });

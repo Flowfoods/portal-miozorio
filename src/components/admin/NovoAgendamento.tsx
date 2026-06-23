@@ -2,13 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { maskPhoneBR, formatDuration } from "@/lib/format";
-import { adminCreateManualBooking } from "@/app/admin/actions";
+import { maskPhoneBR, formatDuration, formatBRL } from "@/lib/format";
+import {
+  adminCreateManualBooking,
+  adminQuickCreateCustomer,
+} from "@/app/admin/actions";
 
 export interface AdminService {
   id: string;
   name: string;
   durationMin: number;
+  priceCents: number;
+  priceHomeCents: number | null;
   bookableOnline: boolean;
   isCourse: boolean;
 }
@@ -22,9 +27,26 @@ interface FoundCustomer {
 
 type Source = "admin_phone" | "admin_whatsapp";
 
+/** Item do agendamento (multi-serviço). preço em reais (string editável). */
+interface Item {
+  serviceId: string;
+  precoReais: string;
+  motivo: string;
+}
+
+function centsToReais(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+function reaisToCents(s: string): number {
+  const clean = s.replace(/[^\d,]/g, "").replace(",", ".");
+  const v = parseFloat(clean);
+  return Number.isFinite(v) ? Math.round(v * 100) : 0;
+}
+
 /**
- * Encaixe manual (M10.1) — tela única, pensada pra Mi criar em <40s pelo
- * celular quando a cliente liga/fecha no WhatsApp. Nasce confirmado.
+ * Encaixe manual (M10.1 + multi-serviço) — tela única, pensada pra Mi criar em
+ * <40s. Nasce confirmado. Vários serviços por atendimento, cada um com valor
+ * sugerido do catálogo e editável por particularidade + motivo do ajuste.
  */
 export default function NovoAgendamento({
   services,
@@ -36,12 +58,25 @@ export default function NovoAgendamento({
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
+  const priceFor = (svc: AdminService | undefined, loc: "studio" | "home") =>
+    !svc
+      ? 0
+      : loc === "home" && svc.priceHomeCents != null
+        ? svc.priceHomeCents
+        : svc.priceCents;
+
   const [location, setLocation] = useState<"studio" | "home">("studio");
+  const [items, setItems] = useState<Item[]>([
+    {
+      serviceId: services[0]?.id ?? "",
+      precoReais: centsToReais(priceFor(services[0], "studio")),
+      motivo: "",
+    },
+  ]);
   const [date, setDate] = useState(defaultDate);
   const [source, setSource] = useState<Source>("admin_phone");
 
-  // Horário: slots do motor + opção "fora do padrão" (valida só colisão).
+  // Horário: slots do motor (pela duração TOTAL) + "fora do padrão".
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [time, setTime] = useState("");
@@ -53,6 +88,7 @@ export default function NovoAgendamento({
   const [picked, setPicked] = useState<FoundCustomer | null>(null);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
   const [anamneseOpen, setAnamneseOpen] = useState(false);
   const [alergia, setAlergia] = useState("");
@@ -63,16 +99,54 @@ export default function NovoAgendamento({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const service = services.find((s) => s.id === serviceId) ?? null;
+  const svcById = new Map(services.map((s) => [s.id, s]));
+  const primaryId = items[0]?.serviceId ?? "";
+  const totalDuration = items.reduce(
+    (sum, it) => sum + (svcById.get(it.serviceId)?.durationMin ?? 0),
+    0,
+  );
+  const totalCents = items.reduce((sum, it) => sum + reaisToCents(it.precoReais), 0);
 
-  // Busca de horários do motor (vazio p/ noiva/debutante → usa horário livre).
+  // Atualiza um item; ao trocar o serviço, sugere o preço do catálogo.
+  function setItem(idx: number, patch: Partial<Item>) {
+    setItems((prev) =>
+      prev.map((it, i) => {
+        if (i !== idx) return it;
+        const next = { ...it, ...patch };
+        if (patch.serviceId !== undefined) {
+          next.precoReais = centsToReais(
+            priceFor(svcById.get(patch.serviceId), location),
+          );
+        }
+        return next;
+      }),
+    );
+  }
+  function addItem() {
+    const s = services[0];
+    setItems((prev) => [
+      ...prev,
+      {
+        serviceId: s?.id ?? "",
+        precoReais: centsToReais(priceFor(s, location)),
+        motivo: "",
+      },
+    ]);
+  }
+  function removeItem(idx: number) {
+    setItems((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
+  }
+
+  // Busca de horários do motor pela duração TOTAL (vazio → use horário livre).
   useEffect(() => {
-    if (!open || !serviceId || !date || freeTime) return;
+    if (!open || !primaryId || !date || freeTime || totalDuration <= 0) return;
     let alive = true;
     setSlotsLoading(true);
     setSlots(null);
     setTime("");
-    fetch(`/api/availability?serviceId=${serviceId}&date=${date}&location=${location}`)
+    fetch(
+      `/api/availability?serviceId=${primaryId}&date=${date}&location=${location}&durationMin=${totalDuration}`,
+    )
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { slots: string[] }) => alive && setSlots(d.slots))
       .catch(() => alive && setSlots([]))
@@ -80,7 +154,7 @@ export default function NovoAgendamento({
     return () => {
       alive = false;
     };
-  }, [open, serviceId, date, location, freeTime]);
+  }, [open, primaryId, date, location, freeTime, totalDuration]);
 
   // Busca de clientes (debounce simples).
   const debounce = useRef<ReturnType<typeof setTimeout>>();
@@ -100,17 +174,49 @@ export default function NovoAgendamento({
     return () => debounce.current && clearTimeout(debounce.current);
   }, [query, picked]);
 
-  const customerReady = picked
-    ? true
-    : newName.trim().length >= 2 && newPhone.replace(/\D/g, "").length >= 10;
-  const canSubmit = !!service && !!date && time.length >= 4 && customerReady;
+  const newCustomerReady =
+    newName.trim().length >= 2 && newPhone.replace(/\D/g, "").length >= 10;
+  const customerReady = picked ? true : newCustomerReady;
+  const itemsReady = items.length > 0 && items.every((it) => it.serviceId);
+  const canSubmit = itemsReady && !!date && time.length >= 4 && customerReady;
+
+  async function handleCreateCustomer() {
+    if (!newCustomerReady || creatingCustomer) return;
+    setCreatingCustomer(true);
+    setError(null);
+    try {
+      const r = await adminQuickCreateCustomer(newName, newPhone);
+      if (!r.ok) {
+        setError(r.message);
+        return;
+      }
+      setPicked(r.customer);
+      setQuery("");
+      setResults([]);
+      setNewName("");
+      setNewPhone("");
+    } catch {
+      setError("Não consegui cadastrar a cliente.");
+    } finally {
+      setCreatingCustomer(false);
+    }
+  }
 
   async function submit() {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     setError(null);
     const fd = new FormData();
-    fd.set("serviceId", serviceId);
+    fd.set(
+      "items",
+      JSON.stringify(
+        items.map((it) => ({
+          serviceId: it.serviceId,
+          precoCobradoCents: reaisToCents(it.precoReais),
+          motivoAjuste: it.motivo.trim() || undefined,
+        })),
+      ),
+    );
     fd.set("date", date);
     fd.set("time", time);
     fd.set("location", location);
@@ -126,7 +232,6 @@ export default function NovoAgendamento({
     if (ocasiao.trim()) fd.set("ocasiao", ocasiao.trim());
     try {
       await adminCreateManualBooking(fd);
-      // Sucesso: leva a Mi pro dia do agendamento e fecha o formulário.
       router.push(`/admin?data=${date}`);
       router.refresh();
       setOpen(false);
@@ -141,6 +246,14 @@ export default function NovoAgendamento({
   }
 
   function resetForm() {
+    setItems([
+      {
+        serviceId: services[0]?.id ?? "",
+        precoReais: centsToReais(priceFor(services[0], "studio")),
+        motivo: "",
+      },
+    ]);
+    setLocation("studio");
     setTime("");
     setFreeTime(false);
     setQuery("");
@@ -189,40 +302,98 @@ export default function NovoAgendamento({
       <div className="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         {/* ZONA ESQUERDA — formulário compacto */}
         <div className="space-y-4">
-          {/* Serviço + local lado a lado */}
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <label className="block text-sm">
-              <span className="text-mi-texto">Atendimento</span>
-              <select
-                value={serviceId}
-                onChange={(e) => setServiceId(e.target.value)}
-                className="input-mi mt-1 w-full"
+          {/* Local */}
+          <div className="inline-flex rounded-mi bg-mi-cinza p-1">
+            {(["studio", "home"] as const).map((loc) => (
+              <button
+                key={loc}
+                type="button"
+                onClick={() => setLocation(loc)}
+                className={`min-h-[38px] rounded-[10px] px-3 text-sm transition-colors ${
+                  location === loc
+                    ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
+                    : "text-mi-marrom"
+                }`}
               >
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {formatDuration(s.durationMin)}
-                    {s.bookableOnline ? "" : " (combinado)"}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {loc === "studio" ? "No estúdio" : "Em domicílio"}
+              </button>
+            ))}
+          </div>
 
-            <div className="inline-flex h-[46px] items-center rounded-mi bg-mi-cinza p-1">
-              {(["studio", "home"] as const).map((loc) => (
-                <button
-                  key={loc}
-                  type="button"
-                  onClick={() => setLocation(loc)}
-                  className={`min-h-[38px] rounded-[10px] px-3 text-sm transition-colors ${
-                    location === loc
-                      ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
-                      : "text-mi-marrom"
-                  }`}
+          {/* Serviços (multi) */}
+          <div className="space-y-3">
+            <span className="text-sm font-medium text-mi-marrom-escuro">
+              Serviços
+            </span>
+            {items.map((it, idx) => {
+              const svc = svcById.get(it.serviceId);
+              const tabela = priceFor(svc, location);
+              const cobrado = reaisToCents(it.precoReais);
+              const ajustado = svc != null && cobrado !== tabela;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-mi border border-mi-cinza bg-mi-superficie p-3"
                 >
-                  {loc === "studio" ? "No estúdio" : "Em domicílio"}
-                </button>
-              ))}
-            </div>
+                  <div className="flex items-start gap-2">
+                    <select
+                      value={it.serviceId}
+                      onChange={(e) => setItem(idx, { serviceId: e.target.value })}
+                      className="input-mi w-full text-sm"
+                    >
+                      {services.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} · {formatDuration(s.durationMin)}
+                          {s.bookableOnline ? "" : " (combinado)"}
+                        </option>
+                      ))}
+                    </select>
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(idx)}
+                        aria-label="Remover serviço"
+                        className="mt-1 shrink-0 text-mi-marrom hover:text-mi-marrom-escuro"
+                      >
+                        remover
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[160px_minmax(0,1fr)]">
+                    <label className="block text-xs text-mi-texto">
+                      Valor (R$)
+                      <input
+                        value={it.precoReais}
+                        inputMode="decimal"
+                        onChange={(e) => setItem(idx, { precoReais: e.target.value })}
+                        className="input-mi mt-1 w-full !py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs text-mi-texto">
+                      Motivo do ajuste (opcional)
+                      <input
+                        value={it.motivo}
+                        onChange={(e) => setItem(idx, { motivo: e.target.value })}
+                        placeholder="ex.: cabelo longo, desconto"
+                        className="input-mi mt-1 w-full !py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                  {ajustado && (
+                    <p className="mt-1 text-[11px] text-mi-marrom">
+                      Tabela: {formatBRL(tabela)} · cobrado {formatBRL(cobrado)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={addItem}
+              className="text-sm text-mi-marrom underline-offset-2 hover:underline"
+            >
+              ＋ Adicionar serviço
+            </button>
           </div>
 
           {/* Data */}
@@ -302,6 +473,14 @@ export default function NovoAgendamento({
                     className="input-mi"
                   />
                 </div>
+                <button
+                  type="button"
+                  disabled={!newCustomerReady || creatingCustomer}
+                  onClick={handleCreateCustomer}
+                  className="mt-2 min-h-[40px] w-full rounded-mi border border-mi-marrom px-4 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-cinza/50 disabled:opacity-50"
+                >
+                  {creatingCustomer ? "Cadastrando…" : "Cadastrar cliente"}
+                </button>
               </>
             )}
           </div>
@@ -383,7 +562,7 @@ export default function NovoAgendamento({
           </p>
         </div>
 
-        {/* ZONA DIREITA — horários do dia (aproveita a largura) */}
+        {/* ZONA DIREITA — horários do dia + resumo */}
         <div className="rounded-mi bg-mi-superficie p-3 lg:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-medium text-mi-marrom-escuro">
@@ -442,14 +621,35 @@ export default function NovoAgendamento({
               )}
             </div>
           )}
+
+          {/* Resumo */}
+          <dl className="mt-4 space-y-1 border-t border-mi-cinza/60 pt-3 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-mi-texto/70">Dia / horário</dt>
+              <dd className="text-mi-marrom-escuro">
+                {date
+                  ? new Date(`${date}T00:00`).toLocaleDateString("pt-BR")
+                  : "—"}
+                {time ? ` às ${time}` : ""}
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-mi-texto/70">Duração total</dt>
+              <dd className="text-mi-marrom-escuro">
+                {totalDuration > 0 ? formatDuration(totalDuration) : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between font-medium">
+              <dt className="text-mi-texto/70">Valor total</dt>
+              <dd className="text-mi-marrom-escuro">{formatBRL(totalCents)}</dd>
+            </div>
+          </dl>
         </div>
       </div>
 
       {/* Rodapé sticky: erro + salvar sempre visível */}
       <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-3 rounded-b-mi border-t border-mi-cinza/60 bg-mi-superficie-elevada px-4 py-3">
-        {error && (
-          <p className="mr-auto text-sm text-red-700">{error}</p>
-        )}
+        {error && <p className="mr-auto text-sm text-red-700">{error}</p>}
         <button
           type="button"
           disabled={!canSubmit || submitting}
