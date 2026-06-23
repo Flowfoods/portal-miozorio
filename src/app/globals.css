@@ -60,3 +60,25 @@
     animation: none;
   }
 }
+
+/* Scrollbar fina e discreta no tom da marca (miolo rolável da sidebar admin).
+   marrom #8A7361 = rgb(138 115 97). scrollbar-gutter: stable evita layout shift. */
+.mi-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(138 115 97 / 0.4) transparent;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.mi-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+.mi-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mi-scroll::-webkit-scrollbar-thumb {
+  background-color: rgb(138 115 97 / 0.32);
+  border-radius: 9999px;
+}
+.mi-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgb(138 115 97 / 0.55);
+}

@@ -23,6 +23,15 @@ export default function AdminSidebar() {
   const [open, setOpen] = useState(false); // gaveta mobile
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const asideRef = useRef<HTMLElement>(null);
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // Garante que o item ativo fique visível ao abrir/navegar (telas baixas).
+  useEffect(() => {
+    const el = activeRef.current;
+    if (!el) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: smooth ? "smooth" : "auto" });
+  }, [pathname]);
 
   // Restaura a preferência de recolhido (lg) do localStorage.
   useEffect(() => {
@@ -90,7 +99,7 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Barra superior só no mobile: hambúrguer + marca */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-mi-cinza/60 bg-mi-bege/90 px-4 py-3 backdrop-blur md:hidden">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-mi-cinza/60 bg-mi-superficie-nav/90 px-4 py-3 backdrop-blur md:hidden">
         <button
           ref={hamburgerRef}
           type="button"
@@ -99,7 +108,7 @@ export default function AdminSidebar() {
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls="admin-sidebar"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-mi text-mi-marrom-escuro transition-colors hover:bg-mi-cinza/50"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-mi text-mi-marrom-escuro transition-colors hover:bg-mi-marrom/10"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -130,7 +139,7 @@ export default function AdminSidebar() {
         role={open ? "dialog" : undefined}
         aria-modal={open ? true : undefined}
         aria-label="Navegação do painel"
-        className="group fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-mi-cinza/60 bg-mi-bege transition-transform duration-200 data-[open=true]:translate-x-0 motion-reduce:transition-none md:static md:z-auto md:w-16 md:translate-x-0 lg:w-60 data-[collapsed=true]:lg:w-16"
+        className="group fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-mi-cinza/60 bg-mi-superficie-nav shadow-nav-col transition-transform duration-200 data-[open=true]:translate-x-0 motion-reduce:transition-none md:sticky md:top-0 md:z-auto md:h-screen md:w-16 md:translate-x-0 lg:w-60 data-[collapsed=true]:lg:w-16"
       >
         {/* Cabeçalho: marca + recolher (lg) */}
         <div className="flex h-[57px] items-center gap-2 border-b border-mi-cinza/60 px-3 md:justify-center lg:justify-between group-data-[collapsed=true]:lg:justify-center">
@@ -146,7 +155,7 @@ export default function AdminSidebar() {
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
             aria-expanded={!collapsed}
             title={collapsed ? "Expandir" : "Recolher"}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-mi text-mi-marrom transition-colors hover:bg-mi-cinza/50 lg:inline-flex"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-mi text-mi-marrom transition-colors hover:bg-mi-marrom/10 lg:inline-flex"
           >
             <svg
               width="18"
@@ -168,7 +177,7 @@ export default function AdminSidebar() {
         {/* Navegação */}
         <nav
           aria-label="Navegação do painel"
-          className="flex-1 overflow-y-auto px-2 py-3"
+          className="mi-scroll flex-1 overflow-y-auto px-2 py-3"
         >
           <ul className="flex flex-col gap-1">
             {ADMIN_NAV.map((item) => {
@@ -176,6 +185,7 @@ export default function AdminSidebar() {
               return (
                 <li key={item.href}>
                   <Link
+                    ref={active ? activeRef : undefined}
                     href={item.href}
                     onClick={() => setOpen(false)}
                     aria-current={active ? "page" : undefined}
@@ -184,7 +194,7 @@ export default function AdminSidebar() {
                     className={`flex min-h-[44px] items-center gap-3 rounded-mi px-3 font-corpo text-sm transition-colors md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center ${
                       active
                         ? "bg-mi-marrom text-mi-branco"
-                        : "text-mi-texto hover:bg-mi-cinza/50"
+                        : "text-mi-texto hover:bg-mi-marrom/10"
                     }`}
                   >
                     {item.icon}
@@ -205,7 +215,7 @@ export default function AdminSidebar() {
             onClick={() => signOut({ callbackUrl: "/admin/login" })}
             title="Sair"
             aria-label="Sair"
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-mi px-3 font-corpo text-sm text-mi-marrom transition-colors hover:bg-mi-cinza/50 md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-mi px-3 font-corpo text-sm text-mi-marrom transition-colors hover:bg-mi-marrom/10 md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
