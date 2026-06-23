@@ -9,6 +9,13 @@
   --mi-marrom-escuro: #5c4a3d; /* hover/texto forte */
   --mi-texto: #3d3733;
 
+  /* Superfícies do painel /admin (sistema de 2-3 níveis): coluna de navegação
+     mais quente/profunda ("o móvel"), canvas de edição quase branco ("a mesa")
+     e cards elevados em branco. Neutros on-brand, diferença sutil e premium. */
+  --mi-superficie-nav: #e8dfd2; /* sidebar — bege/taupe levemente mais profundo */
+  --mi-superficie: #fbf9f5; /* canvas de edição — quase branco, descansa a vista */
+  --mi-superficie-elevada: #ffffff; /* cards/painéis dentro do conteúdo */
+
   --font-titulo-stack: var(--font-titulo), "Cormorant Garamond", serif;
   --font-corpo-stack: var(--font-corpo), "Jost", "Inter", sans-serif;
 

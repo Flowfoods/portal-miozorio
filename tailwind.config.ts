@@ -16,6 +16,10 @@ const config: Config = {
           marrom: "#8A7361",
           "marrom-escuro": "#5C4A3D",
           texto: "#3D3733",
+          // Superfícies do /admin (ver src/styles/tokens.css)
+          "superficie-nav": "var(--mi-superficie-nav)",
+          superficie: "var(--mi-superficie)",
+          "superficie-elevada": "var(--mi-superficie-elevada)",
         },
       },
       fontFamily: {
@@ -27,6 +31,8 @@ const config: Config = {
       },
       boxShadow: {
         suave: "0 8px 30px rgb(0 0 0 / 0.06)",
+        // Sombra lateral discreta que "descola" a sidebar do canvas.
+        "nav-col": "2px 0 8px rgb(0 0 0 / 0.04)",
       },
     },
   },

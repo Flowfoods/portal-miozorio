@@ -25,9 +25,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="min-h-screen md:flex">
+    <div className="min-h-screen bg-mi-superficie md:flex">
       <AdminSidebar />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 bg-mi-superficie">
         <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-10">
           {children}
         </main>
