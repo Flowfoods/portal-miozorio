@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { maskPhoneBR, formatDuration, formatBRL } from "@/lib/format";
 import {
   adminCreateManualBooking,
   adminQuickCreateCustomer,
+  previewBookingMessage,
 } from "@/app/admin/actions";
 
 export interface AdminService {
@@ -95,9 +96,19 @@ export default function NovoAgendamento({
   const [referencia, setReferencia] = useState("");
   const [ocasiao, setOcasiao] = useState("");
 
+  // Foto de referência (opcional, LGPD): só vai junto com consentimento.
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoConsent, setPhotoConsent] = useState(false);
+
   const [notify, setNotify] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Preview da mensagem (feature 5): modal de confirmação antes de criar.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const svcById = new Map(services.map((s) => [s.id, s]));
   const primaryId = items[0]?.serviceId ?? "";
@@ -178,7 +189,15 @@ export default function NovoAgendamento({
     newName.trim().length >= 2 && newPhone.replace(/\D/g, "").length >= 10;
   const customerReady = picked ? true : newCustomerReady;
   const itemsReady = items.length > 0 && items.every((it) => it.serviceId);
-  const canSubmit = itemsReady && !!date && time.length >= 4 && customerReady;
+  const photoOk = !photoFile || photoConsent; // foto exige consentimento
+  const canSubmit =
+    itemsReady && !!date && time.length >= 4 && customerReady && photoOk;
+
+  const servicoNames = items
+    .map((it) => svcById.get(it.serviceId)?.name)
+    .filter(Boolean)
+    .join(" + ");
+  const clienteNome = (picked?.name ?? newName).trim();
 
   async function handleCreateCustomer() {
     if (!newCustomerReady || creatingCustomer) return;
@@ -202,11 +221,54 @@ export default function NovoAgendamento({
     }
   }
 
+  function onPickPhoto(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(f);
+    setPhotoConsent(false);
+    setPhotoPreview(f ? URL.createObjectURL(f) : "");
+  }
+  function removePhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoConsent(false);
+    setPhotoPreview("");
+  }
+
+  // Abre o preview da mensagem (mesma do envio real) antes de criar.
+  async function openConfirm() {
+    if (!canSubmit || submitting) return;
+    setError(null);
+    setConfirmOpen(true);
+    if (!notify) {
+      setPreviewText(null);
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const txt = await previewBookingMessage({
+        nome: clienteNome,
+        servico: servicoNames,
+        date,
+        time,
+      });
+      setPreviewText(txt);
+    } catch {
+      setPreviewText(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   async function submit() {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     setError(null);
     const fd = new FormData();
+    if (photoFile) {
+      fd.set("photo", photoFile);
+      fd.set("photoConsent", photoConsent ? "on" : "");
+    }
     fd.set(
       "items",
       JSON.stringify(
@@ -265,6 +327,9 @@ export default function NovoAgendamento({
     setReferencia("");
     setOcasiao("");
     setAnamneseOpen(false);
+    removePhoto();
+    setConfirmOpen(false);
+    setPreviewText(null);
     setError(null);
   }
 
@@ -523,6 +588,56 @@ export default function NovoAgendamento({
             )}
           </div>
 
+          {/* Foto de referência (opcional, LGPD) */}
+          <div className="rounded-mi border border-mi-cinza bg-mi-superficie p-3">
+            <span className="text-sm font-medium text-mi-marrom-escuro">
+              Foto de referência{" "}
+              <span className="font-normal text-mi-texto/60">(opcional)</span>
+            </span>
+            {photoPreview ? (
+              <div className="mt-2 flex items-start gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoPreview}
+                  alt="Pré-visualização da foto"
+                  className="h-20 w-20 rounded-mi object-cover"
+                />
+                <div className="flex-1">
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="text-xs text-mi-marrom underline-offset-2 hover:underline"
+                  >
+                    remover foto
+                  </button>
+                  <label className="mt-2 flex items-start gap-2 text-xs text-mi-texto">
+                    <input
+                      type="checkbox"
+                      checked={photoConsent}
+                      onChange={(e) => setPhotoConsent(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-mi-marrom"
+                    />
+                    A cliente autorizou o registro da imagem (referência do
+                    atendimento).
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label className="mt-2 flex min-h-[44px] cursor-pointer items-center justify-center rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 text-sm text-mi-marrom hover:border-mi-marrom">
+                Anexar foto (JPG/PNG/WebP, até 5MB)
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={onPickPhoto}
+                  className="hidden"
+                />
+              </label>
+            )}
+            <p className="mt-2 text-[11px] text-mi-texto/55">
+              Guardada em local privado, só você vê. Pode remover depois.
+            </p>
+          </div>
+
           {/* Origem + notificação */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="inline-flex rounded-mi bg-mi-cinza p-1 text-sm">
@@ -653,12 +768,76 @@ export default function NovoAgendamento({
         <button
           type="button"
           disabled={!canSubmit || submitting}
-          onClick={submit}
+          onClick={openConfirm}
           className="min-h-[48px] w-full rounded-mi bg-mi-marrom px-6 text-sm text-white shadow-suave hover:bg-mi-marrom-escuro disabled:opacity-50 sm:w-auto"
         >
-          {submitting ? "Salvando…" : "Criar agendamento"}
+          Revisar e criar
         </button>
       </div>
+
+      {/* Preview da mensagem + confirmação (feature 5) */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => !submitting && setConfirmOpen(false)}
+            aria-hidden="true"
+            className="absolute inset-0 bg-mi-marrom-escuro/40 backdrop-blur-sm"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirmar agendamento"
+            className="relative w-full max-w-md rounded-mi bg-mi-superficie-elevada p-5 shadow-suave"
+          >
+            <h3 className="font-titulo text-xl text-mi-marrom-escuro">
+              Confirmar agendamento
+            </h3>
+            <p className="mt-1 text-sm text-mi-texto/70">
+              {servicoNames} · {date ? new Date(`${date}T00:00`).toLocaleDateString("pt-BR") : ""}
+              {time ? ` às ${time}` : ""}
+            </p>
+
+            {notify ? (
+              <div className="mt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-mi-marrom">
+                  Mensagem que será enviada no WhatsApp
+                </p>
+                <div className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-mi border border-mi-cinza bg-mi-superficie p-3 text-sm text-mi-texto">
+                  {previewLoading
+                    ? "carregando…"
+                    : (previewText ?? "(mensagem indisponível)")}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-mi border border-dashed border-mi-cinza bg-mi-superficie p-3 text-sm text-mi-texto/70">
+                “Avisar no WhatsApp” está desligado — nenhuma mensagem será
+                enviada à cliente.
+              </p>
+            )}
+
+            {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setConfirmOpen(false)}
+                className="min-h-[44px] rounded-mi border border-mi-cinza px-4 text-sm text-mi-marrom-escuro hover:bg-mi-cinza/50 disabled:opacity-50"
+              >
+                Voltar e editar
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={submit}
+                className="min-h-[44px] rounded-mi bg-mi-marrom px-5 text-sm text-white shadow-suave hover:bg-mi-marrom-escuro disabled:opacity-50"
+              >
+                {submitting ? "Salvando…" : "Confirmar e criar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,8 +27,11 @@ export interface EventInput {
  * Texto por tipo de evento, a partir dos templates editáveis pela Mi no
  * /admin (CMS, chaves "msg.*"). Placeholders {nome}/{servico}/{data}/{pontos}/
  * {motivo} são interpolados aqui. Default fiel mora no registry (content.ts).
+ *
+ * EXPORTADO: o preview do agendamento (feature 5) usa exatamente esta função —
+ * fonte única, sem cópia divergente do que o Evolution envia de verdade.
  */
-async function montarTexto(
+export async function buildEventMessage(
   kind: string,
   d: Record<string, unknown>,
 ): Promise<string | null> {
@@ -75,7 +78,7 @@ export async function dispatchEvent(input: EventInput): Promise<void> {
     if (exists) return;
 
     const number = String(input.data.telefone ?? "").replace(/\D/g, "");
-    const text = await montarTexto(input.kind, input.data);
+    const text = await buildEventMessage(input.kind, input.data);
     if (!number || !text) return;
 
     const res = await fetch(

@@ -13,6 +13,7 @@ import {
   adminCancelBooking,
   adminMarkNoShow,
   adminMarkCompleted,
+  adminDeleteBookingPhoto,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -89,6 +90,28 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             </p>
           )}
           <Anamnese data={b.anamnesis} />
+          {b.photoKey && (
+            <div className="mt-2 flex items-center gap-2">
+              <a
+                href={`/admin/media/${b.photoKey}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/admin/media/${b.photoKey}`}
+                  alt="Foto de referência da cliente"
+                  className="h-12 w-12 rounded-mi object-cover"
+                />
+              </a>
+              <form action={adminDeleteBookingPhoto}>
+                <input type="hidden" name="id" value={b.id} />
+                <button className="text-xs text-mi-marrom underline-offset-2 hover:underline">
+                  remover foto
+                </button>
+              </form>
+            </div>
+          )}
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs ${STATUS_STYLE[b.status]}`}

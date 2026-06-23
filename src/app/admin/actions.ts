@@ -12,7 +12,7 @@ import {
   resgatarRecompensa,
   ajustarPontosManual,
 } from "@/lib/clube-pontos";
-import { dispatchEvent } from "@/lib/notify";
+import { dispatchEvent, buildEventMessage } from "@/lib/notify";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
@@ -29,6 +29,9 @@ import {
   MAX_UPLOAD_BYTES,
   processUpload,
   deleteMediaFile,
+  processPrivatePhoto,
+  deletePrivatePhoto,
+  MAX_BOOKING_PHOTO_BYTES,
 } from "@/lib/media";
 
 /**
@@ -173,6 +176,49 @@ export async function adminQuickCreateCustomer(
   };
 }
 
+/**
+ * Preview da mensagem de confirmação (feature 5) — usa o MESMO template do
+ * Evolution (buildEventMessage), com o mesmo cálculo de início (TZ), para o
+ * texto exibido ser idêntico ao que será enviado. Não envia nada.
+ */
+export async function previewBookingMessage(input: {
+  nome: string;
+  servico: string;
+  date: string;
+  time: string;
+}): Promise<string | null> {
+  await requireAdmin();
+  const settings = await getSettings();
+  const inicio = DateTime.fromISO(`${input.date}T${input.time}`, {
+    zone: settings.timezone,
+  });
+  return buildEventMessage("booking_confirmation", {
+    nome: input.nome,
+    servico: input.servico,
+    inicio: inicio.isValid ? inicio.toJSDate().toISOString() : undefined,
+  });
+}
+
+/** Remove a foto de referência de um agendamento (LGPD — exclusão posterior). */
+export async function adminDeleteBookingPhoto(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const b = await prisma.booking.findUnique({
+    where: { id },
+    select: { photoKey: true },
+  });
+  if (b?.photoKey) {
+    await deletePrivatePhoto(b.photoKey);
+    await prisma.booking.update({
+      where: { id },
+      data: { photoKey: null, photoConsentAt: null },
+    });
+  }
+  refreshAgenda();
+}
+
 export async function adminCreateManualBooking(
   formData: FormData,
 ): Promise<void> {
@@ -187,6 +233,27 @@ export async function adminCreateManualBooking(
   const items = parseBookingItems(formData.get("items"));
   if (items.length === 0) fail("Escolha ao menos um serviço.");
 
+  // Foto de referência da cliente (opcional, LGPD): valida tipo/tamanho/consent
+  // e processa ANTES de criar (falha cedo). Storage PRIVADO; nunca URL pública.
+  const photo = formData.get("photo");
+  let photoKey: string | null = null;
+  if (photo instanceof File && photo.size > 0) {
+    if (formData.get("photoConsent") !== "on") {
+      fail("Para anexar a foto, marque o consentimento da cliente.");
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
+      fail("A foto deve ser JPG, PNG ou WebP.");
+    }
+    if (photo.size > MAX_BOOKING_PHOTO_BYTES) {
+      fail("Foto muito grande (máximo 5MB).");
+    }
+    try {
+      photoKey = await processPrivatePhoto(Buffer.from(await photo.arrayBuffer()));
+    } catch {
+      fail("Não consegui processar a imagem. Tente outra foto.");
+    }
+  }
+
   const r = await createManualBooking({
     items,
     date: String(formData.get("date") ?? ""),
@@ -198,7 +265,16 @@ export async function adminCreateManualBooking(
     customerPhone: String(formData.get("customerPhone") ?? "") || undefined,
     anamnesis: anamnesisFrom(formData),
   });
-  if (!r.ok) fail(r.message);
+  if (!r.ok) {
+    if (photoKey) await deletePrivatePhoto(photoKey); // sem órfão no volume
+    fail(r.message);
+  }
+  if (photoKey) {
+    await prisma.booking.update({
+      where: { id: r.id },
+      data: { photoKey, photoConsentAt: new Date() },
+    });
+  }
 
   // "Avisar no WhatsApp": emite confirmação ao n8n (env-gated, idempotente por
   // booking). Sem N8N_WEBHOOK_URL nada é enviado — não simula.
