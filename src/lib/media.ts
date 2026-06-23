@@ -50,6 +50,45 @@ export async function deleteMediaFile(url: string): Promise<void> {
   await unlink(path.join(MEDIA_DIR, name)).catch(() => undefined);
 }
 
+// ── Fotos PRIVADAS (foto de referência da cliente — LGPD) ──────────────────
+// Ficam num subdir `priv/` do volume; nunca servidas por /media (público).
+// Acesso só pela rota autenticada /admin/media. Guardamos só a chave (nome).
+export const PRIVATE_MEDIA_DIR = path.join(MEDIA_DIR, "priv");
+/** Limite por foto de cliente (LGPD/feature 2): ~5MB antes da compressão. */
+export const MAX_BOOKING_PHOTO_BYTES = 5 * 1024 * 1024;
+
+/** Processa uma foto privada (WebP, 1600px) → devolve a chave (nome do arquivo). */
+export async function processPrivatePhoto(input: Buffer): Promise<string> {
+  const webp = await sharp(input)
+    .rotate()
+    .resize(MAX_DIM, MAX_DIM, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer();
+  const name = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.webp`;
+  await mkdir(PRIVATE_MEDIA_DIR, { recursive: true });
+  await writeFile(path.join(PRIVATE_MEDIA_DIR, name), webp);
+  return name;
+}
+
+/** Lê uma foto privada por chave (path traversal travado). null se não existir. */
+export async function readPrivatePhoto(key: string): Promise<Buffer | null> {
+  const name = path.basename(key); // só o arquivo, ignora diretórios
+  if (!name.endsWith(".webp")) return null;
+  const file = path.join(PRIVATE_MEDIA_DIR, name);
+  try {
+    const { readFile } = await import("node:fs/promises");
+    return await readFile(file);
+  } catch {
+    return null;
+  }
+}
+
+/** Apaga a foto privada (best-effort). */
+export async function deletePrivatePhoto(key: string): Promise<void> {
+  const name = path.basename(key);
+  await unlink(path.join(PRIVATE_MEDIA_DIR, name)).catch(() => undefined);
+}
+
 /**
  * Fotos publicadas de uma categoria, na ordem do painel. Nunca lança: sem
  * banco (build local, prerender) devolve [] e o site cai no fallback elegante.

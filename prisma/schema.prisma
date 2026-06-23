@@ -203,6 +203,10 @@ model Booking {
   depositPaidAt  DateTime?     @map("deposit_paid_at") @db.Timestamptz
   anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
   source         String        @default("web") // web | whatsapp | manual
+  // Foto de referência da cliente (LGPD): chave em storage PRIVADO (nunca URL
+  // pública); servida só via /admin/media. Consentimento explícito obrigatório.
+  photoKey       String?       @map("photo_key")
+  photoConsentAt DateTime?     @map("photo_consent_at") @db.Timestamptz
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 
   customer      Customer          @relation(fields: [customerId], references: [id])
