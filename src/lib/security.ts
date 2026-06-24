@@ -3,7 +3,7 @@
  * Constantes puras — compartilhadas entre server actions, NextAuth e UI.
  */
 
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
 /** Tamanho mínimo de senha do painel (M13: senha forte). */
 export const MIN_SENHA = 12;
@@ -45,4 +45,23 @@ export function generateResetToken(): string {
  *  já é aleatório de 256 bits, não é senha — não precisa de salt/bcrypt. */
 export function hashResetToken(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
+}
+
+// ── Cron interno (lembretes, RFV...) ─────────────────────────────────────────
+
+/**
+ * Autoriza uma chamada de cron pelo header `Authorization: Bearer $CRON_SECRET`.
+ * Comparação em tempo constante; fail-closed (sem a env → false). Usado pelos
+ * endpoints /api/cron/* disparados pelo Dokploy Schedules.
+ */
+export function cronAuthorized(req: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const header = req.headers.get("authorization") ?? "";
+  const m = header.match(/^Bearer\s+(.+)$/);
+  if (!m) return false;
+  const provided = Buffer.from(m[1]!);
+  const expected = Buffer.from(secret);
+  if (provided.length !== expected.length) return false;
+  return timingSafeEqual(provided, expected);
 }

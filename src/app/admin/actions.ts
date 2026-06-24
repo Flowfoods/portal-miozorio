@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
-import { Prisma } from "@prisma/client";
+import { Prisma, FunilEtapa } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
@@ -849,6 +849,117 @@ export async function adminUpdateCustomerCare(
     },
   });
   refreshFicha(id);
+}
+
+/**
+ * CRM: tags, origem (captação), opt-in de WhatsApp (R3/LGPD) e etapa do funil
+ * de noiva. Os scores RFV/LTV são calculados pelo job (não editáveis aqui).
+ */
+export async function adminUpdateCustomerCrm(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) fail("Cliente não encontrada.");
+
+  const tags = String(formData.get("tags") ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const origem = String(formData.get("origem") ?? "").trim() || null;
+  const optIn = formData.get("whatsappOptIn") === "on";
+  const etapaRaw = String(formData.get("funilEtapa") ?? "");
+  const funilEtapa = (Object.values(FunilEtapa) as string[]).includes(etapaRaw)
+    ? (etapaRaw as FunilEtapa)
+    : null;
+
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      tags,
+      origem,
+      funilEtapa,
+      whatsappOptIn: optIn,
+      // registra o 1º opt-in; mantém o histórico se já existia (LGPD)
+      whatsappOptInAt:
+        optIn && !customer.whatsappOptIn
+          ? new Date()
+          : customer.whatsappOptInAt,
+    },
+  });
+  refreshFicha(id);
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/crm/funil");
+}
+
+// ── Jornadas (CRM — Pilar 3) ─────────────────────────────────────────────────
+
+function refreshJornadas() {
+  revalidatePath("/admin/crm/jornadas");
+  revalidatePath("/admin/crm");
+}
+
+/** Liga/desliga uma jornada. Ligada = passa a enviar (com opt-in) no próximo cron. */
+export async function adminToggleJornada(
+  jornadaId: string,
+  ativo: boolean,
+): Promise<void> {
+  await requireAdmin();
+  await prisma.jornada.update({ where: { id: jornadaId }, data: { ativo } });
+  refreshJornadas();
+}
+
+// Rascunhos sem emoji, voz da Mi — placeholders até a Mi aprovar (R20).
+const JORNADAS_PADRAO: {
+  nome: string;
+  gatilho: string;
+  descricao: string;
+  template: string;
+}[] = [
+  {
+    nome: "Boas-vindas",
+    gatilho: "boas_vindas",
+    descricao: "Após o 1º atendimento concluído. <!-- APROVAR COM A MI -->",
+    template:
+      "Que alegria ter você por aqui, {nome}! Obrigada pela confiança no seu primeiro cuidado comigo. Quando quiser marcar o próximo, é só me chamar por aqui.",
+  },
+  {
+    nome: "Manutenção",
+    gatilho: "manutencao",
+    descricao:
+      "Lembrete de recompra após um tempo sem voltar (cadência em business_settings). <!-- APROVAR COM A MI -->",
+    template:
+      "Oi, {nome}! Já faz um tempinho do seu {servico} — que tal reservarmos a sua manutenção? Me chama por aqui que a gente encontra o melhor horário.",
+  },
+  {
+    nome: "Reativação",
+    gatilho: "reativacao",
+    descricao:
+      "Para clientes em risco ou hibernando (segmento RFV). <!-- APROVAR COM A MI -->",
+    template:
+      "Oi, {nome}! Senti sua falta por aqui. Quando quiser reservar um cuidado só para você, é só me chamar — vou adorar te receber de novo.",
+  },
+];
+
+/** Cria as jornadas padrão (DESATIVADAS) se ainda não houver nenhuma. */
+export async function adminSeedJornadasPadrao(): Promise<void> {
+  await requireAdmin();
+  if ((await prisma.jornada.count()) > 0) {
+    refreshJornadas();
+    return;
+  }
+  for (const j of JORNADAS_PADRAO) {
+    await prisma.jornada.create({
+      data: {
+        nome: j.nome,
+        gatilho: j.gatilho,
+        descricao: j.descricao,
+        ativo: false,
+        etapas: { create: { ordem: 1, esperaHoras: 0, template: j.template } },
+      },
+    });
+  }
+  refreshJornadas();
 }
 
 // ── Clube de Fidelidade ─────────────────────────────────────────────────────
