@@ -63,12 +63,45 @@ export async function buildEventMessage(
   return null;
 }
 
-/** Envia o WhatsApp do evento (best-effort, idempotente, env-gated). */
-export async function dispatchEvent(input: EventInput): Promise<void> {
+/** True se as 3 envs da Evolution estão setadas (URL/KEY/INSTANCE). */
+export function evolutionConfigured(): boolean {
+  return !!(
+    process.env.EVOLUTION_API_URL &&
+    process.env.EVOLUTION_API_KEY &&
+    process.env.EVOLUTION_INSTANCE
+  );
+}
+
+/**
+ * Envia UM texto pela Evolution (sendText). Fonte única do request HTTP —
+ * usada pelos eventos do app (dispatchEvent) e pelo cron diário de lembretes
+ * (src/lib/reminders.ts). Lança se a Evolution não estiver configurada ou se a
+ * API responder erro; quem chama decide o tratamento (best-effort).
+ */
+export async function sendEvolutionText(
+  number: string,
+  text: string,
+): Promise<void> {
   const base = process.env.EVOLUTION_API_URL;
   const apikey = process.env.EVOLUTION_API_KEY;
   const instance = process.env.EVOLUTION_INSTANCE;
-  if (!base || !apikey || !instance) return; // ainda não configurado
+  if (!base || !apikey || !instance) {
+    throw new Error("Evolution não configurada");
+  }
+  const res = await fetch(
+    `${base.replace(/\/$/, "")}/message/sendText/${instance}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey },
+      body: JSON.stringify({ number, text }),
+    },
+  );
+  if (!res.ok) throw new Error(`Evolution respondeu ${res.status}`);
+}
+
+/** Envia o WhatsApp do evento (best-effort, idempotente, env-gated). */
+export async function dispatchEvent(input: EventInput): Promise<void> {
+  if (!evolutionConfigured()) return; // ainda não configurado
 
   try {
     // Idempotência (R10): já enviamos este evento? Então não repete.
@@ -81,15 +114,7 @@ export async function dispatchEvent(input: EventInput): Promise<void> {
     const text = await buildEventMessage(input.kind, input.data);
     if (!number || !text) return;
 
-    const res = await fetch(
-      `${base.replace(/\/$/, "")}/message/sendText/${instance}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey },
-        body: JSON.stringify({ number, text }),
-      },
-    );
-    if (!res.ok) throw new Error(`Evolution respondeu ${res.status}`);
+    await sendEvolutionText(number, text);
 
     await prisma.notificationLog.create({
       data: { kind: input.kind, dedupKey: input.dedupKey },

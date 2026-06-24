@@ -323,7 +323,8 @@ export const CONTENT_FIELDS: ContentField[] = [
   // As chaves "msg.*" alimentam as mensagens enviadas pela Mi:
   //  • club_points e booking_confirmation → enviadas pelo app (src/lib/notify.ts).
   //  • lembrete_24h, aniversario, aniversario_cliente, pos_atendimento, reconexao
-  //    → enviadas pelo cron do n8n (lê site_content; ver n8n/README.md).
+  //    → enviadas pelo cron diário do portal (src/lib/reminders.ts,
+  //      POST /api/cron/lembretes), que lê estes mesmos templates.
   // Placeholders entre chaves são trocados na hora do envio. {data} = data/hora.
   {
     key: "msg.club_points",
@@ -350,7 +351,7 @@ export const CONTENT_FIELDS: ContentField[] = [
       "Oi, {nome}!\n\nPassando pra lembrar do seu horário de {servico} amanhã ({data}). Te espero! Se precisar remarcar, é só me chamar por aqui.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora). Enviado pelo n8n.",
+    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora). Enviado automaticamente no dia certo.",
   },
   {
     key: "msg.aniversario",
@@ -359,7 +360,7 @@ export const CONTENT_FIELDS: ContentField[] = [
       "Feliz aniversário, {nome}!\n\nQue seu dia seja tão lindo quanto você. Passa aqui pra gente comemorar com um cuidado especial.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+    ajuda: "Disponível: {nome}. Enviado automaticamente no dia certo.",
   },
   {
     key: "msg.aniversario_cliente",
@@ -368,7 +369,7 @@ export const CONTENT_FIELDS: ContentField[] = [
       "Oi, {nome}!\n\nFaz 1 ano que a gente se conheceu — obrigada pela confiança desde então. Bora marcar um próximo encontro?",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+    ajuda: "Disponível: {nome}. Enviado automaticamente no dia certo.",
   },
   {
     key: "msg.pos_atendimento",
@@ -377,7 +378,7 @@ export const CONTENT_FIELDS: ContentField[] = [
       "Oi, {nome}!\n\nFoi um prazer te atender de {servico} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização).",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}, {servico}. Enviado pelo n8n.",
+    ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia certo.",
   },
   {
     key: "msg.reconexao",
@@ -386,7 +387,7 @@ export const CONTENT_FIELDS: ContentField[] = [
       "Oi, {nome}!\n\nFaz um tempinho que a gente não se vê — saudades! Que tal remarcar um cuidado pra você? É só me chamar por aqui.",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}. Enviado pelo n8n.",
+    ajuda: "Disponível: {nome}. Enviado automaticamente no dia certo.",
   },
 ];
 
