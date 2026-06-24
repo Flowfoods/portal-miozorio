@@ -174,6 +174,43 @@ export async function processReminders(
   return summary;
 }
 
+export interface ReminderPreview {
+  total: number;
+  porTipo: Record<string, number>;
+  amostra: { kind: string; telefone: string; texto: string }[];
+}
+
+/** Telefone mascarado para o dry-run (só os 4 últimos dígitos). */
+function maskPhone(p: string): string {
+  const d = String(p ?? "").replace(/\D/g, "");
+  return d.length >= 4 ? `***${d.slice(-4)}` : "***";
+}
+
+/**
+ * Dry-run: mostra o que SERIA enviado hoje (contagem por tipo + amostra com
+ * telefone mascarado e o texto final), SEM enviar nem gravar. Para validar o
+ * SQL/copy em produção com segurança antes de ligar o agendamento.
+ */
+export async function previewDueReminders(): Promise<ReminderPreview> {
+  const [rows, content] = await Promise.all([
+    fetchDueReminders(),
+    getSiteContent(),
+  ]);
+  const porTipo: Record<string, number> = {};
+  const amostra: ReminderPreview["amostra"] = [];
+  for (const r of rows) {
+    porTipo[r.kind] = (porTipo[r.kind] ?? 0) + 1;
+    if (amostra.length < 10) {
+      amostra.push({
+        kind: r.kind,
+        telefone: maskPhone(r.telefone),
+        texto: buildReminderText(content, r) ?? "(sem template)",
+      });
+    }
+  }
+  return { total: rows.length, porTipo, amostra };
+}
+
 /** Roda os lembretes do dia (best-effort, idempotente, env-gated). */
 export async function runDailyReminders(): Promise<ReminderSummary> {
   if (!evolutionConfigured()) {

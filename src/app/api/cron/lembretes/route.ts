@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { runDailyReminders } from "@/lib/reminders";
+import { runDailyReminders, previewDueReminders } from "@/lib/reminders";
 
 /**
  * Cron diário dos lembretes por tempo (substitui o workflow do n8n).
@@ -29,6 +29,11 @@ function authorized(req: Request): boolean {
 export async function POST(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  // ?dry=1 → só mostra o que seria enviado hoje, sem enviar nem gravar.
+  if (new URL(req.url).searchParams.get("dry") === "1") {
+    const preview = await previewDueReminders();
+    return NextResponse.json({ ok: true, dryRun: true, ...preview });
   }
   const summary = await runDailyReminders();
   return NextResponse.json({ ok: true, ...summary });
