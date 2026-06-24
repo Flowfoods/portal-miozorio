@@ -40,7 +40,8 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
 }
 
 export default async function CrmPage() {
-  const [segGroups, funilGroups, ltvAgg, ultimoCalc] = await Promise.all([
+  const [segGroups, funilGroups, ltvAgg, ultimoCalc, recompraRows, aniversRows] =
+    await Promise.all([
     prisma.customer.groupBy({
       by: ["rfvSegmento"],
       where: { rfvSegmento: { not: null } },
@@ -61,6 +62,20 @@ export default async function CrmPage() {
       orderBy: { rfvCalculadoEm: "desc" },
       select: { rfvCalculadoEm: true },
     }),
+    // Recompra: % da base (≥1 concluído, sem funil) que voltou (≥2 concluídos).
+    prisma.$queryRawUnsafe<{ base: number; recompra: number }[]>(`
+      SELECT count(*)::int AS base, count(*) FILTER (WHERE t.n >= 2)::int AS recompra
+      FROM (SELECT customer_id, count(*) AS n FROM bookings
+              WHERE status = 'completed' GROUP BY customer_id) t
+      JOIN customers c ON c.id = t.customer_id
+      WHERE c.funil_etapa IS NULL
+    `),
+    // Aniversariantes do mês corrente.
+    prisma.$queryRawUnsafe<{ n: number }[]>(`
+      SELECT count(*)::int AS n FROM customers
+      WHERE birth_date IS NOT NULL
+        AND EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM now())
+    `),
   ]);
 
   const segCount = new Map(segGroups.map((g) => [g.rfvSegmento, g._count._all]));
@@ -73,6 +88,10 @@ export default async function CrmPage() {
         .setZone("America/Sao_Paulo")
         .toFormat("dd/MM 'às' HH:mm")
     : null;
+  const recompra = recompraRows[0] ?? { base: 0, recompra: 0 };
+  const recompraPct =
+    recompra.base > 0 ? Math.round((recompra.recompra / recompra.base) * 100) : 0;
+  const aniversariantes = aniversRows[0]?.n ?? 0;
 
   return (
     <>
@@ -94,7 +113,22 @@ export default async function CrmPage() {
           value={String(Array.from(funilCount.values()).reduce((s, n) => s + n, 0))}
           hint="contatos em andamento"
         />
+        <Card
+          label="Taxa de recompra"
+          value={`${recompraPct}%`}
+          hint={`${recompra.recompra} de ${recompra.base} voltaram`}
+        />
+        <Card
+          label="Aniversariantes do mês"
+          value={String(aniversariantes)}
+        />
       </div>
+
+      <p className="mt-3 text-sm">
+        <Link href="/admin/resumo" className="text-mi-marrom hover:underline">
+          Ver os números do mês (faturamento, no-show, serviços) →
+        </Link>
+      </p>
 
       <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">
         Segmentos (Matriz RFV)
