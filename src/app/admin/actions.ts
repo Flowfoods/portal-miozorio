@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
-import { Prisma } from "@prisma/client";
+import { Prisma, FunilEtapa } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
@@ -849,6 +849,47 @@ export async function adminUpdateCustomerCare(
     },
   });
   refreshFicha(id);
+}
+
+/**
+ * CRM: tags, origem (captação), opt-in de WhatsApp (R3/LGPD) e etapa do funil
+ * de noiva. Os scores RFV/LTV são calculados pelo job (não editáveis aqui).
+ */
+export async function adminUpdateCustomerCrm(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer) fail("Cliente não encontrada.");
+
+  const tags = String(formData.get("tags") ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const origem = String(formData.get("origem") ?? "").trim() || null;
+  const optIn = formData.get("whatsappOptIn") === "on";
+  const etapaRaw = String(formData.get("funilEtapa") ?? "");
+  const funilEtapa = (Object.values(FunilEtapa) as string[]).includes(etapaRaw)
+    ? (etapaRaw as FunilEtapa)
+    : null;
+
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      tags,
+      origem,
+      funilEtapa,
+      whatsappOptIn: optIn,
+      // registra o 1º opt-in; mantém o histórico se já existia (LGPD)
+      whatsappOptInAt:
+        optIn && !customer.whatsappOptIn
+          ? new Date()
+          : customer.whatsappOptInAt,
+    },
+  });
+  refreshFicha(id);
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/crm/funil");
 }
 
 // ── Clube de Fidelidade ─────────────────────────────────────────────────────

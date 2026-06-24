@@ -11,6 +11,7 @@ import { contarIndicacoesFechadas } from "@/lib/clube";
 import {
   adminUpdateCustomer,
   adminUpdateCustomerCare,
+  adminUpdateCustomerCrm,
   adminSetPhotoConsent,
   adminResetStrikes,
   adminEnrollCustomer,
@@ -312,6 +313,100 @@ export default async function FichaClientePage({
               </button>
             </form>
           )}
+        </section>
+
+        {/* CRM — segmentação RFV + funil + opt-in */}
+        <section className="rounded-mi bg-mi-branco p-5 shadow-suave lg:col-span-2">
+          <h2 className="mb-3 text-xl">CRM</h2>
+          <div className="mb-4 flex flex-wrap gap-2 text-sm">
+            {customer.rfvSegmento ? (
+              <>
+                <span className="rounded-full bg-mi-bege px-3 py-1 font-medium text-mi-marrom-escuro">
+                  {customer.rfvSegmento}
+                </span>
+                <span className="rounded-full bg-mi-bege/50 px-3 py-1 text-mi-texto/80">
+                  R {customer.rScore} · F {customer.fScore} · V {customer.vScore}
+                </span>
+                <span className="rounded-full bg-mi-bege/50 px-3 py-1 text-mi-texto/80">
+                  LTV previsto {formatBRL(customer.ltvPrevistoCents ?? 0)}
+                </span>
+              </>
+            ) : (
+              <span className="text-mi-texto/60">
+                Segmentação ainda não calculada (roda todo dia automaticamente).
+              </span>
+            )}
+          </div>
+          <form action={adminUpdateCustomerCrm} className="space-y-3 text-sm">
+            <input type="hidden" name="id" value={customer.id} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-xs text-mi-texto/60">
+                  Etiquetas (separadas por vírgula)
+                </span>
+                <input
+                  name="tags"
+                  defaultValue={customer.tags.join(", ")}
+                  placeholder="vip, indica muito, pele sensível"
+                  className="input-mi w-full"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-mi-texto/60">
+                  Origem (como chegou)
+                </span>
+                <input
+                  name="origem"
+                  defaultValue={customer.origem ?? ""}
+                  placeholder="instagram, indicação, anúncio…"
+                  className="input-mi w-full"
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-xs text-mi-texto/60">
+                Etapa do funil de noiva/debutante
+              </span>
+              <select
+                name="funilEtapa"
+                defaultValue={customer.funilEtapa ?? ""}
+                className="input-mi w-full"
+              >
+                <option value="">— não está no funil</option>
+                <option value="lead">Lead</option>
+                <option value="previa_agendada">Prévia agendada</option>
+                <option value="previa_feita">Prévia feita</option>
+                <option value="contrato_fechado">Contrato fechado</option>
+                <option value="evento">Evento</option>
+                <option value="pos_evento">Pós-evento</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="whatsappOptIn"
+                defaultChecked={customer.whatsappOptIn}
+                className="h-4 w-4 accent-mi-marrom"
+              />
+              <span>
+                Autoriza mensagens de relacionamento no WhatsApp (jornadas)
+                {customer.whatsappOptInAt && (
+                  <span className="text-mi-texto/50">
+                    {" "}· desde{" "}
+                    {DateTime.fromJSDate(customer.whatsappOptInAt)
+                      .setZone(tz)
+                      .toFormat("dd/LL/yyyy")}
+                  </span>
+                )}
+              </span>
+            </label>
+            <SubmitButton
+              pendingLabel="Salvando…"
+              className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white"
+            >
+              Salvar CRM
+            </SubmitButton>
+          </form>
         </section>
 
         {/* Clube de Fidelidade */}
