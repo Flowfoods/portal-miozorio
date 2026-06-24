@@ -153,6 +153,9 @@ export default async function CrmPage() {
         <Link href="/admin/crm/funil" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Funil de noiva →
         </Link>
+        <Link href="/admin/crm/jornadas" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
+          Jornadas →
+        </Link>
         <Link href="/admin/clientes" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Todas as clientes →
         </Link>

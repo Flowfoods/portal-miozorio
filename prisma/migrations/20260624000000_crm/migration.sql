@@ -70,3 +70,8 @@ CREATE TABLE "envios_mensagem" (
 CREATE UNIQUE INDEX "envios_mensagem_dedup_key_key" ON "envios_mensagem"("dedup_key");
 CREATE INDEX "envios_mensagem_customer_id_idx" ON "envios_mensagem"("customer_id");
 CREATE INDEX "envios_mensagem_status_idx" ON "envios_mensagem"("status");
+
+-- Cadência da jornada de manutenção (dias). Default 60 — A CONFIRMAR COM A MI.
+INSERT INTO "business_settings" ("key", "value", "updatedAt")
+VALUES ('jornada_manutencao_dias', '60'::jsonb, CURRENT_TIMESTAMP)
+ON CONFLICT ("key") DO NOTHING;
