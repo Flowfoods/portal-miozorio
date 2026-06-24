@@ -32,7 +32,11 @@ export default async function CrmRfvPage({
       : null;
 
   const clientes = await prisma.customer.findMany({
-    where: seg ? { rfvSegmento: seg } : { rfvSegmento: { not: null } },
+    // noivas/deb ficam fora da matriz, mesmo com score antigo (R2)
+    where: {
+      funilEtapa: null,
+      ...(seg ? { rfvSegmento: seg } : { rfvSegmento: { not: null } }),
+    },
     orderBy: [{ ltvPrevistoCents: "desc" }, { name: "asc" }],
     take: 300,
     select: {
