@@ -70,9 +70,8 @@ export function segmentoRFV(r: number, f: number, v: number): string {
   if (r <= 2) return f >= 3 || v >= 3 ? "Em risco" : "Hibernando";
   // r ∈ 3..5 (ainda ativas):
   if (f >= 4) return "Fiéis";
-  if (f <= 2 && v >= 3) return "Promissoras";
-  if (f <= 2) return "Promissoras";
-  return "Fiéis";
+  if (f <= 2) return "Promissoras"; // recente com poucas visitas
+  return "Fiéis"; // f == 3 → recorrente
 }
 
 /**

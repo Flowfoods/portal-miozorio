@@ -44,7 +44,8 @@ export default async function CrmPage() {
     await Promise.all([
     prisma.customer.groupBy({
       by: ["rfvSegmento"],
-      where: { rfvSegmento: { not: null } },
+      // noivas/deb saem da matriz mesmo que tenham score antigo (R2)
+      where: { rfvSegmento: { not: null }, funilEtapa: null },
       _count: { _all: true },
     }),
     prisma.customer.groupBy({
@@ -53,7 +54,7 @@ export default async function CrmPage() {
       _count: { _all: true },
     }),
     prisma.customer.aggregate({
-      where: { ltvPrevistoCents: { not: null } },
+      where: { ltvPrevistoCents: { not: null }, funilEtapa: null },
       _sum: { ltvPrevistoCents: true },
       _avg: { ltvPrevistoCents: true },
     }),
@@ -79,7 +80,9 @@ export default async function CrmPage() {
   ]);
 
   const segCount = new Map(segGroups.map((g) => [g.rfvSegmento, g._count._all]));
-  const funilCount = new Map(funilGroups.map((g) => [g.funilEtapa, g._count._all]));
+  const funilCount = new Map(
+    funilGroups.map((g) => [String(g.funilEtapa), g._count._all]),
+  );
   const baseTotal = segGroups.reduce((s, g) => s + g._count._all, 0);
   const ltvTotal = ltvAgg._sum.ltvPrevistoCents ?? 0;
   const ltvMedio = Math.round(ltvAgg._avg.ltvPrevistoCents ?? 0);
@@ -173,7 +176,7 @@ export default async function CrmPage() {
             className="rounded-mi bg-mi-branco p-4 text-center shadow-suave transition hover:bg-mi-bege/40"
           >
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
-              {funilCount.get(f.etapa as never) ?? 0}
+              {funilCount.get(f.etapa) ?? 0}
             </p>
             <p className="mt-1 text-xs text-mi-texto/60">{f.label}</p>
           </Link>
