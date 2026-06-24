@@ -25,6 +25,17 @@ enum BookingStatus {
   no_show
 }
 
+/// Etapas do funil de noiva/debutante (CRM). Nunca agendável online (R14) —
+/// avanço manual pela Mi no kanban do CRM, cada etapa com follow-up de jornada.
+enum FunilEtapa {
+  lead
+  previa_agendada
+  previa_feita
+  contrato_fechado
+  evento
+  pos_evento
+}
+
 /// Configuração do negócio — parâmetros externos, nunca hardcode (R3).
 /// Chaves: working_hours, buffer_min, min_lead_hours, max_lead_days,
 /// reminder_hours, cancel_window_days, strike_limit, hold_minutes,
@@ -112,6 +123,19 @@ model Customer {
   clubJoinedAt    DateTime? @map("club_joined_at") @db.Timestamptz
   clubInterest    String?   @map("club_interest") // ocasião desejada/referência da indicada
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  // ── CRM (estende a ficha; observações privadas seguem em `notes`) ──
+  tags             String[]    @default([]) // etiquetas livres da Mi (≠ MediaAsset.tags)
+  origem           String? // captação (instagram, indicação...) p/ cadastro manual; quando há booking, deriva do source
+  whatsappOptIn    Boolean     @default(false) @map("whatsapp_opt_in") // opt-in p/ jornadas de relacionamento (R3/LGPD)
+  whatsappOptInAt  DateTime?   @map("whatsapp_opt_in_at") @db.Timestamptz
+  funilEtapa       FunilEtapa? @map("funil_etapa") // só noiva/debutante (fora da matriz RFV)
+  // ── RFV — calculados pelo job diário (src/lib/rfv.ts); null = ainda não calculado ──
+  rScore           Int?        @map("r_score") // 1–5 (recência)
+  fScore           Int?        @map("f_score") // 1–5 (frequência)
+  vScore           Int?        @map("v_score") // 1–5 (valor)
+  rfvSegmento      String?     @map("rfv_segmento") // "Campeãs" | "Fiéis" | "Promissoras" | "Em risco" | "Hibernando"
+  ltvPrevistoCents Int?        @map("ltv_previsto_cents") // LTV projetado em centavos
+  rfvCalculadoEm   DateTime?   @map("rfv_calculado_em") @db.Timestamptz
 
   bookings     Booking[]
   waitlist     Waitlist[]
@@ -120,8 +144,10 @@ model Customer {
   milestones   ReferralMilestone[]
   redemptions  ClubRedemption[]
   clubTxns     ClubTransaction[]
+  envios       EnvioMensagem[]
 
   @@index([referredById])
+  @@index([rfvSegmento])
   @@map("customers")
 }
 
@@ -420,4 +446,66 @@ model NotificationLog {
   booking Booking? @relation(fields: [bookingId], references: [id])
 
   @@map("notification_log")
+}
+
+// ─────────────────────────── CRM — Jornadas ───────────────────────────
+
+/// Definição de uma jornada (fluxo automático por comportamento). gatilho =
+/// boas_vindas | pos_atendimento | aniversario | manutencao | reativacao |
+/// noiva | manual. Começa desligada (ativo=false) até a Mi revisar a copy.
+model Jornada {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome      String
+  gatilho   String
+  ativo     Boolean  @default(false)
+  descricao String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  etapas JornadaEtapa[]
+  envios EnvioMensagem[]
+
+  @@map("jornadas")
+}
+
+/// Passo de uma jornada: espera (h) após o gatilho/etapa anterior e a mensagem.
+/// templateKey aponta p/ site_content (msg.*, editável pela Mi); template é o
+/// texto inline de fallback. condicao = critério opcional de saída.
+model JornadaEtapa {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jornadaId   String  @map("jornada_id") @db.Uuid
+  ordem       Int
+  esperaHoras Int     @default(0) @map("espera_horas")
+  templateKey String? @map("template_key")
+  template    String?
+  condicao    String?
+
+  jornada Jornada @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+
+  @@index([jornadaId])
+  @@map("jornada_etapas")
+}
+
+/// Auditoria de disparo de mensagem (jornadas/CRM). dedup_key único = R10.
+/// status: pendente | enviado | falha | cancelado. Complementa notification_log
+/// (que segue cuidando da dedupe do cron/eventos transacionais).
+model EnvioMensagem {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  jornadaId  String?   @map("jornada_id") @db.Uuid
+  etapaId    String?   @map("etapa_id") @db.Uuid
+  canal      String    @default("whatsapp")
+  kind       String
+  status     String    @default("pendente")
+  erro       String?
+  dedupKey   String?   @unique @map("dedup_key")
+  agendadoEm DateTime? @map("agendado_em") @db.Timestamptz
+  enviadoEm  DateTime? @map("enviado_em") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jornada  Jornada? @relation(fields: [jornadaId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@map("envios_mensagem")
 }
