@@ -331,6 +331,47 @@ export async function reconhecerReceitaDeBooking(
 }
 
 /**
+ * Gera as despesas do mês a partir dos custos recorrentes ativos. Idempotente:
+ * não duplica se já existe a despesa daquele template no mês (competência = 1º
+ * do mês). paidAt fica null (a pagar). Disparado pelo cron mensal (dia 1).
+ */
+export async function gerarRecorrentesDoMes(
+  ano: number,
+  mes: number,
+): Promise<{ ativos: number; criadas: number }> {
+  const recorrentes = await prisma.recurringCost.findMany({
+    where: { active: true },
+  });
+  const competenceDate = DateTime.fromObject(
+    { year: ano, month: mes, day: 1 },
+    { zone: "utc" },
+  ).toJSDate();
+
+  let criadas = 0;
+  for (const r of recorrentes) {
+    const existe = await prisma.expense.findFirst({
+      where: { recurringId: r.id, competenceDate },
+      select: { id: true },
+    });
+    if (existe) continue;
+    await prisma.expense.create({
+      data: {
+        categoryId: r.categoryId,
+        description: r.description,
+        amountCents: r.amountCents,
+        competenceDate,
+        paymentMethod: r.paymentMethod,
+        supplier: r.supplier,
+        isRecurring: true,
+        recurringId: r.id,
+      },
+    });
+    criadas++;
+  }
+  return { ativos: recorrentes.length, criadas };
+}
+
+/**
  * Backfill: reconhece a receita de todos os bookings concluídos que ainda não
  * têm lançamento. Usado uma vez após o deploy (e seguro de repetir).
  */
