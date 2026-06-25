@@ -52,6 +52,17 @@ export const ADMIN_NAV: AdminNavItem[] = [
     ),
   },
   {
+    href: "/admin/financeiro",
+    label: "Financeiro",
+    icon: (
+      <I>
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M2 10h20" />
+        <circle cx="17" cy="14.5" r="1.3" />
+      </I>
+    ),
+  },
+  {
     href: "/admin/crm",
     label: "CRM",
     icon: (

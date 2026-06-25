@@ -195,6 +195,68 @@ export async function serieMensal(
   return pontos;
 }
 
+export interface FatiaCategoria {
+  code: string;
+  name: string;
+  color: string;
+  cents: number;
+}
+
+/** Quebra de receita e despesa por categoria (donuts). Ordenado por valor desc. */
+export async function breakdownDoMes(
+  ano: number,
+  mes: number,
+  regime: Regime,
+): Promise<{ receita: FatiaCategoria[]; despesa: FatiaCategoria[] }> {
+  const { timezone: tz } = await getSettings();
+  const comp = competenceRange(ano, mes);
+  const inst = instantRange(ano, mes, tz);
+  const recWhere =
+    regime === "competencia"
+      ? { active: true, competenceDate: comp }
+      : { active: true, receivedAt: inst };
+  const expWhere =
+    regime === "competencia"
+      ? { active: true, competenceDate: comp }
+      : { active: true, paidAt: inst };
+
+  const [receitas, despesas] = await Promise.all([
+    prisma.revenueEntry.findMany({
+      where: recWhere,
+      select: {
+        amountCents: true,
+        category: { select: { code: true, name: true, color: true } },
+      },
+    }),
+    prisma.expense.findMany({
+      where: expWhere,
+      select: {
+        amountCents: true,
+        category: { select: { code: true, name: true, color: true } },
+      },
+    }),
+  ]);
+
+  const agrupar = (
+    rows: { amountCents: number; category: { code: string; name: string; color: string } | null }[],
+  ): FatiaCategoria[] => {
+    const m = new Map<string, FatiaCategoria>();
+    for (const r of rows) {
+      const c = r.category ?? {
+        code: "sem-categoria",
+        name: "Sem categoria",
+        color: "#C9BFB2",
+      };
+      const cur = m.get(c.code) ?? { ...c, cents: 0 };
+      cur.cents += r.amountCents;
+      m.set(c.code, cur);
+    }
+    return Array.from(m.values()).sort((a, b) => b.cents - a.cents);
+  };
+
+  return { receita: agrupar(receitas), despesa: agrupar(despesas) };
+}
+
 /**
  * Reconhece a receita de um booking concluído (idempotente por bookingId).
  * Cria o lançamento se ainda não existe; se existe, atualiza só os dados
