@@ -81,3 +81,11 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 ## Scripts
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck; suíte do motor = `npm test`, 13 testes)
+
+**Reset de senha do admin (caminho OFICIAL):** `scripts/reset-admin-password.ts`.
+A senha entra **só em runtime** (sem hardcode/default), e-mail normalizado, hash
+bcryptjs/rounds 12 (mesma config do login), zera o lockout. Não loga senha/hash.
+Uso: `ADMIN_EMAIL="..." NEW_ADMIN_PASSWORD="..." npx tsx scripts/reset-admin-password.ts`
+(rodar onde o `DATABASE_URL` aponta pro banco certo; ⚠️ nunca commitar `.env*`).
+Obs.: o bootstrap do seed só **cria** o admin se não existir — **não** troca a
+senha de conta existente; para resetar, use este script.
