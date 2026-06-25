@@ -8,6 +8,7 @@ import {
   creditarPontosServico,
   creditarPontosIndicacao,
 } from "./clube-pontos";
+import { reconhecerReceitaDeBooking } from "./finance/queries";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -634,6 +635,14 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
     await creditarPontosIndicacao(booking.customerId);
   } catch (e) {
     console.error("clube: falha ao creditar pontos", e);
+  }
+
+  // Financeiro: reconhece a receita deste atendimento (idempotente por bookingId).
+  // Falha aqui não desfaz a conclusão — o backfill recupera depois.
+  try {
+    await reconhecerReceitaDeBooking(id);
+  } catch (e) {
+    console.error("financeiro: falha ao reconhecer receita do booking", e);
   }
 
   return { ok: true, status: "completed" };
