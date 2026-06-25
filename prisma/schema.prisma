@@ -36,6 +36,38 @@ enum FunilEtapa {
   pos_evento
 }
 
+// ─────────────────────────── Financeiro ───────────────────────────
+// Centro de custos + receita (booking + manual) + DRE mensal. Valores SEMPRE
+// em centavos (Int). Datas: competência (mês a que o lançamento pertence) em
+// @db.Date; caixa (paidAt/receivedAt) em Timestamptz. Soft-delete (active).
+
+/// Natureza de uma categoria financeira.
+enum FinancialKind {
+  expense
+  revenue
+}
+
+/// Fixo x variável (só para despesa) — alimenta o donut "fixo vs variável" e o CMV.
+enum CostNature {
+  fixed
+  variable
+}
+
+/// Linha do DRE a que a categoria de DESPESA pertence (ordem da seção 2.5):
+/// deducao_venda (taxa de cartão, DAS/impostos) → custo_variavel → custo_fixo → pro_labore.
+enum DreGroup {
+  deducao_venda
+  custo_variavel
+  custo_fixo
+  pro_labore
+}
+
+/// Origem de um lançamento de receita.
+enum RevenueSource {
+  booking
+  manual
+}
+
 /// Configuração do negócio — parâmetros externos, nunca hardcode (R3).
 /// Chaves: working_hours, buffer_min, min_lead_hours, max_lead_days,
 /// reminder_hours, cancel_window_days, strike_limit, hold_minutes,
@@ -102,27 +134,27 @@ model ServiceAvailability {
 }
 
 model Customer {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  phoneE164       String    @unique @map("phone_e164") // +5521970225231 (R5)
-  email           String?
-  birthDate       DateTime? @map("birth_date") @db.Date
-  guardianName    String?   @map("guardian_name") // obrigatório se menor (R6)
-  guardianPhone   String?   @map("guardian_phone")
-  strikes         Int       @default(0)
-  requiresDeposit Boolean   @default(false) @map("requires_deposit") // régua de reincidência
-  lgpdConsentAt   DateTime? @map("lgpd_consent_at") @db.Timestamptz
-  allergies       String? // alergia persistente da cliente — dado de saúde (R6/R18)
-  notes           String? // anotações privadas da Mi — nunca aparecem no site
-  photoConsent    Boolean   @default(false) @map("photo_consent") // foto da cliente só com isto (R18)
-  photoConsentAt  DateTime? @map("photo_consent_at") @db.Timestamptz // quando o consentimento mudou
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  phoneE164        String      @unique @map("phone_e164") // +5521970225231 (R5)
+  email            String?
+  birthDate        DateTime?   @map("birth_date") @db.Date
+  guardianName     String?     @map("guardian_name") // obrigatório se menor (R6)
+  guardianPhone    String?     @map("guardian_phone")
+  strikes          Int         @default(0)
+  requiresDeposit  Boolean     @default(false) @map("requires_deposit") // régua de reincidência
+  lgpdConsentAt    DateTime?   @map("lgpd_consent_at") @db.Timestamptz
+  allergies        String? // alergia persistente da cliente — dado de saúde (R6/R18)
+  notes            String? // anotações privadas da Mi — nunca aparecem no site
+  photoConsent     Boolean     @default(false) @map("photo_consent") // foto da cliente só com isto (R18)
+  photoConsentAt   DateTime?   @map("photo_consent_at") @db.Timestamptz // quando o consentimento mudou
   // Clube de Fidelidade — extensão do cliente (não há tabela de "membro";
   // ocasiões = bookings completed). club_joined_at null = não entrou no clube.
-  referralCode    String?   @unique @map("referral_code") // link /indicar/<code>
-  referredById    String?   @map("referred_by_id") @db.Uuid
-  clubJoinedAt    DateTime? @map("club_joined_at") @db.Timestamptz
-  clubInterest    String?   @map("club_interest") // ocasião desejada/referência da indicada
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  referralCode     String?     @unique @map("referral_code") // link /indicar/<code>
+  referredById     String?     @map("referred_by_id") @db.Uuid
+  clubJoinedAt     DateTime?   @map("club_joined_at") @db.Timestamptz
+  clubInterest     String?     @map("club_interest") // ocasião desejada/referência da indicada
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
   // ── CRM (estende a ficha; observações privadas seguem em `notes`) ──
   tags             String[]    @default([]) // etiquetas livres da Mi (≠ MediaAsset.tags)
   origem           String? // captação (instagram, indicação...) p/ cadastro manual; quando há booking, deriva do source
@@ -137,14 +169,14 @@ model Customer {
   ltvPrevistoCents Int?        @map("ltv_previsto_cents") // LTV projetado em centavos
   rfvCalculadoEm   DateTime?   @map("rfv_calculado_em") @db.Timestamptz
 
-  bookings     Booking[]
-  waitlist     Waitlist[]
-  referredBy   Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
-  referrals    Customer[]          @relation("Indicacoes")
-  milestones   ReferralMilestone[]
-  redemptions  ClubRedemption[]
-  clubTxns     ClubTransaction[]
-  envios       EnvioMensagem[]
+  bookings    Booking[]
+  waitlist    Waitlist[]
+  referredBy  Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
+  referrals   Customer[]          @relation("Indicacoes")
+  milestones  ReferralMilestone[]
+  redemptions ClubRedemption[]
+  clubTxns    ClubTransaction[]
+  envios      EnvioMensagem[]
 
   @@index([referredById])
   @@index([rfvSegmento])
@@ -242,6 +274,7 @@ model Booking {
   events        BookingEvent[]
   notifications NotificationLog[]
   items         BookingItem[]
+  revenueEntry  RevenueEntry? // receita reconhecida deste booking (1:1, idempotente)
   // ⚠️ CHECK (ends_at > starts_at) + constraint no_overlap EXCLUDE USING gist
   //    na migration SQL manual — ver migration.sql.
 
@@ -508,4 +541,127 @@ model EnvioMensagem {
   @@index([customerId])
   @@index([status])
   @@map("envios_mensagem")
+}
+
+// ─────────────────────────── Financeiro (modelos) ───────────────────────────
+
+/// Categoria de um lançamento financeiro (despesa ou receita). `nature` e
+/// `dreGroup` só fazem sentido para despesa; `isCmv` marca insumo/descartável
+/// (entra no CMV do mês). `color` (hex) pinta os gráficos. Seed traz as padrão.
+model FinancialCategory {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String        @unique // slug estável p/ seed idempotente e mapeamento
+  name      String
+  kind      FinancialKind
+  nature    CostNature? // só despesa
+  dreGroup  DreGroup?     @map("dre_group") // só despesa — linha do DRE
+  isCmv     Boolean       @default(false) @map("is_cmv") // insumo/descartável → CMV
+  color     String        @default("#8A7361") // hex p/ gráfico
+  isDefault Boolean       @default(false) @map("is_default")
+  sort      Int           @default(0)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  expenses  Expense[]
+  revenues  RevenueEntry[]
+  recurring RecurringCost[]
+
+  @@index([kind, active])
+  @@map("financial_categories")
+}
+
+/// Despesa lançada pela Mi (insumo, aluguel, energia, tráfego, taxa, DAS…).
+/// competenceDate = mês a que pertence; paidAt = quando saiu o dinheiro (caixa).
+/// Soft-delete por `active` (nunca apaga histórico — R financeiro 4).
+model Expense {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId     String    @map("category_id") @db.Uuid
+  description    String
+  amountCents    Int       @map("amount_cents")
+  competenceDate DateTime  @map("competence_date") @db.Date
+  paidAt         DateTime? @map("paid_at") @db.Timestamptz // caixa; null = a pagar
+  paymentMethod  String?   @map("payment_method") // pix | cartao | dinheiro | boleto
+  supplier       String?
+  isRecurring    Boolean   @default(false) @map("is_recurring")
+  recurringId    String?   @map("recurring_id") @db.Uuid // origem, se gerada por template
+  notes          String?
+  active         Boolean   @default(true) // soft-delete
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  category    FinancialCategory @relation(fields: [categoryId], references: [id])
+  recurring   RecurringCost?    @relation(fields: [recurringId], references: [id])
+  attachments Attachment[]
+
+  @@index([competenceDate])
+  @@index([categoryId])
+  @@index([recurringId, competenceDate])
+  @@map("expenses")
+}
+
+/// Receita: automática (BOOKING concluído, idempotente por bookingId) ou manual
+/// (noiva/debutante/curso/venda avulsa). competenceDate = data do evento/serviço;
+/// receivedAt = quando o dinheiro entrou (caixa). cardFeeCents = taxa de cartão
+/// dessa entrada (dedução sobre venda). Soft-delete por `active`.
+model RevenueEntry {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId     String?       @map("category_id") @db.Uuid
+  description    String
+  amountCents    Int           @map("amount_cents")
+  competenceDate DateTime      @map("competence_date") @db.Date
+  receivedAt     DateTime?     @map("received_at") @db.Timestamptz // caixa; null = a receber
+  source         RevenueSource @default(manual)
+  bookingId      String?       @unique @map("booking_id") @db.Uuid // idempotência (1:1)
+  customerName   String?       @map("customer_name")
+  paymentMethod  String?       @map("payment_method") // pix | cartao | dinheiro | boleto
+  cardFeeCents   Int?          @map("card_fee_cents")
+  active         Boolean       @default(true) // soft-delete
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  category    FinancialCategory? @relation(fields: [categoryId], references: [id])
+  booking     Booking?           @relation(fields: [bookingId], references: [id])
+  attachments Attachment[]
+
+  @@index([competenceDate])
+  @@index([categoryId])
+  @@map("revenue_entries")
+}
+
+/// Comprovante/nota de um lançamento (PDF ou imagem). Arquivo no store PRIVADO
+/// (MEDIA_DIR/priv) — só `filePath` (chave/nome), nunca caminho absoluto. Exatamente
+/// um dos dois donos (expense XOR revenue) — CHECK na migration.
+model Attachment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  filePath   String   @map("file_path") // chave no store privado (basename)
+  fileName   String   @map("file_name") // nome original (exibição/download)
+  mimeType   String   @map("mime_type")
+  sizeBytes  Int      @map("size_bytes")
+  expenseId  String?  @map("expense_id") @db.Uuid
+  revenueId  String?  @map("revenue_id") @db.Uuid
+  uploadedAt DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  expense Expense?      @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  revenue RevenueEntry? @relation(fields: [revenueId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@index([revenueId])
+  @@map("attachments")
+}
+
+/// Template de custo fixo recorrente. Gera uma Expense por mês (cron Fase 5),
+/// idempotente por (recurringId, competenceDate=1º do mês). dayOfMonth = vencimento.
+model RecurringCost {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId    String   @map("category_id") @db.Uuid
+  description   String
+  amountCents   Int      @map("amount_cents")
+  dayOfMonth    Int      @map("day_of_month") // 1–28 (vencimento)
+  paymentMethod String?  @map("payment_method")
+  supplier      String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  category FinancialCategory @relation(fields: [categoryId], references: [id])
+  expenses Expense[]
+
+  @@map("recurring_costs")
 }

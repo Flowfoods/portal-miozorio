@@ -238,6 +238,72 @@ const services: SeedService[] = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Categorias financeiras padrão (módulo Financeiro). Seed idempotente por `code`,
+// roda SEMPRE (fora do --if-empty) p/ popular bancos já existentes. A Mi edita/
+// cria mais no painel. dreGroup define a linha do DRE; isCmv marca insumo.
+// ─────────────────────────────────────────────────────────────────────────────
+type SeedCategory = {
+  code: string;
+  name: string;
+  kind: "expense" | "revenue";
+  nature?: "fixed" | "variable";
+  dreGroup?: "deducao_venda" | "custo_variavel" | "custo_fixo" | "pro_labore";
+  isCmv?: boolean;
+  color: string;
+  sort: number;
+};
+
+const financialCategories: SeedCategory[] = [
+  // Receita por origem (espelha service.category + venda avulsa)
+  { code: "rev-social", name: "Maquiagem social", kind: "revenue", color: "#8A7361", sort: 1 },
+  { code: "rev-cabelo", name: "Cabelo / dia a dia", kind: "revenue", color: "#A68A6D", sort: 2 },
+  { code: "rev-sobrancelha", name: "Sobrancelha", kind: "revenue", color: "#B9A487", sort: 3 },
+  { code: "rev-curso", name: "Curso de automaquiagem", kind: "revenue", color: "#C9B89C", sort: 4 },
+  { code: "rev-noiva", name: "Noiva (La Mariée)", kind: "revenue", color: "#7A5C49", sort: 5 },
+  { code: "rev-debutante", name: "Debutante", kind: "revenue", color: "#9C6F52", sort: 6 },
+  { code: "rev-avulsa", name: "Venda avulsa", kind: "revenue", color: "#D8CBB6", sort: 7 },
+  // Deduções sobre venda
+  { code: "exp-taxa-cartao", name: "Taxa de maquininha", kind: "expense", nature: "variable", dreGroup: "deducao_venda", color: "#C98A6B", sort: 10 },
+  { code: "exp-das", name: "DAS / Impostos sobre venda", kind: "expense", nature: "variable", dreGroup: "deducao_venda", color: "#B5705A", sort: 11 },
+  // Custos variáveis
+  { code: "exp-insumos", name: "Insumos e descartáveis", kind: "expense", nature: "variable", dreGroup: "custo_variavel", isCmv: true, color: "#8A9A5B", sort: 20 },
+  { code: "exp-deslocamento", name: "Deslocamento", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#6B8E9A", sort: 21 },
+  { code: "exp-comissao", name: "Comissão 2ª profissional", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#7C9A6B", sort: 22 },
+  { code: "exp-brindes", name: "Brindes e embalagens", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#A88FB0", sort: 23 },
+  // Custos fixos
+  { code: "exp-aluguel", name: "Aluguel do estúdio", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#5C4A3D", sort: 30 },
+  { code: "exp-energia", name: "Energia e climatização", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#6E5A4A", sort: 31 },
+  { code: "exp-agua", name: "Água", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#4A6E7A", sort: 32 },
+  { code: "exp-internet", name: "Internet", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#7A6E5A", sort: 33 },
+  { code: "exp-software", name: "Software, VPS e domínio", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#8A7361", sort: 34 },
+  { code: "exp-contador", name: "Contador", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#9A8A7A", sort: 35 },
+  // Pró-labore (isolado no DRE)
+  { code: "exp-prolabore", name: "Pró-labore da Mi", kind: "expense", dreGroup: "pro_labore", color: "#3D3733", sort: 40 },
+];
+
+/** Semeia/atualiza as categorias financeiras padrão (idempotente por code). */
+async function ensureFinancialCategories() {
+  for (const c of financialCategories) {
+    const data = {
+      name: c.name,
+      kind: c.kind,
+      nature: c.nature ?? null,
+      dreGroup: c.dreGroup ?? null,
+      isCmv: c.isCmv ?? false,
+      color: c.color,
+      sort: c.sort,
+      isDefault: true,
+    };
+    await prisma.financialCategory.upsert({
+      where: { code: c.code },
+      update: data,
+      create: { code: c.code, ...data },
+    });
+  }
+  console.log(`✓ financial_categories: ${financialCategories.length} categorias`);
+}
+
 /**
  * Bootstrap da conta do painel /admin (M5). Roda SEMPRE (mesmo com --if-empty),
  * mas só cria se o e-mail ainda não existir — nunca sobrescreve senha trocada.
@@ -267,6 +333,7 @@ async function ensureAdmin() {
 
 async function main() {
   await ensureAdmin();
+  await ensureFinancialCategories();
 
   // --if-empty (entrypoint do container): só semeia banco virgem, para nunca
   // sobrescrever ajustes feitos pela Mi no admin (R3) num restart.
