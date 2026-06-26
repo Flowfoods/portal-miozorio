@@ -2,7 +2,7 @@
 
 import { useFormState } from "react-dom";
 import Link from "next/link";
-import { submitReferral, type ClubFormState } from "@/app/clube/actions";
+import { submitReferral, type ClubFormState } from "@/app/(site)/clube/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { PhoneField, Honeypot, FormError } from "./ClubFields";
 
