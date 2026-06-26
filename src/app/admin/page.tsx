@@ -6,6 +6,7 @@ import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
+import PainelHoje from "@/components/admin/PainelHoje";
 import WeekAgenda from "@/components/admin/WeekAgenda";
 import RescheduleForm from "@/components/admin/RescheduleForm";
 import {
@@ -226,6 +227,8 @@ export default async function AdminAgendaPage({
 
   return (
     <>
+      <PainelHoje />
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Agenda</h1>
         <p className="text-sm text-mi-texto/70">
