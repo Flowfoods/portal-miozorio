@@ -293,15 +293,17 @@ export default function NovoAgendamento({
     if (referencia.trim()) fd.set("referencia", referencia.trim());
     if (ocasiao.trim()) fd.set("ocasiao", ocasiao.trim());
     try {
-      await adminCreateManualBooking(fd);
+      const r = await adminCreateManualBooking(fd);
+      if (!r.ok) {
+        setError(r.message);
+        return;
+      }
       router.push(`/admin?data=${date}`);
       router.refresh();
       setOpen(false);
       resetForm();
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Não consegui criar o agendamento.",
-      );
+    } catch {
+      setError("Não consegui criar o agendamento. Tente de novo.");
     } finally {
       setSubmitting(false);
     }

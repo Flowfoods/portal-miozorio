@@ -43,12 +43,16 @@ export default function RescheduleForm({
     fd.set("date", date);
     fd.set("time", time);
     try {
-      await adminRescheduleBooking(fd);
+      const r = await adminRescheduleBooking(fd);
+      if (!r.ok) {
+        setError(r.message);
+        return;
+      }
       router.push(`/admin?data=${date}`);
       router.refresh();
       setOpen(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Não consegui remarcar.");
+    } catch {
+      setError("Não consegui remarcar. Tente de novo.");
     } finally {
       setBusy(false);
     }

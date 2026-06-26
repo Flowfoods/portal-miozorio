@@ -219,19 +219,27 @@ export async function adminDeleteBookingPhoto(
   refreshAgenda();
 }
 
+/**
+ * Resultado das actions de agendamento chamadas programaticamente pelo cliente.
+ * Erros de DOMÍNIO (slot ocupado, validação) são RETORNADOS — nunca lançados —
+ * porque o Next apaga a mensagem de erro de server actions em produção. Assim a
+ * mensagem amigável ("Esse horário já está ocupado…") chega de fato à tela.
+ */
+export type AdminBookingResult = { ok: true } | { ok: false; message: string };
+
 export async function adminCreateManualBooking(
   formData: FormData,
-): Promise<void> {
+): Promise<AdminBookingResult> {
   await requireAdmin();
 
   const source = String(formData.get("source") ?? "");
   if (source !== "admin_phone" && source !== "admin_whatsapp") {
-    fail("Informe como a cliente fechou (telefone ou WhatsApp).");
+    return { ok: false, message: "Informe como a cliente fechou (telefone ou WhatsApp)." };
   }
   const location = formData.get("location") === "home" ? "home" : "studio";
 
   const items = parseBookingItems(formData.get("items"));
-  if (items.length === 0) fail("Escolha ao menos um serviço.");
+  if (items.length === 0) return { ok: false, message: "Escolha ao menos um serviço." };
 
   // Foto de referência da cliente (opcional, LGPD): valida tipo/tamanho/consent
   // e processa ANTES de criar (falha cedo). Storage PRIVADO; nunca URL pública.
@@ -239,18 +247,18 @@ export async function adminCreateManualBooking(
   let photoKey: string | null = null;
   if (photo instanceof File && photo.size > 0) {
     if (formData.get("photoConsent") !== "on") {
-      fail("Para anexar a foto, marque o consentimento da cliente.");
+      return { ok: false, message: "Para anexar a foto, marque o consentimento da cliente." };
     }
     if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
-      fail("A foto deve ser JPG, PNG ou WebP.");
+      return { ok: false, message: "A foto deve ser JPG, PNG ou WebP." };
     }
     if (photo.size > MAX_BOOKING_PHOTO_BYTES) {
-      fail("Foto muito grande (máximo 5MB).");
+      return { ok: false, message: "Foto muito grande (máximo 5MB)." };
     }
     try {
       photoKey = await processPrivatePhoto(Buffer.from(await photo.arrayBuffer()));
     } catch {
-      fail("Não consegui processar a imagem. Tente outra foto.");
+      return { ok: false, message: "Não consegui processar a imagem. Tente outra foto." };
     }
   }
 
@@ -267,7 +275,7 @@ export async function adminCreateManualBooking(
   });
   if (!r.ok) {
     if (photoKey) await deletePrivatePhoto(photoKey); // sem órfão no volume
-    fail(r.message);
+    return { ok: false, message: r.message };
   }
   if (photoKey) {
     await prisma.booking.update({
@@ -311,11 +319,12 @@ export async function adminCreateManualBooking(
   }
 
   refreshAgenda();
+  return { ok: true };
 }
 
 export async function adminRescheduleBooking(
   formData: FormData,
-): Promise<void> {
+): Promise<AdminBookingResult> {
   await requireAdmin();
   const r = await rescheduleBooking(
     String(formData.get("id") ?? ""),
@@ -323,7 +332,8 @@ export async function adminRescheduleBooking(
     String(formData.get("time") ?? ""),
   );
   refreshAgenda();
-  if (!r.ok) fail(r.message);
+  if (!r.ok) return { ok: false, message: r.message };
+  return { ok: true };
 }
 
 // ── Serviços ────────────────────────────────────────────────────────────────
