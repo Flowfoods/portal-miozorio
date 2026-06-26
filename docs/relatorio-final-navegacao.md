@@ -11,8 +11,8 @@
 | 2 | 🟠 Curso sem porta de entrada | ✅ **Resolvido** — item "Curso" na nav + footer (deep link `?servico=curso-automaquiagem`) |
 | 3 | 🔴 Sem 404 da marca | ✅ **Resolvido** — `not-found.tsx` auto-contido (CTA início + WhatsApp) |
 | 4 | 🟡 Resumo × Financeiro | ✅ **Decidido** — papéis distintos (operação × dinheiro), mantidos |
-| 5 | 🟠 `/admin` é Agenda, não Dashboard | ⏳ **Pendente** (enhancement; ver "o que falta") |
-| 6 | 🟠 Sem breadcrumbs | ⏳ **Pendente** (enhancement) |
+| 5 | 🟠 `/admin` é Agenda, não Dashboard | ✅ **Resolvido** — faixa "Hoje" + atalhos no topo da Agenda (`PainelHoje`), sem mover `/admin` nem quebrar links |
+| 6 | 🟠 Sem breadcrumbs | ✅ **OK** — o wizard `/agendar` já tem indicador de passos (`Stepper`); admin tem a sidebar com item ativo. Breadcrumb genérico dispensável |
 | 7 | 🟡 Duas configs de nav | ➖ **Mantido** — uma por mundo (`navLinks.ts` + `adminNavItems.tsx`); aceitável |
 | 8 | 🟠 Footer enxuto | ✅ **Resolvido** — coluna "Navegar" com os caminhos principais (fonte única) |
 | 9 | 🟠 Sem CTA flutuante de WhatsApp | ✅ **Resolvido** — `FloatingWhatsApp` em todo o site |
