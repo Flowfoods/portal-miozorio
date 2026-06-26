@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NAV_LINKS } from "./navLinks";
 
 const WHATSAPP =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Vim%20pelo%20site";
@@ -6,12 +7,24 @@ const WHATSAPP =
 export default function Footer() {
   return (
     <footer className="mt-24 border-t border-mi-cinza bg-mi-branco/40">
-      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="font-titulo text-xl text-mi-marrom-escuro">Mi Ozorio</p>
           <p className="mt-1 font-corpo text-sm text-mi-marrom">
             Maquiagem & penteado · Rio de Janeiro
           </p>
+        </div>
+
+        <div className="font-corpo text-sm text-mi-texto">
+          <p className="mb-2 font-medium text-mi-marrom-escuro">Navegar</p>
+          <Link href="/agendar" className="block hover:underline">
+            Agendar
+          </Link>
+          {NAV_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="block hover:underline">
+              {l.label}
+            </Link>
+          ))}
         </div>
 
         <div className="font-corpo text-sm text-mi-texto">
