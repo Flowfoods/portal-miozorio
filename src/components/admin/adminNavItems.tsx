@@ -63,17 +63,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
     ),
   },
   {
-    href: "/admin/crm",
-    label: "CRM",
-    icon: (
-      <I>
-        <circle cx="12" cy="12" r="9" />
-        <circle cx="12" cy="12" r="5" />
-        <circle cx="12" cy="12" r="1" />
-      </I>
-    ),
-  },
-  {
     href: "/admin/servicos",
     label: "Serviços",
     icon: (
@@ -141,16 +130,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      </I>
-    ),
-  },
-  {
-    href: "/admin/clube",
-    label: "Clube",
-    icon: (
-      <I>
-        <circle cx="12" cy="8" r="6" />
-        <path d="M8.2 13.4L7 22l5-3 5 3-1.2-8.6" />
       </I>
     ),
   },
