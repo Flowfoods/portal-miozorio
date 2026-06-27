@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
+import ClientesHubNav from "@/components/admin/ClientesHubNav";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export default async function CrmPage() {
 
   return (
     <>
+      <ClientesHubNav />
       <div className="mb-6">
         <h1 className="text-3xl">CRM</h1>
         <p className="mt-1 text-sm text-mi-texto/60">

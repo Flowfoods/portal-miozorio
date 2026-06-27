@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
+import ClientesHubNav from "@/components/admin/ClientesHubNav";
 import {
   adminCreateReward,
   adminUpdateReward,
@@ -40,6 +41,7 @@ export default async function AdminClubePage() {
 
   return (
     <>
+      <ClientesHubNav />
       <h1 className="mb-2 text-3xl">Clube de fidelidade</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
         Suas clientes ganham pontos por atendimento (configure em Serviços) e por
