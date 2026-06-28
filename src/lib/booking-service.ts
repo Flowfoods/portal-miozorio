@@ -8,6 +8,7 @@ import {
   creditarPontosServico,
   creditarPontosIndicacao,
 } from "./clube-pontos";
+import { ensureClubMember } from "./clube";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 
 export interface CreateBookingInput {
@@ -135,6 +136,10 @@ export async function createBooking(
       lgpdConsentAt: new Date(),
     },
   });
+
+  // Auto-inscrição no clube (toda cliente vira membro). Idempotente; falha aqui
+  // nunca impede o agendamento.
+  await ensureClubMember(customer.id).catch(() => null);
 
   try {
     const booking = await prisma.$transaction(async (tx) => {
@@ -314,6 +319,9 @@ export async function createManualBooking(
       };
     }
   }
+
+  // Auto-inscrição no clube (idempotente; não bloqueia o encaixe).
+  await ensureClubMember(customerId).catch(() => null);
 
   // Valor total = soma dos preços cobrados (snapshot no booking p/ retrocompat).
   const priceCents = rows.reduce((sum, r) => sum + r.precoCobradoCents, 0);

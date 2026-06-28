@@ -154,6 +154,12 @@ model Customer {
   referredById     String?     @map("referred_by_id") @db.Uuid
   clubJoinedAt     DateTime?   @map("club_joined_at") @db.Timestamptz
   clubInterest     String?     @map("club_interest") // ocasião desejada/referência da indicada
+  // Portal do cliente (auth própria). hash null + provisoria=true ⇒ senha = telefone.
+  clubPasswordHash       String?   @map("club_password_hash")
+  clubPasswordProvisoria Boolean   @default(true) @map("club_password_provisoria")
+  clubFailedLogins       Int       @default(0) @map("club_failed_logins") // anti brute-force
+  clubLockedUntil        DateTime? @map("club_locked_until") @db.Timestamptz
+  clubConsentAt          DateTime? @map("club_consent_at") @db.Timestamptz // LGPD (1º acesso)
   createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
   // ── CRM (estende a ficha; observações privadas seguem em `notes`) ──
   tags             String[]    @default([]) // etiquetas livres da Mi (≠ MediaAsset.tags)

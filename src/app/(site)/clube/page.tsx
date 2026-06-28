@@ -53,12 +53,20 @@ export default async function ClubePage() {
           Entre no clube, junte pontos a cada atendimento e a cada amiga que você
           indica, e troque por recompensas especiais da Mi.
         </p>
-        <a
-          href="#participar"
-          className="mt-8 inline-flex min-h-[48px] items-center rounded-mi bg-mi-marrom px-8 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
-        >
-          Quero participar
-        </a>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <a
+            href="#participar"
+            className="inline-flex min-h-[48px] items-center rounded-mi bg-mi-marrom px-8 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+          >
+            Quero participar
+          </a>
+          <a
+            href="/clube/entrar"
+            className="inline-flex min-h-[48px] items-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom transition-colors hover:bg-mi-branco"
+          >
+            Já sou cliente — entrar
+          </a>
+        </div>
       </section>
 
       {/* Como funciona */}
