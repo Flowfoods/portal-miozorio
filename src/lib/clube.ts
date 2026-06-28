@@ -125,6 +125,32 @@ export async function ensureClubMember(customerId: string) {
   throw new Error("Não consegui gerar um código de indicação único.");
 }
 
+/**
+ * Backfill: inscreve no clube TODAS as clientes ainda não-membros (clubJoinedAt
+ * null) — gera código de indicação e marca a entrada. Idempotente e seguro de
+ * repetir. A senha do portal nasce provisória (= telefone) por padrão de coluna.
+ * Rodar 1× após o deploy do portal do cliente.
+ */
+export async function enrollAllCustomers(): Promise<{
+  total: number;
+  inscritos: number;
+}> {
+  const pendentes = await prisma.customer.findMany({
+    where: { clubJoinedAt: null },
+    select: { id: true },
+  });
+  let inscritos = 0;
+  for (const c of pendentes) {
+    try {
+      await ensureClubMember(c.id);
+      inscritos++;
+    } catch (e) {
+      console.error("clube: falha ao inscrever", c.id, e);
+    }
+  }
+  return { total: pendentes.length, inscritos };
+}
+
 /** Indicações fechadas = indicadas distintas com ≥1 atendimento realizado. */
 export function contarIndicacoesFechadas(customerId: string): Promise<number> {
   return prisma.customer.count({

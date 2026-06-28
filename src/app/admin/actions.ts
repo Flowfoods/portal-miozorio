@@ -169,6 +169,7 @@ export async function adminQuickCreateCustomer(
   const c = await prisma.customer.create({
     data: { name: nome, phoneE164: e164 },
   });
+  await ensureClubMember(c.id).catch(() => null); // auto-inscrição no clube
   return {
     ok: true,
     existed: false,
