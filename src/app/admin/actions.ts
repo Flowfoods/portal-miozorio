@@ -11,6 +11,7 @@ import { ensureClubMember } from "@/lib/clube";
 import {
   resgatarRecompensa,
   ajustarPontosManual,
+  marcarVoucherEntregue,
 } from "@/lib/clube-pontos";
 import { dispatchEvent, buildEventMessage } from "@/lib/notify";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
@@ -1206,6 +1207,13 @@ export async function adminRedeemReward(formData: FormData): Promise<void> {
   const r = await resgatarRecompensa(customerId, rewardId);
   if (!r.ok) fail(r.message ?? "Não foi possível resgatar.");
   revalidatePath(`/admin/clientes/${customerId}`);
+}
+
+/** Mi marca um voucher de resgate como entregue. */
+export async function adminMarkVoucherEntregue(id: string): Promise<void> {
+  await requireAdmin();
+  await marcarVoucherEntregue(id);
+  revalidatePath("/admin/clube");
 }
 
 // ── Vitrine editável: pacotes e FAQs de noiva/debutante (Onda B) ─────────────

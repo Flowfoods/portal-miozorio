@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getClienteSession } from "@/lib/cliente-auth";
 import { getSaldoExtrato } from "@/lib/clube-pontos";
 import { contarIndicacoesFechadas } from "@/lib/clube";
-import { sairAction } from "./actions";
+import { sairAction, resgatarAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,18 +23,24 @@ export default async function ContaPage() {
   if (s.prov) redirect("/clube/conta/senha"); // troca obrigatória antes de tudo
 
   // Isolamento: TUDO pelo id da sessão — nunca por parâmetro do request.
-  const [customer, { saldo, extrato }, recompensas, fechadas] = await Promise.all([
-    prisma.customer.findUnique({
-      where: { id: s.customerId },
-      select: { name: true, referralCode: true },
-    }),
-    getSaldoExtrato(s.customerId),
-    prisma.clubReward.findMany({
-      where: { ativo: true },
-      orderBy: { custoPontos: "asc" },
-    }),
-    contarIndicacoesFechadas(s.customerId),
-  ]);
+  const [customer, { saldo, extrato }, recompensas, fechadas, vouchers] =
+    await Promise.all([
+      prisma.customer.findUnique({
+        where: { id: s.customerId },
+        select: { name: true, referralCode: true },
+      }),
+      getSaldoExtrato(s.customerId),
+      prisma.clubReward.findMany({
+        where: { ativo: true },
+        orderBy: { custoPontos: "asc" },
+      }),
+      contarIndicacoesFechadas(s.customerId),
+      prisma.clubVoucher.findMany({
+        where: { customerId: s.customerId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
   if (!customer) redirect("/clube/entrar");
 
   const primeiroNome = customer.name.split(" ")[0];
@@ -109,6 +115,77 @@ export default async function ContaPage() {
         <p className="mt-3 break-all text-center font-corpo text-xs text-mi-texto/60">
           {link}
         </p>
+      </section>
+
+      {/* Recompensas (catálogo + resgate self-service) */}
+      <section className="mt-6 rounded-mi bg-mi-branco p-5 shadow-suave">
+        <h2 className="font-titulo text-xl text-mi-marrom-escuro">Recompensas</h2>
+        {recompensas.length === 0 ? (
+          <p className="mt-2 font-corpo text-sm text-mi-texto/60">
+            Em breve, recompensas pra você trocar seus pontos 💛
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {recompensas.map((r) => {
+              const podeResgatar = saldo >= r.custoPontos;
+              return (
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 rounded-mi border border-mi-cinza p-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-corpo text-sm text-mi-texto">
+                      {r.nome}
+                    </span>
+                    <span className="font-corpo text-xs text-mi-texto/55">
+                      {r.custoPontos} pontos
+                    </span>
+                  </span>
+                  {podeResgatar ? (
+                    <form action={resgatarAction}>
+                      <input type="hidden" name="rewardId" value={r.id} />
+                      <button className="shrink-0 rounded-mi bg-mi-marrom px-4 py-2 font-corpo text-sm text-mi-branco transition-colors hover:bg-mi-marrom-escuro">
+                        Resgatar
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="shrink-0 font-corpo text-xs text-mi-texto/50">
+                      faltam {r.custoPontos - saldo}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {vouchers.length > 0 && (
+          <div className="mt-4 border-t border-mi-cinza/60 pt-3">
+            <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+              Meus resgates
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {vouchers.map((v) => (
+                <li
+                  key={v.id}
+                  className="flex items-center justify-between gap-2 font-corpo text-sm"
+                >
+                  <span className="min-w-0 truncate text-mi-texto/80">
+                    {v.rewardNome} ·{" "}
+                    <span className="font-mono text-mi-marrom-escuro">{v.codigo}</span>
+                  </span>
+                  <span
+                    className={`shrink-0 text-xs ${
+                      v.status === "entregue" ? "text-emerald-700" : "text-amber-700"
+                    }`}
+                  >
+                    {v.status === "entregue" ? "entregue" : "mostre na visita"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* Extrato */}

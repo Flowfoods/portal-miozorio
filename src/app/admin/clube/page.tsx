@@ -7,6 +7,7 @@ import {
   adminUpdateReward,
   adminDeleteReward,
   adminSetPointsPerReferral,
+  adminMarkVoucherEntregue,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
  * ficam em /admin/servicos; saldo/extrato/resgate por cliente, na ficha.
  */
 export default async function AdminClubePage() {
-  const [settings, rewards, membros, saldos] = await Promise.all([
+  const [settings, rewards, membros, saldos, vouchers] = await Promise.all([
     getSettings(),
     prisma.clubReward.findMany({ orderBy: [{ sort: "asc" }, { nome: "asc" }] }),
     prisma.customer.findMany({
@@ -29,6 +30,11 @@ export default async function AdminClubePage() {
     prisma.clubTransaction.groupBy({
       by: ["customerId"],
       _sum: { pontos: true },
+    }),
+    prisma.clubVoucher.findMany({
+      where: { status: "solicitado" },
+      include: { customer: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -49,6 +55,46 @@ export default async function AdminClubePage() {
         catálogo de recompensas. O saldo e o resgate de cada cliente ficam na
         ficha dela.
       </p>
+
+      {/* Resgates a entregar (vouchers self-service do cliente) */}
+      <section className="mb-8">
+        <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
+          Resgates a entregar{" "}
+          {vouchers.length > 0 && (
+            <span className="rounded-full bg-amber-100 px-3 py-0.5 text-sm text-amber-900">
+              {vouchers.length}
+            </span>
+          )}
+        </h2>
+        {vouchers.length === 0 ? (
+          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/60 shadow-suave">
+            Nenhum resgate pendente.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {vouchers.map((v) => (
+              <div
+                key={v.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-mi bg-mi-branco p-3 shadow-suave"
+              >
+                <div className="text-sm">
+                  <span className="font-medium">{v.customer.name}</span> ·{" "}
+                  {v.rewardNome}{" "}
+                  <span className="font-mono text-mi-marrom-escuro">{v.codigo}</span>
+                  <span className="block text-xs text-mi-texto/55">
+                    {v.custoPontos} pontos
+                  </span>
+                </div>
+                <form action={adminMarkVoucherEntregue.bind(null, v.id)}>
+                  <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+                    Marcar entregue
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Config: pontos por indicação */}
       <section className="mb-8 rounded-mi bg-mi-branco p-4 shadow-suave">

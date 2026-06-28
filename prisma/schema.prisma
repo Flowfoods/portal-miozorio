@@ -179,10 +179,11 @@ model Customer {
   waitlist    Waitlist[]
   referredBy  Customer?           @relation("Indicacoes", fields: [referredById], references: [id])
   referrals   Customer[]          @relation("Indicacoes")
-  milestones  ReferralMilestone[]
-  redemptions ClubRedemption[]
-  clubTxns    ClubTransaction[]
-  envios      EnvioMensagem[]
+  milestones   ReferralMilestone[]
+  redemptions  ClubRedemption[]
+  clubTxns     ClubTransaction[]
+  clubVouchers ClubVoucher[]
+  envios       EnvioMensagem[]
 
   @@index([referredById])
   @@index([rfvSegmento])
@@ -230,7 +231,31 @@ model ClubReward {
   sort        Int      @default(0)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  vouchers ClubVoucher[]
+
   @@map("club_rewards")
+}
+
+/// Voucher de resgate self-service (fulfillment). O débito de pontos é o
+/// ClubTransaction (tipo redemption); aqui mora o código + status que a Mi
+/// marca como entregue. Snapshots de nome/custo p/ histórico estável.
+model ClubVoucher {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId  String    @map("customer_id") @db.Uuid
+  rewardId    String?   @map("reward_id") @db.Uuid
+  rewardNome  String    @map("reward_nome")
+  custoPontos Int       @map("custo_pontos")
+  codigo      String    @unique // código curto p/ retirada
+  status      String    @default("solicitado") // solicitado | entregue | cancelado
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  entregueAt  DateTime? @map("entregue_at") @db.Timestamptz
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  reward   ClubReward? @relation(fields: [rewardId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@map("club_vouchers")
 }
 
 /// Extrato auditável de pontos. Saldo = SUM(pontos). pontos > 0 ganha,
