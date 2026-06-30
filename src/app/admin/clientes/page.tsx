@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPhoneBR } from "@/lib/format";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
+import NovaClienteForm from "@/components/admin/NovaClienteForm";
 import { adminResetStrikes } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,8 @@ export default async function AdminClientesPage({
         histórico). Quem atinge o limite de cancelamentos só reagenda com
         sinal — “Perdoar” zera e libera de novo.
       </p>
+
+      <NovaClienteForm />
 
       <form className="mb-6 flex max-w-md gap-2" action="/admin/clientes">
         <input

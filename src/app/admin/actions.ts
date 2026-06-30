@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { Prisma, FunilEtapa } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -8,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
 import { ensureClubMember } from "@/lib/clube";
+import { criarCliente } from "@/lib/cliente";
 import {
   resgatarRecompensa,
   ajustarPontosManual,
@@ -144,38 +146,41 @@ export async function adminQuickCreateCustomer(
   | { ok: false; message: string }
 > {
   await requireAdmin();
-  const nome = name.trim();
-  if (nome.length < 2) {
-    return { ok: false, message: "Informe o nome da cliente." };
-  }
-  const e164 = normalizeE164BR(phone);
-  if (!e164) {
-    return { ok: false, message: "WhatsApp inválido — use DDD + número." };
-  }
-  const existing = await prisma.customer.findUnique({
-    where: { phoneE164: e164 },
-  });
-  if (existing) {
-    return {
-      ok: true,
-      existed: true,
-      customer: {
-        id: existing.id,
-        name: existing.name,
-        phoneE164: existing.phoneE164,
-        strikes: existing.strikes,
-      },
-    };
-  }
-  const c = await prisma.customer.create({
-    data: { name: nome, phoneE164: e164 },
-  });
-  await ensureClubMember(c.id).catch(() => null); // auto-inscrição no clube
+  // Mesmo serviço único de onboarding do cadastro manual (paridade de benefícios).
+  const r = await criarCliente({ name, phone });
+  if (!r.ok) return { ok: false, message: r.message };
+  const c = r.customer;
   return {
     ok: true,
-    existed: false,
+    existed: r.existed,
     customer: { id: c.id, name: c.name, phoneE164: c.phoneE164, strikes: c.strikes },
   };
+}
+
+/**
+ * Cadastro manual de cliente pela Mi (aba Clientes). Passa pelo MESMO
+ * `criarCliente()` do fluxo normal → onboarding completo (clube + código de
+ * indicação + acesso ao portal). Dedup por telefone: já existe → abre a ficha.
+ */
+export async function adminCriarClienteManual(
+  _prev: { error: string } | null,
+  formData: FormData,
+): Promise<{ error: string } | null> {
+  await requireAdmin();
+  const r = await criarCliente({
+    name: String(formData.get("name") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    email: String(formData.get("email") ?? "") || undefined,
+    birthDate: String(formData.get("birthDate") ?? "") || undefined,
+    allergies: String(formData.get("allergies") ?? "") || undefined,
+    notes: String(formData.get("notes") ?? "") || undefined,
+    origem: String(formData.get("origem") ?? "") || undefined,
+    whatsappOptIn: formData.get("whatsappOptIn") === "on",
+  });
+  if (!r.ok) return { error: r.message };
+  revalidatePath("/admin/clientes");
+  // Created OU já existente: abre a ficha (atualizar/ver) — sem beco sem saída.
+  redirect(`/admin/clientes/${r.customer.id}`);
 }
 
 /**
