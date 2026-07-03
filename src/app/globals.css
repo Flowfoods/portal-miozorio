@@ -70,15 +70,30 @@
     opacity: 1;
   }
 }
+@keyframes miItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .mi-drawer-in {
   animation: miDrawerIn 0.25s ease-out;
 }
 .mi-fade-in {
   animation: miFadeIn 0.2s ease-out;
 }
+/* Itens do drawer entram em cascata (delay inline por item). */
+.mi-item-in {
+  animation: miItemIn 0.35s ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
   .mi-drawer-in,
-  .mi-fade-in {
+  .mi-fade-in,
+  .mi-item-in {
     animation: none;
   }
 }
