@@ -38,6 +38,7 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 - **R11** Nada quebra o que está no ar: migration só aditiva; suíte do motor verde antes de deploy.
 - **R12** Identidade: branco/bege `#F5F0E8`/cinza `#E8E6E3`/marrom `#8A7361`/`#5C4A3D`;
   Cormorant 500–600 + Jost 300–400; vibe @anaveiga; antiexemplo: rosa choque, ícone de estoque.
+  Guia completo + backlog visual: `docs/GUIA-VISUAL.md`.
 - **R13** Zero jargão na UI da Mi ("horário", nunca "slot"/"booking"/"lead").
 - **R17** Toda transição de status via `booking-service` → `booking_events` (admin grava `actor: 'admin'`).
 - **R19** Mobile-first real: validar telas novas em 390px antes do DoD (a Mi opera pelo celular).
