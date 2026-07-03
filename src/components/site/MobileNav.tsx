@@ -188,20 +188,22 @@ export default function MobileNav() {
                 className="mi-item-in"
                 style={{ animationDelay: `${80 + i * 40}ms` }}
               >
+                {/* Feedback de toque: fundo acende, nome desliza, seta aparece
+                    (hover no desktop, :active no dedo — iOS). */}
                 <NavLink
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="group flex min-h-[54px] items-baseline gap-4 py-1.5 text-mi-marrom-escuro transition-colors hover:text-mi-marrom"
+                  className="group -mx-3 flex min-h-[52px] items-center justify-between gap-3 rounded-mi px-3 py-1 text-mi-marrom-escuro transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-mi-branco/80 hover:text-mi-marrom active:bg-mi-branco active:text-mi-marrom"
                   activeClassName="italic text-mi-marrom"
                 >
+                  <span className="font-titulo text-[25px] leading-tight transition-transform duration-150 group-hover:translate-x-1.5 group-active:translate-x-1.5">
+                    {item.label}
+                  </span>
                   <span
                     aria-hidden
-                    className="w-5 shrink-0 font-corpo text-[10px] tracking-[0.2em] text-mi-marrom/45"
+                    className="text-xl leading-none text-mi-marrom opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-active:opacity-100"
                   >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="font-titulo text-[26px] leading-tight text-inherit">
-                    {item.label}
+                    ›
                   </span>
                 </NavLink>
               </li>
