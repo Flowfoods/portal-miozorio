@@ -20,6 +20,17 @@
     font-weight: 500;
     color: var(--mi-marrom-escuro);
   }
+  /* Foco visível on-brand em todo elemento interativo (teclado/a11y). */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--mi-marrom);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer components {
@@ -28,6 +39,17 @@
   }
   .input-mi:focus {
     @apply border-mi-marrom;
+  }
+  /* Carrossel horizontal mobile: scroll-snap suave, sem barra visível. */
+  .mi-carrossel {
+    @apply flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2;
+    scrollbar-width: none;
+  }
+  .mi-carrossel::-webkit-scrollbar {
+    display: none;
+  }
+  .mi-carrossel > * {
+    @apply snap-start;
   }
 }
 

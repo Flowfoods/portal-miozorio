@@ -15,6 +15,8 @@ const config: Config = {
           cinza: "#E8E6E3",
           marrom: "#8A7361",
           "marrom-escuro": "#5C4A3D",
+          "marrom-suave": "#A89380",
+          ok: "#7A8B6F",
           texto: "#3D3733",
           // Superfícies do /admin (ver src/styles/tokens.css)
           "superficie-nav": "var(--mi-superficie-nav)",
