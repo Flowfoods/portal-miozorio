@@ -12,6 +12,7 @@ export interface NavItem {
 }
 
 export const NAV_LINKS: NavItem[] = [
+  { href: "/", label: "Início" },
   { href: "/#servicos", label: "Serviços" },
   { href: "/dia-a-dia", label: "Dia a dia" },
   // Curso é serviço agendável: o link já pré-seleciona no wizard (?servico=).
