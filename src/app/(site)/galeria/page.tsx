@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
+import GaleriaLightbox from "@/components/site/GaleriaLightbox";
+import Botao from "@/components/ui/Botao";
 
 export const dynamic = "force-dynamic";
 
@@ -31,32 +31,13 @@ export default async function GaleriaPage() {
           Em breve, os trabalhos da Mi por aqui.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {fotos.map((foto) => (
-            <div
-              key={foto.id}
-              className="relative aspect-[4/5] overflow-hidden rounded-mi bg-mi-bege"
-            >
-              <Image
-                src={foto.url}
-                alt={foto.alt}
-                fill
-                loading="lazy"
-                sizes="(max-width: 640px) 50vw, 320px"
-                className="object-cover"
-              />
-            </div>
-          ))}
-        </div>
+        <GaleriaLightbox
+          fotos={fotos.map((f) => ({ id: f.id, url: f.url, alt: f.alt }))}
+        />
       )}
 
       <div className="mt-12 text-center">
-        <Link
-          href="/agendar"
-          className="inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-7 font-corpo text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-        >
-          Quero agendar meu horário
-        </Link>
+        <Botao href="/agendar">Quero agendar meu horário</Botao>
       </div>
     </main>
   );

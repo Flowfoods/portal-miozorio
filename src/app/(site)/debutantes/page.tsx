@@ -3,6 +3,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
 import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
+import Botao from "@/components/ui/Botao";
 
 export const metadata: Metadata = pageMeta({
   path: "/debutantes",
@@ -28,7 +29,10 @@ export default async function DebutantesPage() {
         data={faqSchema(faqs.map((f) => ({ q: f.pergunta, a: f.resposta })))}
       />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
-        <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+        <span className="inline-block rounded-full border border-mi-cinza bg-mi-branco px-4 py-1.5 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
+          Atendimento exclusivo — uma debutante por dia
+        </span>
+        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           {content["debutantes.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
@@ -45,10 +49,15 @@ export default async function DebutantesPage() {
           {pacotes.map((p) => (
             <article
               key={p.nome}
-              className={`flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
+              className={`relative flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
                 p.destaque ? "border-mi-marrom" : "border-mi-cinza"
               }`}
             >
+              {p.destaque && (
+                <span className="absolute -top-3 left-8 rounded-full bg-mi-marrom px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-branco">
+                  Mais escolhido
+                </span>
+              )}
               <h2 className="font-titulo text-3xl text-mi-marrom-escuro">
                 {p.nome}
               </h2>
@@ -132,19 +141,18 @@ export default async function DebutantesPage() {
       </section>
 
       {/* CTA WhatsApp (R1) */}
-      <section className="mx-auto max-w-2xl px-5 pb-20 text-center">
-        <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
-          {content["debutantes.cta.title"]}
-        </h2>
-        <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          {content["debutantes.cta.subtitle"]}
-        </p>
-        <a
-          href={WA}
-          className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-        >
-          {content["debutantes.cta.button"]}
-        </a>
+      <section className="bg-mi-superficie-nav">
+        <div className="mx-auto max-w-2xl px-5 py-20 text-center">
+          <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
+            {content["debutantes.cta.title"]}
+          </h2>
+          <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
+            {content["debutantes.cta.subtitle"]}
+          </p>
+          <Botao href={WA} className="mt-8">
+            {content["debutantes.cta.button"]}
+          </Botao>
+        </div>
       </section>
     </main>
   );

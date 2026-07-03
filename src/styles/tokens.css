@@ -7,6 +7,8 @@
   --mi-cinza: #e8e6e3; /* superfícies/divisores */
   --mi-marrom: #8a7361; /* acento, títulos, botões */
   --mi-marrom-escuro: #5c4a3d; /* hover/texto forte */
+  --mi-marrom-suave: #a89380; /* bordas de destaque, estados desabilitados */
+  --mi-ok: #7a8b6f; /* confirmação on-brand (verde-oliva discreto) */
   --mi-texto: #3d3733;
 
   /* Superfícies do painel /admin (sistema de 2-3 níveis): coluna de navegação

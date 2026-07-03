@@ -3,6 +3,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { faqSchema, pageMeta } from "@/lib/seo";
 import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
+import Botao from "@/components/ui/Botao";
 
 export const metadata: Metadata = pageMeta({
   path: "/noivas",
@@ -28,7 +29,10 @@ export default async function NoivasPage() {
         data={faqSchema(faqs.map((f) => ({ q: f.pergunta, a: f.resposta })))}
       />
       <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-24">
-        <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+        <span className="inline-block rounded-full border border-mi-cinza bg-mi-branco px-4 py-1.5 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
+          Atendimento exclusivo — uma noiva por dia
+        </span>
+        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
           {content["noivas.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
@@ -43,11 +47,17 @@ export default async function NoivasPage() {
       <section className="mx-auto max-w-5xl px-5 py-8">
         <div className="grid gap-8 sm:grid-cols-3">
           {jornada.map((j, i) => (
-            <div key={j.o}>
-              <span className="font-titulo text-3xl text-mi-marrom">
+            <div key={j.o} className="relative">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-mi-marrom/40 bg-mi-branco font-titulo text-xl text-mi-marrom shadow-suave">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <h2 className="mt-2 font-titulo text-2xl text-mi-marrom-escuro">
+              {i < jornada.length - 1 && (
+                <span
+                  aria-hidden
+                  className="absolute left-14 top-6 hidden h-px w-[calc(100%-4rem)] bg-mi-cinza sm:block"
+                />
+              )}
+              <h2 className="mt-4 font-titulo text-2xl text-mi-marrom-escuro">
                 {j.o}
               </h2>
               <p className="mt-2 font-corpo text-sm text-mi-texto">{j.v}</p>
@@ -67,10 +77,15 @@ export default async function NoivasPage() {
           {pacotes.map((p) => (
             <article
               key={p.nome}
-              className={`flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
+              className={`relative flex flex-col rounded-mi border bg-mi-branco p-8 shadow-suave ${
                 p.destaque ? "border-mi-marrom" : "border-mi-cinza"
               }`}
             >
+              {p.destaque && (
+                <span className="absolute -top-3 left-8 rounded-full bg-mi-marrom px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-branco">
+                  Mais escolhido
+                </span>
+              )}
               <h3 className="font-titulo text-3xl text-mi-marrom-escuro">
                 {p.nome}
               </h3>
@@ -177,19 +192,18 @@ export default async function NoivasPage() {
       </section>
 
       {/* CTA único — WhatsApp (R1) */}
-      <section className="mx-auto max-w-2xl px-5 py-20 text-center">
-        <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
-          {content["noivas.cta.title"]}
-        </h2>
-        <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          {content["noivas.cta.subtitle"]}
-        </p>
-        <a
-          href={WA}
-          className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-        >
-          {content["noivas.cta.button"]}
-        </a>
+      <section className="bg-mi-superficie-nav">
+        <div className="mx-auto max-w-2xl px-5 py-20 text-center">
+          <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro">
+            {content["noivas.cta.title"]}
+          </h2>
+          <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
+            {content["noivas.cta.subtitle"]}
+          </p>
+          <Botao href={WA} className="mt-8">
+            {content["noivas.cta.button"]}
+          </Botao>
+        </div>
       </section>
     </main>
   );

@@ -17,11 +17,17 @@ export default function EntrarPage() {
 
   return (
     <main className="mx-auto max-w-md px-5 pb-24 pt-14">
-      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p
+        aria-hidden
+        className="select-none text-center font-titulo text-5xl font-medium italic text-mi-marrom/25"
+      >
+        Mi
+      </p>
+      <p className="mt-4 text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
         Clube Mi Ozorio
       </p>
       <h1 className="mt-3 text-center font-titulo text-3xl text-mi-marrom-escuro">
-        Sua área de pontos
+        Que bom te ver por aqui 💛
       </h1>
       <p className="mt-3 text-center font-corpo text-mi-texto/80">
         Entre para ver seus pontos, seu link de indicação e os prêmios.

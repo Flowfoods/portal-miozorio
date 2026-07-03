@@ -25,7 +25,7 @@ export default function Header() {
               key={item.href}
               href={item.href}
               className="font-corpo text-sm text-mi-texto transition-colors hover:text-mi-marrom-escuro"
-              activeClassName="text-mi-marrom-escuro"
+              activeClassName="text-mi-marrom-escuro underline decoration-mi-marrom decoration-[1.5px] underline-offset-8"
             >
               {item.label}
             </NavLink>
