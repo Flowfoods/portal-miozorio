@@ -8,6 +8,11 @@ import {
   maskPhoneBR,
   formatDateLong,
 } from "@/lib/format";
+import Tabs from "@/components/ui/Tabs";
+import Chip from "@/components/ui/Chip";
+import WeekStrip, { type DiaStrip } from "@/components/ui/WeekStrip";
+import Botao from "@/components/ui/Botao";
+import BarraResumo from "./BarraResumo";
 
 interface ApiService {
   id: string;
@@ -36,6 +41,15 @@ const OCCASIONS = [
 
 const STEPS = ["Serviço", "Data", "Horário", "Seus dados", "Confirmação"];
 
+/* Rótulos humanos por categoria do banco — apresentação, não regra (R13). */
+const CATEGORIA_LABELS: Record<string, string> = {
+  social: "Maquiagem",
+  cabelo: "Penteado & cabelo",
+  sobrancelha: "Sobrancelha",
+  curso: "Curso",
+};
+const CATEGORIA_ORDEM = ["social", "cabelo", "sobrancelha", "curso"];
+
 export default function AgendarWizard() {
   const [step, setStep] = useState(1);
 
@@ -44,6 +58,7 @@ export default function AgendarWizard() {
 
   const [service, setService] = useState<ApiService | null>(null);
   const [location, setLocation] = useState<Location>("studio");
+  const [categoria, setCategoria] = useState("todos");
 
   const [date, setDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
@@ -94,6 +109,33 @@ export default function AgendarWizard() {
   const priceForLocation = (s: ApiService): number | null =>
     location === "home" ? s.priceHomeCents : s.priceCents;
 
+  // Tabs de categoria derivadas dos serviços do banco (R3).
+  const categorias = useMemo(() => {
+    if (!services) return [];
+    const presentes = Array.from(new Set(services.map((s) => s.category)));
+    presentes.sort((a, b) => {
+      const ia = CATEGORIA_ORDEM.indexOf(a);
+      const ib = CATEGORIA_ORDEM.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    return [
+      { id: "todos", label: "Todos" },
+      ...presentes.map((c) => ({
+        id: c,
+        label:
+          CATEGORIA_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1),
+      })),
+    ];
+  }, [services]);
+
+  const servicosFiltrados = useMemo(
+    () =>
+      categoria === "todos"
+        ? services
+        : (services?.filter((s) => s.category === categoria) ?? null),
+    [services, categoria],
+  );
+
   const validDates = useMemo(() => {
     if (!service) return [];
     const out: string[] = [];
@@ -118,6 +160,30 @@ export default function AgendarWizard() {
     }
     return out;
   }, [service]);
+
+  // Datas agrupadas por mês para o week-strip (guia visual §2.2).
+  const gruposMes = useMemo(() => {
+    const grupos: { mes: string; dias: DiaStrip[] }[] = [];
+    for (const iso of validDates.slice(0, 24)) {
+      const d = new Date(`${iso}T12:00:00`);
+      const mes = d.toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric",
+      });
+      const dia: DiaStrip = {
+        id: iso,
+        diaSemana: d
+          .toLocaleDateString("pt-BR", { weekday: "short" })
+          .replace(".", "")
+          .toUpperCase(),
+        diaMes: String(d.getDate()).padStart(2, "0"),
+      };
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && ultimo.mes === mes) ultimo.dias.push(dia);
+      else grupos.push({ mes, dias: [dia] });
+    }
+    return grupos;
+  }, [validDates]);
 
   useEffect(() => {
     if (!service || !date) return;
@@ -219,8 +285,12 @@ export default function AgendarWizard() {
     return <SuccessScreen service={service} date={date} time={time} />;
   }
 
+  const mostraBarra = step >= 2 && step <= 4 && service !== null;
+
   return (
-    <div className="mx-auto w-full max-w-lg px-5 py-8">
+    <div
+      className={`mx-auto w-full max-w-lg px-5 py-8 ${mostraBarra ? "pb-28" : ""}`}
+    >
       <Stepper step={step} />
 
       {/* STEP 1 — Serviço */}
@@ -258,8 +328,19 @@ export default function AgendarWizard() {
           )}
           {!services && !loadError && <CardsSkeleton />}
 
+          {categorias.length > 2 && (
+            <div className="mt-6">
+              <Tabs
+                items={categorias}
+                ativo={categoria}
+                onSelect={setCategoria}
+                ariaLabel="Categorias de atendimento"
+              />
+            </div>
+          )}
+
           <div className="mt-6 space-y-3">
-            {services?.map((s) => {
+            {servicosFiltrados?.map((s) => {
               const price = priceForLocation(s);
               const unavailableHome = location === "home" && s.priceHomeCents === null;
               return (
@@ -308,22 +389,21 @@ export default function AgendarWizard() {
               : "Atendimentos aos sábados e domingos"}
           </p>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {validDates.slice(0, 18).map((d) => (
-              <button
-                key={d}
-                onClick={() => {
-                  setDate(d);
-                  setStep(3);
-                }}
-                className="min-h-[56px] rounded-mi border border-mi-cinza bg-mi-branco px-3 py-2 font-corpo text-sm capitalize text-mi-texto shadow-suave transition-colors hover:border-mi-marrom"
-              >
-                {new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR", {
-                  weekday: "short",
-                  day: "2-digit",
-                  month: "short",
-                })}
-              </button>
+          <div className="mt-6 space-y-6">
+            {gruposMes.map((grupo) => (
+              <div key={grupo.mes}>
+                <p className="mb-3 font-corpo text-sm capitalize text-mi-marrom">
+                  {grupo.mes}
+                </p>
+                <WeekStrip
+                  dias={grupo.dias}
+                  ariaLabel={`Dias disponíveis em ${grupo.mes}`}
+                  onSelect={(iso) => {
+                    setDate(iso);
+                    setStep(3);
+                  }}
+                />
+              </div>
             ))}
           </div>
         </section>
@@ -348,16 +428,15 @@ export default function AgendarWizard() {
           )}
           <div className="mt-6 flex flex-wrap gap-2">
             {slots?.map((hhmm) => (
-              <button
+              <Chip
                 key={hhmm}
                 onClick={() => {
                   setTime(hhmm);
                   setStep(4);
                 }}
-                className="min-h-[48px] rounded-mi border border-mi-cinza bg-mi-branco px-5 font-corpo text-mi-texto shadow-suave transition-colors hover:border-mi-marrom"
               >
                 {hhmm}
-              </button>
+              </Chip>
             ))}
           </div>
         </section>
@@ -510,6 +589,22 @@ export default function AgendarWizard() {
           </button>
         </section>
       )}
+
+      {mostraBarra && service && (
+        <BarraResumo
+          servico={service.name}
+          preco={
+            service.pendingPrice || priceForLocation(service) === null
+              ? "valor sob consulta"
+              : formatBRL(priceForLocation(service) as number)
+          }
+          detalhe={
+            date
+              ? `${formatDateLong(date)}${time ? ` · ${time}` : ""}`
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
@@ -658,6 +753,23 @@ function SuccessScreen({
 }) {
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
+      <span
+        aria-hidden
+        className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-mi-ok/10 text-mi-ok"
+      >
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
       <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
         Agendamento confirmado
       </p>
@@ -673,12 +785,9 @@ function SuccessScreen({
         Você vai receber a confirmação no WhatsApp Lembre de levar referências
         do que deseja!
       </p>
-      <a
-        href="/"
-        className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-      >
+      <Botao href="/" className="mt-8">
         Voltar ao início
-      </a>
+      </Botao>
     </div>
   );
 }
