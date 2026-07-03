@@ -15,11 +15,11 @@ export const NAV_LINKS: NavItem[] = [
   { href: "/", label: "Início" },
   { href: "/#servicos", label: "Serviços" },
   { href: "/dia-a-dia", label: "Dia a dia" },
+  { href: "/clube", label: "Clube" },
   // Curso é serviço agendável: o link já pré-seleciona no wizard (?servico=).
   { href: "/agendar?servico=curso-automaquiagem", label: "Curso" },
   { href: "/galeria", label: "Galeria" },
   { href: "/noivas", label: "Noivas" },
   { href: "/debutantes", label: "Debutantes" },
-  { href: "/clube", label: "Clube" },
   { href: "/sobre", label: "Sobre" },
 ];
