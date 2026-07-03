@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { formatBRL, formatDuration } from "@/lib/format";
 import { getSiteContent } from "@/lib/content";
+import Botao from "@/components/ui/Botao";
+import EstadoVazio from "@/components/ui/EstadoVazio";
 
 // Catálogo vem do banco e não tem hook de revalidação (preços/serviços mudam
 // no admin). Dinâmico garante frescor; a query é pequena e o SSR mantém o SEO.
@@ -75,19 +76,11 @@ function Lista({ titulo, itens }: { titulo: string; itens: Servico[] }) {
             </p>
             <div className="mt-4">
               {s.bookableOnline ? (
-                <Link
-                  href={`/agendar?servico=${s.code}`}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-mi bg-mi-marrom px-6 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
-                >
-                  Agendar
-                </Link>
+                <Botao href={`/agendar?servico=${s.code}`}>Agendar</Botao>
               ) : (
-                <Link
-                  href="/agendar"
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-mi border border-mi-marrom px-6 font-corpo text-mi-marrom-escuro transition-colors hover:bg-mi-cinza"
-                >
+                <Botao href="/agendar" variante="secundario">
                   Agendar
-                </Link>
+                </Botao>
               )}
             </div>
           </div>
@@ -114,9 +107,11 @@ export default async function DiaADiaPage() {
       </header>
 
       {vazio ? (
-        <p className="font-corpo text-mi-texto/70">
-          Em breve, os serviços do dia a dia por aqui.
-        </p>
+        <EstadoVazio
+          titulo="Em breve por aqui"
+          descricao="Os serviços do dia a dia estão sendo combinados. Enquanto isso, é só chamar a Mi."
+          cta={{ label: "Falar com a Mi", href: "https://wa.me/5521970225231?text=Oi%20Mi!%20Vim%20pelo%20site" }}
+        />
       ) : (
         <>
           <Lista titulo="Cabelo" itens={cabelo} />
