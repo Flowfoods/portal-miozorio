@@ -10,6 +10,9 @@ import {
   SEGMENTO_STYLE,
 } from "@/lib/clube";
 import { saldoDoCliente } from "@/lib/clube-pontos";
+import Chip from "@/components/ui/Chip";
+import WeekStrip, { type DiaStrip } from "@/components/ui/WeekStrip";
+import EstadoVazio from "@/components/ui/EstadoVazio";
 
 export const metadata: Metadata = {
   title: "Minha carteirinha · Clube Mi Ozorio",
@@ -38,7 +41,7 @@ export default async function PainelMembroPage({
   });
   if (!membro?.clubJoinedAt) notFound();
 
-  const [settings, fechadas, ocasioes, ultima, saldo, recompensas] =
+  const [settings, fechadas, ocasioes, ultima, saldo, recompensas, proximo] =
     await Promise.all([
       getSettings(),
       contarIndicacoesFechadas(membro.id),
@@ -54,6 +57,16 @@ export default async function PainelMembroPage({
       prisma.clubReward.findMany({
         where: { ativo: true },
         orderBy: [{ sort: "asc" }, { custoPontos: "asc" }],
+      }),
+      // Próximo atendimento da membro (só o dela — R18) para "Minha agenda".
+      prisma.booking.findFirst({
+        where: {
+          customerId: membro.id,
+          status: { in: ["pending", "confirmed"] },
+          startsAt: { gte: new Date() },
+        },
+        orderBy: { startsAt: "asc" },
+        select: { startsAt: true, service: { select: { name: true } } },
       }),
     ]);
 
@@ -72,11 +85,44 @@ export default async function PainelMembroPage({
     `Oi! Eu me arrumo com a Mi Ozorio e acho que você vai amar Conta que eu indiquei: ${linkIndicacao}`,
   );
 
+  // "Minha agenda": próximos 7 dias, com o dia do atendimento em destaque.
+  const hoje = DateTime.now().setZone(settings.timezone).setLocale("pt-BR");
+  const proximoDt = proximo
+    ? DateTime.fromJSDate(proximo.startsAt)
+        .setZone(settings.timezone)
+        .setLocale("pt-BR")
+    : null;
+  const diasAgenda: DiaStrip[] = Array.from({ length: 7 }).map((_, i) => {
+    const d = hoje.plus({ days: i });
+    return {
+      id: d.toISODate() ?? String(i),
+      diaSemana: d.toFormat("ccc").replace(".", "").toUpperCase(),
+      diaMes: d.toFormat("dd"),
+      ativo: proximoDt?.toISODate() === d.toISODate(),
+    };
+  });
+  const primeiroNome = membro.name.trim().split(/\s+/)[0] ?? membro.name;
+
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-12">
+      {/* Saudação + ações rápidas */}
+      <h1 className="font-titulo text-3xl text-mi-marrom-escuro">
+        Olá, {primeiroNome} 💛
+      </h1>
+      <div className="mi-carrossel -mx-5 mt-4 px-5">
+        <Chip href="/agendar" ativo>
+          Agendar
+        </Chip>
+        <Chip href="#minha-agenda">Minha agenda</Chip>
+        <Chip href="#pontos">Meus pontos</Chip>
+        <Chip href="https://wa.me/5521970225231?text=Oi%20Mi!">
+          Falar com a Mi
+        </Chip>
+      </div>
+
       {/* Carteirinha digital */}
       <section
-        className="rounded-2xl border border-mi-cinza bg-gradient-to-br from-mi-branco to-mi-bege p-6 shadow-suave"
+        className="mt-8 rounded-2xl border border-mi-cinza bg-gradient-to-br from-mi-branco to-mi-bege p-6 shadow-suave"
         aria-label="Carteirinha do Clube Mi Ozorio"
       >
         <div className="flex items-start justify-between">
@@ -108,8 +154,49 @@ export default async function PainelMembroPage({
         Guarde o link desta página — ela é a sua carteirinha
       </p>
 
+      {/* Minha agenda */}
+      <section
+        id="minha-agenda"
+        className="mt-10 rounded-mi bg-mi-branco p-6 shadow-suave"
+      >
+        <h2 className="text-2xl">Minha agenda</h2>
+        <div className="mt-4">
+          <WeekStrip dias={diasAgenda} ariaLabel="Próximos 7 dias" />
+        </div>
+        {proximo && proximoDt ? (
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-mi border border-mi-marrom bg-mi-bege/50 p-4">
+            <div>
+              <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
+                {proximo.service.name}
+              </p>
+              <p className="font-corpo text-xs capitalize text-mi-texto/70">
+                {proximoDt.toFormat("cccc, dd 'de' LLLL")} ·{" "}
+                {proximoDt.toFormat("HH:mm")}
+              </p>
+            </div>
+            <span
+              aria-hidden
+              className="shrink-0 font-titulo text-2xl text-mi-marrom/40"
+            >
+              Mi
+            </span>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <EstadoVazio
+              titulo="Nenhum horário marcado"
+              descricao="Que tal garantir seu próximo momento de cuidado?"
+              cta={{ label: "Agendar um horário", href: "/agendar" }}
+            />
+          </div>
+        )}
+      </section>
+
       {/* Indicações */}
-      <section className="mt-10 rounded-mi bg-mi-branco p-6 shadow-suave">
+      <section
+        id="indicacoes"
+        className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave"
+      >
         <h2 className="text-2xl">Suas indicações</h2>
         <p className="mt-2 font-corpo text-sm text-mi-texto/80">
           <strong>{fechadas}</strong> amiga(s) já se cuidaram com a Mi pela sua
@@ -133,7 +220,7 @@ export default async function PainelMembroPage({
       </section>
 
       {/* Pontos */}
-      <section className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave">
+      <section id="pontos" className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave">
         <h2 className="text-2xl">Seus pontos</h2>
         <p className="mt-2 font-corpo text-4xl text-mi-marrom-escuro">
           {saldo}{" "}
