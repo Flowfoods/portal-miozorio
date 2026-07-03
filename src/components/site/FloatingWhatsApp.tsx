@@ -1,12 +1,19 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 /**
  * CTA flutuante de WhatsApp — discreto, presente em todo o site público.
  * Conversão sempre a um toque, sem precisar rolar até o footer. Sai do caminho
  * de leitura (canto inferior direito) e tem alvo ≥48px (R19).
+ * Em /agendar não aparece: a barra de resumo fixa assume o rodapé da tela.
  */
 const WA =
   "https://wa.me/5521970225231?text=Oi%20Mi!%20Vim%20pelo%20site%20e%20quero%20tirar%20uma%20d%C3%BAvida";
 
 export default function FloatingWhatsApp() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/agendar")) return null;
   return (
     <a
       href={WA}
