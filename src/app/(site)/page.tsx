@@ -6,6 +6,8 @@ import { getPublishedMedia } from "@/lib/media";
 import { getPublishedTestimonials } from "@/lib/testimonials";
 import { getSiteContent, parseServicos, parseTabela } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
+import Botao from "@/components/ui/Botao";
+import CardServico from "@/components/ui/CardServico";
 
 // ISR: as fotos vêm do banco (media_assets). Mudanças no painel chamam
 // revalidatePath("/") e aparecem na hora; 1h é só o teto de segurança.
@@ -32,7 +34,8 @@ export default async function Home() {
       {/* HERO */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>
-          <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+          <p className="flex items-center gap-3 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+            <span aria-hidden className="h-px w-8 bg-mi-marrom" />
             {content["home.hero.eyebrow"]}
           </p>
           <h1 className="mt-5 text-balance font-titulo text-5xl leading-[1.05] text-mi-marrom-escuro sm:text-6xl">
@@ -42,18 +45,10 @@ export default async function Home() {
             {content["home.hero.subtitle"]}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/agendar"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-7 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-            >
-              {content["home.hero.cta_primary"]}
-            </Link>
-            <Link
-              href="/#especiais"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-mi border border-mi-marrom px-7 font-corpo text-base text-mi-marrom-escuro transition-colors hover:bg-mi-cinza"
-            >
+            <Botao href="/agendar">{content["home.hero.cta_primary"]}</Botao>
+            <Botao href="/#especiais" variante="secundario">
               {content["home.hero.cta_secondary"]}
-            </Link>
+            </Botao>
           </div>
         </div>
 
@@ -83,23 +78,20 @@ export default async function Home() {
             {content["home.servicos.subtitle"]}
           </p>
         </header>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Carrossel no mobile (scroll-snap), grid a partir de sm. */}
+        <div className="mi-carrossel -mx-5 px-5 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
           {servicos.map((s) => (
-            <Link
+            <div
               key={s.nome}
-              href="/agendar"
-              className="group flex flex-col rounded-mi border border-mi-cinza bg-mi-branco p-6 shadow-suave transition-colors hover:border-mi-marrom"
+              className="w-[72vw] max-w-[280px] shrink-0 sm:w-auto sm:max-w-none"
             >
-              <h3 className="font-titulo text-2xl text-mi-marrom-escuro">
-                {s.nome}
-              </h3>
-              <p className="mt-2 flex-1 font-corpo text-sm text-mi-texto">
-                {s.desc}
-              </p>
-              <p className="mt-4 font-corpo text-sm font-medium text-mi-marrom">
-                {s.preco}
-              </p>
-            </Link>
+              <CardServico
+                nome={s.nome}
+                descricao={s.desc}
+                preco={s.preco}
+                href="/agendar"
+              />
+            </div>
           ))}
         </div>
       </section>
@@ -171,14 +163,20 @@ export default async function Home() {
               {content["home.depoimentos.title"]}
             </h2>
           </header>
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="mi-carrossel -mx-5 px-5 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
             {depoimentos.map((d, i) => (
               <figure
                 key={i}
-                className="rounded-mi border border-mi-cinza bg-mi-branco p-6 shadow-suave"
+                className="w-[78vw] max-w-[320px] shrink-0 rounded-mi border border-mi-cinza bg-mi-branco p-6 shadow-suave sm:w-auto sm:max-w-none"
               >
-                <blockquote className="font-corpo text-mi-texto">
-                  “{d.quote}”
+                <span
+                  aria-hidden
+                  className="block font-titulo text-5xl leading-none text-mi-marrom/30"
+                >
+                  “
+                </span>
+                <blockquote className="mt-1 font-titulo text-lg italic text-mi-texto">
+                  {d.quote}
                 </blockquote>
                 <figcaption className="mt-4 font-corpo text-sm text-mi-marrom">
                   {d.author}
@@ -217,9 +215,12 @@ export default async function Home() {
             <Link
               key={c.href}
               href={c.href}
-              className="group rounded-mi border border-mi-cinza bg-mi-branco p-8 shadow-suave transition-colors hover:border-mi-marrom"
+              className="group relative overflow-hidden rounded-mi border border-mi-cinza bg-mi-branco p-8 shadow-suave transition-colors hover:border-mi-marrom"
             >
-              <p className="font-corpo text-xs uppercase tracking-[0.25em] text-mi-marrom">
+              <span className="inline-block rounded-full bg-mi-bege px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
+                Atendimento exclusivo
+              </span>
+              <p className="mt-4 font-corpo text-xs uppercase tracking-[0.25em] text-mi-marrom">
                 {c.sub}
               </p>
               <h3 className="mt-2 font-titulo text-3xl text-mi-marrom-escuro">
@@ -234,20 +235,19 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="mx-auto max-w-3xl px-5 py-20 text-center">
-        <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro sm:text-5xl">
-          {content["home.cta.title"]}
-        </h2>
-        <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
-          {content["home.cta.subtitle"]}
-        </p>
-        <Link
-          href="/agendar"
-          className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-mi bg-mi-marrom px-8 font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
-        >
-          {content["home.cta.button"]}
-        </Link>
+      {/* CTA FINAL — faixa quente para fechar a página */}
+      <section className="bg-mi-superficie-nav">
+        <div className="mx-auto max-w-3xl px-5 py-20 text-center">
+          <h2 className="text-balance font-titulo text-4xl text-mi-marrom-escuro sm:text-5xl">
+            {content["home.cta.title"]}
+          </h2>
+          <p className="mx-auto mt-4 max-w-md font-corpo text-mi-texto">
+            {content["home.cta.subtitle"]}
+          </p>
+          <Botao href="/agendar" className="mt-8">
+            {content["home.cta.button"]}
+          </Botao>
+        </div>
       </section>
     </main>
   );
