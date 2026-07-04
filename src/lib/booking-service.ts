@@ -7,6 +7,7 @@ import { evaluateCancellation, evaluateNoShow } from "./policies";
 import {
   creditarPontosServico,
   creditarPontosIndicacao,
+  creditarBonusReagendamento,
 } from "./clube-pontos";
 import { ensureClubMember } from "./clube";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
@@ -26,6 +27,8 @@ export interface CreateBookingInput {
   };
   anamnesis?: Record<string, unknown>;
   lgpdConsent: boolean;
+  /** "web" (default) | "area_cliente" — origem p/ o bônus de reagendamento (F5). */
+  source?: "web" | "area_cliente";
 }
 
 export type CreateBookingResult =
@@ -157,7 +160,7 @@ export async function createBooking(
           ...(input.anamnesis !== undefined
             ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
             : {}),
-          source: "web",
+          source: input.source ?? "web",
         },
       });
       await tx.bookingEvent.create({
@@ -641,6 +644,11 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
   try {
     await creditarPontosServico(id);
     await creditarPontosIndicacao(booking.customerId);
+    // (3) bônus de reagendamento (F5): só se o agendamento veio da retenção da
+    //     Área da Cliente e a Mi ligou o incentivo (default 0). Idempotente.
+    if (booking.source === "area_cliente") {
+      await creditarBonusReagendamento(id, booking.customerId);
+    }
   } catch (e) {
     console.error("clube: falha ao creditar pontos", e);
   }

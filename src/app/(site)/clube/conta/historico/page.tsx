@@ -185,7 +185,7 @@ export default async function HistoricoPage() {
                       )}
                       {agendavel ? (
                         <Botao
-                          href={`/agendar?servico=${b.service.code}`}
+                          href={`/agendar?servico=${b.service.code}&origem=cuidar`}
                           variante="secundario"
                           className="w-full !min-h-[46px] text-sm"
                         >

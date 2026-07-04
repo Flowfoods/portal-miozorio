@@ -1261,6 +1261,28 @@ export async function adminSetPointsPerReferral(
   revalidatePath("/admin/clube");
 }
 
+/** Pontos de engajamento (F5/Área da Cliente): depoimento, foto, reagendamento. */
+export async function adminSetPointsEngajamento(
+  formData: FormData,
+): Promise<void> {
+  await requireAdmin();
+  const chaves = {
+    depoimento: "club_points_depoimento",
+    foto: "club_points_foto",
+    reagendamento: "club_points_reagendamento",
+  } as const;
+  for (const [campo, key] of Object.entries(chaves)) {
+    const valor = Math.max(0, Math.trunc(Number(formData.get(campo)) || 0));
+    await prisma.businessSetting.upsert({
+      where: { key },
+      update: { value: valor },
+      create: { key, value: valor },
+    });
+  }
+  invalidateSettingsCache();
+  revalidatePath("/admin/clube");
+}
+
 export async function adminAdjustPoints(formData: FormData): Promise<void> {
   await requireAdmin();
   const customerId = String(formData.get("customerId") ?? "");

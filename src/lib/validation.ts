@@ -30,6 +30,9 @@ export const createBookingBody = z.object({
   }),
   anamnesis: z.record(z.string(), z.unknown()).optional(),
   lgpdConsent: z.boolean(),
+  // Origem do agendamento público. "area_cliente" = veio da retenção da Área
+  // da Cliente (habilita o bônus de reagendamento na conclusão — F5).
+  source: z.enum(["web", "area_cliente"]).default("web"),
 });
 
 export const cancelBody = z.object({

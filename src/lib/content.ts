@@ -402,10 +402,10 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.pos_atendimento",
     label: "WhatsApp · pós-atendimento (dia seguinte)",
     default:
-      "Oi, {nome}!\n\nFoi um prazer te atender de {servico} ontem. Como você se sentiu? Se puder, me conta — e se topar, adoraria registrar o resultado (só com a sua autorização).",
+      "Oi, {nome}!\n\nFoi um prazer te atender de {servico} ontem 💛 Como você se sentiu? Se quiser contar como foi (e mostrar o resultado, só com a sua autorização), é rapidinho na sua área: https://miozorio.com.br/clube/conta/momentos",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia certo.",
+    ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia seguinte, convida a deixar um depoimento na Área da Cliente.",
   },
   {
     key: "msg.reconexao",
