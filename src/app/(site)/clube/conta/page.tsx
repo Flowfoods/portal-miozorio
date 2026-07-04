@@ -6,9 +6,15 @@ import { prisma } from "@/lib/prisma";
 import { getClienteSession } from "@/lib/cliente-auth";
 import { saldoDoCliente } from "@/lib/clube-pontos";
 import { getSettings } from "@/lib/settings";
+import { getSugestaoRetorno } from "@/lib/retencao";
 import ContaShell from "@/components/clube/ContaShell";
 import Botao from "@/components/ui/Botao";
 import EstadoVazio from "@/components/ui/EstadoVazio";
+
+const WA_CUIDAR = (servico: string) =>
+  `https://wa.me/5521970225231?text=${encodeURIComponent(
+    `Oi Mi! Quero marcar de novo: ${servico} 💛`,
+  )}`;
 
 export const metadata: Metadata = {
   title: "Minha área · Mi Ozorio",
@@ -27,27 +33,29 @@ export default async function InicioPage() {
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha"); // troca obrigatória antes de tudo
 
-  const [customer, saldo, settings, proximo, atendimentos] = await Promise.all([
-    prisma.customer.findUnique({
-      where: { id: s.customerId },
-      select: { name: true },
-    }),
-    saldoDoCliente(s.customerId),
-    getSettings(),
-    // Próximo horário da própria cliente (isolamento pela sessão — R18).
-    prisma.booking.findFirst({
-      where: {
-        customerId: s.customerId,
-        status: { in: ["pending", "confirmed"] },
-        startsAt: { gte: new Date() },
-      },
-      orderBy: { startsAt: "asc" },
-      select: { startsAt: true, service: { select: { name: true } } },
-    }),
-    prisma.booking.count({
-      where: { customerId: s.customerId, status: "completed" },
-    }),
-  ]);
+  const [customer, saldo, settings, proximo, atendimentos, sugestao] =
+    await Promise.all([
+      prisma.customer.findUnique({
+        where: { id: s.customerId },
+        select: { name: true },
+      }),
+      saldoDoCliente(s.customerId),
+      getSettings(),
+      // Próximo horário da própria cliente (isolamento pela sessão — R18).
+      prisma.booking.findFirst({
+        where: {
+          customerId: s.customerId,
+          status: { in: ["pending", "confirmed"] },
+          startsAt: { gte: new Date() },
+        },
+        orderBy: { startsAt: "asc" },
+        select: { startsAt: true, service: { select: { name: true } } },
+      }),
+      prisma.booking.count({
+        where: { customerId: s.customerId, status: "completed" },
+      }),
+      getSugestaoRetorno(s.customerId),
+    ]);
   if (!customer) redirect("/clube/entrar");
 
   const primeiroNome = customer.name.trim().split(/\s+/)[0] ?? customer.name;
@@ -73,6 +81,39 @@ export default async function InicioPage() {
           Agendar meu horário
         </Botao>
       </div>
+
+      {/* Hora de se cuidar de novo (F5) — só quando passou da cadência */}
+      {sugestao && (
+        <section className="mt-6 overflow-hidden rounded-2xl border border-mi-marrom/40 bg-gradient-to-br from-mi-bege to-mi-branco p-6 shadow-suave">
+          <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom">
+            Hora de se cuidar de novo 💛
+          </p>
+          <h2 className="mt-2 font-titulo text-2xl text-mi-marrom-escuro">
+            Que tal repetir {sugestao.servicoNome}?
+          </h2>
+          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+            Faz {sugestao.diasDesde} dias do seu último cuidado com a Mi.
+          </p>
+          <div className="mt-4">
+            {sugestao.agendavelOnline ? (
+              <Botao
+                href={`/agendar?servico=${sugestao.servicoCode}&origem=cuidar`}
+                className="w-full"
+              >
+                Marcar de novo
+              </Botao>
+            ) : (
+              <Botao
+                href={WA_CUIDAR(sugestao.servicoNome)}
+                variante="whatsapp"
+                className="w-full"
+              >
+                Combinar com a Mi
+              </Botao>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Próximo horário */}
       <section className="mt-6">

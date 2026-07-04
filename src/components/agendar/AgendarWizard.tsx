@@ -85,6 +85,9 @@ export default function AgendarWizard() {
 
   const search = useSearchParams();
   const preselectCode = search.get("servico");
+  // Veio da retenção da Área da Cliente ("Hora de se cuidar de novo" / repetir):
+  // marca a origem p/ o bônus de reagendamento na conclusão (F5).
+  const daAreaCliente = search.get("origem") === "cuidar";
   const preselectDone = useRef(false);
 
   useEffect(() => {
@@ -229,6 +232,7 @@ export default function AgendarWizard() {
             ocasiao: form.occasion,
           },
           lgpdConsent: form.lgpd,
+          ...(daAreaCliente ? { source: "area_cliente" } : {}),
         }),
       });
       if (res.status === 409) {

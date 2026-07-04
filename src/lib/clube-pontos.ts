@@ -24,7 +24,14 @@ export function saldoDe(txns: { pontos: number }[]): number {
 interface CreditoInput {
   customerId: string;
   pontos: number;
-  tipo: "service" | "referral" | "redemption" | "manual";
+  tipo:
+    | "service"
+    | "referral"
+    | "redemption"
+    | "manual"
+    | "depoimento"
+    | "foto"
+    | "reagendamento";
   descricao: string;
   dedupKey?: string;
 }
@@ -131,6 +138,32 @@ export async function creditarPontosIndicacao(
     });
   }
   return { embaixadoraId: indicada.referredById, pontos };
+}
+
+/**
+ * Bônus de reagendamento (F5): creditado quando um atendimento agendado pela
+ * Área da Cliente (source=area_cliente) é concluído. Configurável em
+ * business_settings (club_points_reagendamento), default 0 = desligado (R3).
+ * Idempotente por booking (dedup reagendamento:<bookingId>). Só para membro.
+ */
+export async function creditarBonusReagendamento(
+  bookingId: string,
+  customerId: string,
+): Promise<void> {
+  const pontos = (await getSettings()).clubPointsReagendamento;
+  if (pontos <= 0) return;
+  const membro = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { clubJoinedAt: true },
+  });
+  if (!membro?.clubJoinedAt) return;
+  await lancar({
+    customerId,
+    pontos,
+    tipo: "reagendamento",
+    descricao: "Bônus por voltar 💛",
+    dedupKey: `reagendamento:${bookingId}`,
+  });
 }
 
 export interface ResgateResult {

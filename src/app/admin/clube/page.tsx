@@ -7,6 +7,7 @@ import {
   adminUpdateReward,
   adminDeleteReward,
   adminSetPointsPerReferral,
+  adminSetPointsEngajamento,
   adminMarkVoucherEntregue,
 } from "../actions";
 
@@ -111,6 +112,57 @@ export default async function AdminClubePage() {
               min={0}
               step={1}
               defaultValue={settings.clubPointsPerReferral}
+            />
+          </label>
+          <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+            Salvar
+          </button>
+        </form>
+      </section>
+
+      {/* Config: pontos de engajamento (Área da Cliente — F5) */}
+      <section className="mb-8 rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="mb-1 font-titulo text-xl text-mi-marrom-escuro">
+          Pontos por engajamento
+        </h2>
+        <p className="mb-3 text-xs text-mi-texto/60">
+          Recompense quem conta como foi e quem volta. Deixe em 0 para desligar.
+        </p>
+        <form
+          action={adminSetPointsEngajamento}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <label className="text-xs">
+            Depoimento aprovado
+            <input
+              className="input-mi mt-1 w-24 !py-2"
+              name="depoimento"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={settings.clubPointsDepoimento}
+            />
+          </label>
+          <label className="text-xs">
+            Cada foto aprovada
+            <input
+              className="input-mi mt-1 w-24 !py-2"
+              name="foto"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={settings.clubPointsFoto}
+            />
+          </label>
+          <label className="text-xs">
+            Reagendar pela área
+            <input
+              className="input-mi mt-1 w-24 !py-2"
+              name="reagendamento"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={settings.clubPointsReagendamento}
             />
           </label>
           <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">

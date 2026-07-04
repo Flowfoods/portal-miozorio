@@ -22,6 +22,9 @@ const TIPO_LABEL: Record<string, string> = {
   referral: "Indicação",
   redemption: "Resgate",
   manual: "Ajuste",
+  depoimento: "Depoimento",
+  foto: "Foto",
+  reagendamento: "Voltou 💛",
 };
 
 /**
