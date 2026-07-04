@@ -266,7 +266,7 @@ model ClubTransaction {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customerId String   @map("customer_id") @db.Uuid
   pontos     Int
-  tipo       String // service | referral | redemption | manual
+  tipo       String // service | referral | redemption | manual | depoimento | foto | reagendamento
   descricao  String
   dedupKey   String?  @unique @map("dedup_key")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
