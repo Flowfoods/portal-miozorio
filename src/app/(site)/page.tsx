@@ -1,11 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { beautySalonSchema, pageMeta } from "@/lib/seo";
+import { beautySalonSchema, pageMeta, reviewSchema } from "@/lib/seo";
 import { getPublishedMedia } from "@/lib/media";
-import { getPublishedTestimonials } from "@/lib/testimonials";
+import {
+  getPublishedTestimonials,
+  getVitrineTestimonials,
+  getTestimonialsAggregate,
+} from "@/lib/testimonials";
 import { getSiteContent, parseServicos, parseTabela } from "@/lib/content";
 import MonogramPlaceholder from "@/components/site/MonogramPlaceholder";
+import HistoriasClientes from "@/components/site/HistoriasClientes";
 import Botao from "@/components/ui/Botao";
 import CardServico from "@/components/ui/CardServico";
 
@@ -25,12 +30,19 @@ export default async function Home() {
   const [heroFoto] = await getPublishedMedia("hero", 1);
   const portfolio = await getPublishedMedia("portfolio", 6);
   const depoimentos = await getPublishedTestimonials(6);
+  const historias = await getVitrineTestimonials(9);
+  const agregado = await getTestimonialsAggregate();
   const content = await getSiteContent();
   const servicos = parseServicos(content["home.servicos.lista"] ?? "");
   const diferenciais = parseTabela(content["home.diferenciais.lista"] ?? "");
+  const reviews = reviewSchema(
+    agregado,
+    historias.map((h) => ({ autor: h.author, nota: h.rating, texto: h.quote })),
+  );
   return (
     <main>
       <JsonLd data={beautySalonSchema} />
+      {reviews && <JsonLd data={reviews} />}
       {/* HERO */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>
@@ -154,6 +166,9 @@ export default async function Home() {
               ))}
         </div>
       </section>
+
+      {/* HISTÓRIAS DE CLIENTES (F4) — vitrine com foto; some quando vazia */}
+      <HistoriasClientes historias={historias} />
 
       {/* DEPOIMENTOS */}
       <section className="bg-mi-branco/50 py-16">

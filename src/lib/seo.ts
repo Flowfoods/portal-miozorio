@@ -90,6 +90,48 @@ export const beautySalonSchema: Record<string, unknown> = {
   ],
 };
 
+/**
+ * Reviews de clientes (F4) para rich snippet — AggregateRating + Review
+ * anexados ao negócio. Só notas reais aprovadas (sem inflar). Retorna null
+ * quando não há avaliações (não emite schema vazio).
+ */
+export function reviewSchema(
+  aggregate: { media: number; total: number } | null,
+  reviews: { autor: string; nota: number | null; texto: string }[],
+): Record<string, unknown> | null {
+  const comNota = reviews.filter((r) => r.nota !== null);
+  if (!aggregate && comNota.length === 0) return null;
+  const schema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "BeautySalon",
+    name: "Mi Ozorio · Beauty Artist",
+    url: SITE_URL,
+  };
+  if (aggregate) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: aggregate.media,
+      reviewCount: aggregate.total,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+  if (comNota.length > 0) {
+    schema.review = comNota.slice(0, 10).map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.autor },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: r.nota,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      reviewBody: r.texto,
+    }));
+  }
+  return schema;
+}
+
 export function faqSchema(
   items: { q: string; a: string }[],
 ): Record<string, unknown> {
