@@ -7,11 +7,12 @@ import Chip from "@/components/ui/Chip";
  * forçada fica fora do shell e cada rota mantém seu próprio guard de sessão).
  * Histórico (F2) e Momentos (F3) entram nesta lista quando ficarem prontas.
  */
-export type ContaTab = "inicio" | "historico" | "clube" | "perfil";
+export type ContaTab = "inicio" | "historico" | "momentos" | "clube" | "perfil";
 
 const TABS: { id: ContaTab; label: string; href: string }[] = [
   { id: "inicio", label: "Início", href: "/clube/conta" },
   { id: "historico", label: "Histórico", href: "/clube/conta/historico" },
+  { id: "momentos", label: "Momentos", href: "/clube/conta/momentos" },
   { id: "clube", label: "Clube", href: "/clube/conta/clube" },
   { id: "perfil", label: "Perfil", href: "/clube/conta/perfil" },
 ];

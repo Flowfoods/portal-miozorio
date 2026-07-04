@@ -1099,6 +1099,66 @@ export async function adminDeleteTestimonial(id: string): Promise<void> {
   refreshDepoimentos();
 }
 
+// ── Moderação de momentos (F3 — depoimentos enviados pelas clientes) ─────────
+
+export async function adminAprovarMomento(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const { aprovarMomento } = await import("@/lib/momentos");
+  await aprovarMomento(
+    String(formData.get("id") ?? ""),
+    session.user?.email ?? "admin",
+  );
+  refreshDepoimentos();
+}
+
+export async function adminRejeitarMomento(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const { rejeitarMomento } = await import("@/lib/momentos");
+  await rejeitarMomento(
+    String(formData.get("id") ?? ""),
+    session.user?.email ?? "admin",
+    String(formData.get("motivo") ?? ""),
+  );
+  refreshDepoimentos();
+}
+
+/** Aprova o texto mas oculta (ou volta a mostrar) uma foto específica. */
+export async function adminToggleFotoMomento(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("fotoId") ?? "");
+  const foto = await prisma.testimonialPhoto.findUnique({ where: { id } });
+  if (!foto) fail("Foto não encontrada.");
+  await prisma.testimonialPhoto.update({
+    where: { id },
+    data: { aprovada: !foto.aprovada },
+  });
+  refreshDepoimentos();
+}
+
+/** Destaque: aparece primeiro na vitrine pública. */
+export async function adminToggleDestaqueMomento(id: string): Promise<void> {
+  await requireAdmin();
+  const t = await prisma.testimonial.findUnique({ where: { id } });
+  if (!t) fail("Depoimento não encontrado.");
+  await prisma.testimonial.update({
+    where: { id },
+    data: { destaque: !t.destaque },
+  });
+  refreshDepoimentos();
+}
+
+/** Arquiva um momento antigo (sai do site; a cliente vê como arquivado). */
+export async function adminArquivarMomento(id: string): Promise<void> {
+  await requireAdmin();
+  await prisma.testimonial
+    .update({
+      where: { id },
+      data: { status: "arquivado", published: false },
+    })
+    .catch(() => null);
+  refreshDepoimentos();
+}
+
 // ── Disponibilidade por serviço (M9.5 — dias/horas próprios do dia a dia) ─────
 
 const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;

@@ -345,6 +345,33 @@ export const CONTENT_FIELDS: ContentField[] = [
     ajuda: "Disponível: {nome}, {servico}, {data} (data e hora).",
   },
   {
+    key: "msg.momento_pendente",
+    label: "WhatsApp · novo depoimento aguardando você (Mi)",
+    default:
+      "Oi, Mi! 💛\n\n{nome} acabou de contar como foi a experiência com você. Dá uma olhadinha em https://miozorio.com.br/admin/depoimentos pra aprovar.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Enviada pra VOCÊ quando uma cliente envia depoimento. Disponível: {nome}.",
+  },
+  {
+    key: "msg.momento_aprovado",
+    label: "WhatsApp · depoimento aprovado (cliente)",
+    default:
+      "Oi, {nome}! 💛\n\nSeu depoimento está no ar no meu site — obrigada por dividir esse momento comigo!{pontos}",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Disponível: {nome}, {pontos} (quando houver pontos, vira uma frase pronta).",
+  },
+  {
+    key: "msg.momento_nao_publicado",
+    label: "WhatsApp · depoimento não publicado (cliente)",
+    default:
+      "Oi, {nome}! 💛\n\nRecebi seu depoimento com muito carinho — dessa vez não vou publicar no site, tá? Se quiser, ajusta e reenvia na sua área que eu leio de novo.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda: "Tom gentil, sem tom punitivo. Disponível: {nome}.",
+  },
+  {
     key: "msg.lembrete_24h",
     label: "WhatsApp · lembrete da véspera",
     default:

@@ -60,6 +60,20 @@ export default async function HistoricoPage() {
   ]);
   if (!customer) redirect("/clube/entrar");
 
+  // Atendimentos sobre os quais ela já contou (F3): troca o CTA do card.
+  const jaContou = new Set(
+    (
+      await prisma.testimonial.findMany({
+        where: {
+          customerId: s.customerId,
+          origem: "cliente",
+          bookingId: { not: null },
+        },
+        select: { bookingId: true },
+      })
+    ).map((t) => t.bookingId),
+  );
+
   const pontosPorBooking = new Map(
     txnsServico
       .filter((t) => t.dedupKey?.startsWith("service:"))
@@ -151,7 +165,24 @@ export default async function HistoricoPage() {
                         </span>
                       )}
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {jaContou.has(b.id) ? (
+                        <Botao
+                          href="/clube/conta/momentos"
+                          variante="secundario"
+                          className="w-full !min-h-[46px] text-sm"
+                        >
+                          Você já contou 💛 Ver
+                        </Botao>
+                      ) : (
+                        <Botao
+                          href={`/clube/conta/momentos/novo?atendimento=${b.id}`}
+                          variante="secundario"
+                          className="w-full !min-h-[46px] text-sm"
+                        >
+                          Contar como foi
+                        </Botao>
+                      )}
                       {agendavel ? (
                         <Botao
                           href={`/agendar?servico=${b.service.code}`}
@@ -166,7 +197,7 @@ export default async function HistoricoPage() {
                           variante="secundario"
                           className="w-full !min-h-[46px] text-sm"
                         >
-                          Combinar com a Mi no WhatsApp
+                          Combinar com a Mi
                         </Botao>
                       )}
                     </div>
