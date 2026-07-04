@@ -51,5 +51,6 @@ export async function resgatarAction(formData: FormData): Promise<void> {
   if (!s || s.prov) redirect("/clube/entrar");
   const rewardId = String(formData.get("rewardId") ?? "");
   if (rewardId) await resgatarRecompensa(s.customerId, rewardId);
-  revalidatePath("/clube/conta");
+  revalidatePath("/clube/conta"); // Início (resumo de pontos)
+  revalidatePath("/clube/conta/clube"); // aba Clube (catálogo/vouchers/extrato)
 }
