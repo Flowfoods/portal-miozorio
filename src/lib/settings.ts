@@ -23,6 +23,10 @@ export interface BusinessSettings {
   depositPolicy: { default: string; on_strikes: boolean };
   clubLadder: ClubLadderStep[];
   clubPointsPerReferral: number;
+  // Área da Cliente (F1) — 0 = desligado até a Mi definir no admin (R3).
+  clubPointsDepoimento: number;
+  clubPointsFoto: number;
+  clubPointsReagendamento: number;
 }
 
 /** Fallback da escada do Clube (a migration insere a versão oficial no banco). */
@@ -50,6 +54,9 @@ const DEFAULTS: BusinessSettings = {
   depositPolicy: { default: "none", on_strikes: true },
   clubLadder: DEFAULT_CLUB_LADDER,
   clubPointsPerReferral: 100,
+  clubPointsDepoimento: 0,
+  clubPointsFoto: 0,
+  clubPointsReagendamento: 0,
 };
 
 const TTL_MS = 60_000;
@@ -97,6 +104,15 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
     clubPointsPerReferral: num(
       "club_points_per_referral",
       DEFAULTS.clubPointsPerReferral,
+    ),
+    clubPointsDepoimento: num(
+      "club_points_depoimento",
+      DEFAULTS.clubPointsDepoimento,
+    ),
+    clubPointsFoto: num("club_points_foto", DEFAULTS.clubPointsFoto),
+    clubPointsReagendamento: num(
+      "club_points_reagendamento",
+      DEFAULTS.clubPointsReagendamento,
     ),
   };
 

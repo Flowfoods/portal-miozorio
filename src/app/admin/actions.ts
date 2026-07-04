@@ -1053,7 +1053,10 @@ export async function adminCreateTestimonial(formData: FormData): Promise<void> 
   if (quote.length < 5) fail("Escreva o depoimento.");
   if (author.length < 2) fail("Informe quem disse (ex.: Ana · madrinha).");
 
-  await prisma.testimonial.create({ data: { quote, author, sort } });
+  // Depoimento criado pela Mi já nasce aprovado (status espelha `published`).
+  await prisma.testimonial.create({
+    data: { quote, author, sort, status: "aprovado", origem: "admin" },
+  });
   refreshDepoimentos();
 }
 
@@ -1081,7 +1084,11 @@ export async function adminToggleTestimonial(id: string): Promise<void> {
   if (!t) fail("Depoimento não encontrado.");
   await prisma.testimonial.update({
     where: { id },
-    data: { published: !t.published },
+    // status espelha `published` (F1): despublicar arquiva, publicar aprova.
+    data: {
+      published: !t.published,
+      status: !t.published ? "aprovado" : "arquivado",
+    },
   });
   refreshDepoimentos();
 }

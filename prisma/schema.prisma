@@ -184,6 +184,7 @@ model Customer {
   clubTxns     ClubTransaction[]
   clubVouchers ClubVoucher[]
   envios       EnvioMensagem[]
+  testimonials Testimonial[]
 
   @@index([referredById])
   @@index([rfvSegmento])
@@ -306,6 +307,7 @@ model Booking {
   notifications NotificationLog[]
   items         BookingItem[]
   revenueEntry  RevenueEntry? // receita reconhecida deste booking (1:1, idempotente)
+  testimonials  Testimonial[] // depoimentos vinculados a este atendimento
   // ⚠️ CHECK (ends_at > starts_at) + constraint no_overlap EXCLUDE USING gist
   //    na migration SQL manual — ver migration.sql.
 
@@ -442,6 +444,9 @@ model MediaAsset {
 
 /// M12 — depoimentos de clientes (prova social). CRUD pela Mi no /admin.
 /// LGPD: só publicar com autorização da cliente (Anexo A).
+/// F1 (Área da Cliente): estendido aditivamente — a cliente envia o próprio
+/// depoimento (origem=cliente) com fotos e ele passa por moderação da Mi.
+/// `published` legado = espelho de status='aprovado' (manter sincronizado).
 model Testimonial {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   quote     String // o depoimento
@@ -450,8 +455,44 @@ model Testimonial {
   sort      Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  // ── Área da Cliente (F1) ──
+  customerId             String?   @map("customer_id") @db.Uuid
+  bookingId              String?   @map("booking_id") @db.Uuid // atendimento vinculado (opcional)
+  rating                 Int? // 1–5 (validação no código)
+  status                 String    @default("pendente") // rascunho | pendente | aprovado | rejeitado | arquivado
+  motivoRejeicao         String?   @map("motivo_rejeicao")
+  consentimentoPublicoAt DateTime? @map("consentimento_publico_at") @db.Timestamptz // LGPD: quando a cliente autorizou exibição
+  destaque               Boolean   @default(false) // Mi fixa primeiro na vitrine
+  origem                 String    @default("admin") // admin | cliente
+  enviadoEm              DateTime? @map("enviado_em") @db.Timestamptz
+  moderadoEm             DateTime? @map("moderado_em") @db.Timestamptz
+  moderadoPor            String?   @map("moderado_por") // e-mail da admin que moderou
+
+  customer Customer?          @relation(fields: [customerId], references: [id])
+  booking  Booking?           @relation(fields: [bookingId], references: [id])
+  photos   TestimonialPhoto[]
+
   @@index([published])
+  @@index([customerId])
+  @@index([status])
   @@map("testimonials")
+}
+
+/// Foto de um depoimento (Área da Cliente). Arquivo no store PRIVADO (priv/)
+/// — nunca em /media público. Servida por rota com gate por status no banco
+/// (só aparece se o depoimento está aprovado E a foto está aprovada).
+model TestimonialPhoto {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testimonialId String   @map("testimonial_id") @db.Uuid
+  fileKey       String   @map("file_key") // chave no store privado (basename)
+  ordem         Int      @default(0)
+  aprovada      Boolean  @default(true) // Mi pode aprovar o texto e ocultar uma foto
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  testimonial Testimonial @relation(fields: [testimonialId], references: [id], onDelete: Cascade)
+
+  @@index([testimonialId])
+  @@map("testimonial_photos")
 }
 
 /// CMS leve (Onda B): textos editáveis das páginas, por chave. Default no
