@@ -275,6 +275,12 @@ export async function aprovarMomento(
   });
   if (!t || t.origem !== "cliente") return;
 
+  // Primeira aprovação? (moderadoEm lido ANTES do update). Pontos só na 1ª vez:
+  // blinda re-aprovação após edição — inclusive troca de fotos, cujos ids
+  // novos escapariam do dedup por-foto (anti-farm). Belt-and-suspenders com o
+  // dedup_key único no banco.
+  const primeiraAprovacao = t.moderadoEm === null;
+
   await prisma.testimonial.update({
     where: { id: t.id },
     data: {
@@ -286,10 +292,9 @@ export async function aprovarMomento(
     },
   });
 
-  // Pontos (R3: configuráveis, default 0 = desligado). Dedup = 1x por
-  // depoimento/foto pra sempre, mesmo após edição + re-aprovação (anti-farm).
+  // Pontos (R3: configuráveis, default 0 = desligado). 1x por depoimento na vida.
   let pontosCreditados = 0;
-  if (t.customerId) {
+  if (t.customerId && primeiraAprovacao) {
     const s = await getSettings();
     if (s.clubPointsDepoimento > 0) {
       const criou = await prisma.clubTransaction
