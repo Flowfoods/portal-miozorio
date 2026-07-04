@@ -261,14 +261,17 @@ model ClubVoucher {
 
 /// Extrato auditável de pontos. Saldo = SUM(pontos). pontos > 0 ganha,
 /// pontos < 0 resgata. dedup_key único garante crédito idempotente (R10)
-/// — service:<bookingId>, referral:<indicadaId>. Resgate/manual sem dedup.
+/// — service:<bookingId>, indicacao_pct:<bookingId>, estorno_*:<bookingId>.
+/// Legado: referral:<indicadaId> (pontuação fixa antiga, só leitura).
+/// `meta` guarda o snapshot do lançamento (percentual/base/bookingId/indicadaId).
 model ClubTransaction {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customerId String   @map("customer_id") @db.Uuid
   pontos     Int
-  tipo       String // service | referral | redemption | manual | depoimento | foto | reagendamento
+  tipo       String // service | referral | indicacao_percentual | redemption | manual | depoimento | foto | reagendamento
   descricao  String
   dedupKey   String?  @unique @map("dedup_key")
+  meta       Json? // snapshot auditável do crédito de indicação/estorno
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   customer Customer @relation(fields: [customerId], references: [id])

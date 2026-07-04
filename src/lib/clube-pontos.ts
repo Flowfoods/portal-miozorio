@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "./prisma";
-import { getSettings } from "./settings";
+import { getSettings, type ReferralScope } from "./settings";
 import { dispatchEvent } from "./notify";
 
 /**
@@ -16,9 +16,75 @@ import { dispatchEvent } from "./notify";
  *  - resgate nunca deixa o saldo negativo.
  */
 
+/**
+ * Motivo do bônus de indicação PERCENTUAL (novo). O motivo antigo "referral"
+ * (pontuação fixa) permanece só como legado de leitura no histórico (R: migração).
+ */
+export const MOTIVO_INDICACAO_PCT = "indicacao_percentual";
+
 /** Função pura: saldo a partir das transações. */
 export function saldoDe(txns: { pontos: number }[]): number {
   return txns.reduce((s, t) => s + t.pontos, 0);
+}
+
+/**
+ * Bônus percentual da indicação — função PURA (testável sem banco).
+ * Base = pontos que a indicada ganhou NAQUELE atendimento.
+ * Regra de arredondamento: `floor` (para baixo) até inteiro; PISO de 1 ponto
+ * quando o cálculo resulta > 0 e < 1 (a indicadora nunca sai com zero de um
+ * atendimento válido que pontuou). Percentual é clampado em [0, 100].
+ */
+export function calcularBonusIndicacao(
+  base: number,
+  percentual: number,
+): number {
+  if (base <= 0) return 0;
+  const pct = Math.min(100, Math.max(0, percentual));
+  const bruto = (base * pct) / 100;
+  if (bruto <= 0) return 0;
+  return bruto < 1 ? 1 : Math.floor(bruto);
+}
+
+/** Primeiro nome para a UX do extrato/WhatsApp ("Indicação: Ana se cuidou..."). */
+function primeiroNome(nome: string): string {
+  const p = nome.trim().split(/\s+/)[0];
+  return p && p.length > 0 ? p : nome.trim();
+}
+
+/**
+ * Antifraude PURO (sec-audit-fraud-guard): bloqueia autoindicação quando
+ * indicada e embaixadora são a mesma pessoa por clientId, telefone ou e-mail.
+ */
+export function ehAutoindicacao(a: {
+  indicadaId: string;
+  embaixadoraId: string;
+  indicadaPhone?: string | null;
+  embaixadoraPhone?: string | null;
+  indicadaEmail?: string | null;
+  embaixadoraEmail?: string | null;
+}): boolean {
+  if (a.indicadaId === a.embaixadoraId) return true;
+  if (
+    a.indicadaPhone &&
+    a.embaixadoraPhone &&
+    a.indicadaPhone === a.embaixadoraPhone
+  )
+    return true;
+  const e1 = a.indicadaEmail?.trim().toLowerCase();
+  const e2 = a.embaixadoraEmail?.trim().toLowerCase();
+  if (e1 && e2 && e1 === e2) return true;
+  return false;
+}
+
+/**
+ * Escopo PURO: PRIMEIRO_ATENDIMENTO só credita se a indicada ainda não gerou
+ * bônus (novo OU legado fixo). TODOS_ATENDIMENTOS credita sempre.
+ */
+export function escopoPermiteBonus(
+  escopo: ReferralScope,
+  jaPago: boolean,
+): boolean {
+  return escopo === "PRIMEIRO_ATENDIMENTO" ? !jaPago : true;
 }
 
 interface CreditoInput {
@@ -27,6 +93,7 @@ interface CreditoInput {
   tipo:
     | "service"
     | "referral"
+    | typeof MOTIVO_INDICACAO_PCT
     | "redemption"
     | "manual"
     | "depoimento"
@@ -34,6 +101,8 @@ interface CreditoInput {
     | "reagendamento";
   descricao: string;
   dedupKey?: string;
+  /** Snapshot auditável (percentual, base, bookingId, indicadaId, estorno…). */
+  meta?: Record<string, unknown>;
 }
 
 /** Lança a transação. Retorna false se o dedup_key já existia (já creditado). */
@@ -46,6 +115,7 @@ async function lancar(input: CreditoInput): Promise<boolean> {
         tipo: input.tipo,
         descricao: input.descricao,
         dedupKey: input.dedupKey ?? null,
+        meta: (input.meta ?? undefined) as never,
       },
     });
     return true;
@@ -94,50 +164,180 @@ export async function creditarPontosServico(bookingId: string): Promise<void> {
 }
 
 /**
- * Credita os pontos de indicação para a embaixadora quando a indicada realiza
- * um atendimento. Idempotente por indicada (dedup) e antifraude. Retorna a
- * embaixadora + pontos quando creditou AGORA (insumo do parabéns via n8n).
+ * Credita o bônus de indicação PERCENTUAL para a embaixadora quando a indicada
+ * conclui um atendimento e pontua. Regra nova (substitui a pontuação fixa):
+ * embaixadora ganha `floor(pontos_da_indicada × percentual)` daquele atendimento.
+ *
+ * Integridade (sec-audit-fraud-guard):
+ *  - Gatilho é a conclusão do atendimento (chamada em markCompleted), nunca
+ *    cadastro/agendamento.
+ *  - Base = SÓ os pontos que a indicada ganhou NESTE atendimento (service.clubPoints
+ *    se membro); não inclui depoimento/foto/bônus/resgate/saldo.
+ *  - Idempotência por atendimento: dedup `indicacao_pct:<bookingId>` (constraint
+ *    única) — reprocessar o mesmo evento nunca duplica.
+ *  - Snapshot no lançamento: percentual vigente, base, bookingId, indicadaId.
+ *  - Antifraude: bloqueia auto-indicação (mesmo clientId / telefone / e-mail).
+ *  - Escopo PRIMEIRO_ATENDIMENTO vs TODOS_ATENDIMENTOS e liga/desliga do programa.
+ *  - Migração: `referral:<indicadaId>` legado conta como bônus já pago no escopo
+ *    PRIMEIRO_ATENDIMENTO; créditos históricos ficam intocados.
+ *
+ * Retorna a embaixadora + pontos quando creditou AGORA (insumo do parabéns n8n).
  */
 export async function creditarPontosIndicacao(
   indicadaId: string,
-): Promise<{ embaixadoraId: string; pontos: number } | null> {
+  bookingId: string,
+): Promise<{
+  embaixadoraId: string;
+  pontos: number;
+  indicadaNome: string;
+} | null> {
+  const settings = await getSettings();
+  if (!settings.clubReferralActive) return null; // programa desligado (R3), vínculos preservados
+
   const indicada = await prisma.customer.findUnique({
     where: { id: indicadaId },
-    select: { referredById: true },
+    select: { name: true, email: true, phoneE164: true, referredById: true },
   });
   if (!indicada?.referredById) return null;
-  if (indicada.referredById === indicadaId) return null; // antifraude: auto-indicação
+  const embaixadoraId = indicada.referredById;
 
-  const pontos = (await getSettings()).clubPointsPerReferral;
+  // Base de cálculo: apenas os pontos deste atendimento (service.clubPoints),
+  // e só se a indicada é membro do Clube — igual a creditarPontosServico.
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      customerId: true,
+      customer: { select: { clubJoinedAt: true } },
+      service: { select: { clubPoints: true } },
+    },
+  });
+  if (!booking || booking.customerId !== indicadaId) return null;
+  const base =
+    booking.customer.clubJoinedAt && booking.service.clubPoints > 0
+      ? booking.service.clubPoints
+      : 0;
+  if (base <= 0) return null;
+
+  const embaixadora = await prisma.customer.findUnique({
+    where: { id: embaixadoraId },
+    select: { name: true, phoneE164: true, email: true },
+  });
+  if (!embaixadora) return null;
+
+  // Antifraude: bloqueia autoindicação (clientId/telefone/e-mail coincidentes).
+  if (
+    ehAutoindicacao({
+      indicadaId,
+      embaixadoraId,
+      indicadaPhone: indicada.phoneE164,
+      embaixadoraPhone: embaixadora.phoneE164,
+      indicadaEmail: indicada.email,
+      embaixadoraEmail: embaixadora.email,
+    })
+  )
+    return null;
+
+  // Escopo PRIMEIRO_ATENDIMENTO: só o 1º atendimento concluído da indicada gera
+  // bônus. Conta o novo motivo E o legado fixo já pago (migração da regra antiga).
+  const jaPago = !!(await prisma.clubTransaction.findFirst({
+    where: {
+      customerId: embaixadoraId,
+      OR: [
+        { dedupKey: `referral:${indicadaId}` }, // legado fixo
+        {
+          tipo: MOTIVO_INDICACAO_PCT,
+          pontos: { gt: 0 },
+          meta: { path: ["indicadaId"], equals: indicadaId },
+        },
+      ],
+    },
+    select: { id: true },
+  }));
+  if (!escopoPermiteBonus(settings.clubReferralScope, jaPago)) return null;
+
+  const pontos = calcularBonusIndicacao(base, settings.clubReferralPercent);
   if (pontos <= 0) return null;
 
   const creditou = await lancar({
-    customerId: indicada.referredById,
+    customerId: embaixadoraId,
     pontos,
-    tipo: "referral",
-    descricao: "Indicação concretizada",
-    dedupKey: `referral:${indicadaId}`,
+    tipo: MOTIVO_INDICACAO_PCT,
+    // Extrato (UX): "Indicação: {primeiro nome} se cuidou com a Mi · +X pts".
+    descricao: `Indicação: ${primeiroNome(indicada.name)} se cuidou com a Mi`,
+    // Idempotência por atendimento concluído (bookingId + motivo).
+    dedupKey: `indicacao_pct:${bookingId}`,
+    // Snapshot vigente no momento — auditável ponta a ponta.
+    meta: {
+      motivo: "INDICACAO_PERCENTUAL",
+      percentual: settings.clubReferralPercent,
+      base,
+      bookingId,
+      indicadaId,
+    },
   });
   if (!creditou) return null;
 
-  // Parabéns via n8n (env-gated, idempotente). Falha não desfaz o crédito.
-  const embaixadora = await prisma.customer.findUnique({
-    where: { id: indicada.referredById },
-    select: { name: true, phoneE164: true },
+  // Parabéns via n8n (env-gated, idempotente). Falha NÃO desfaz o crédito.
+  const saldo = await saldoDoCliente(embaixadoraId);
+  await dispatchEvent({
+    kind: "club_points",
+    dedupKey: `club_points_indicacao:${bookingId}`,
+    data: {
+      nome: embaixadora.name,
+      telefone: embaixadora.phoneE164,
+      pontos,
+      saldo,
+      amigaNome: primeiroNome(indicada.name),
+      motivo: "indicação",
+    },
   });
-  if (embaixadora) {
-    await dispatchEvent({
-      kind: "club_points",
-      dedupKey: `club_points_referral:${indicadaId}`,
-      data: {
-        nome: embaixadora.name,
-        telefone: embaixadora.phoneE164,
-        pontos,
-        motivo: "indicação",
-      },
+
+  return {
+    embaixadoraId,
+    pontos,
+    indicadaNome: primeiroNome(indicada.name),
+  };
+}
+
+/**
+ * Estorno espelhado (R: estorno). Se um atendimento concluído da indicada for
+ * revertido, os pontos do serviço dela E o bônus percentual da embaixadora são
+ * revertidos por LANÇAMENTO NEGATIVO ESPELHADO — nunca por deleção (extrato
+ * imutável e auditável). Idempotente: cada estorno tem dedup próprio e só
+ * reverte o crédito que existe e ainda não foi estornado.
+ */
+export async function reverterCreditosDeBooking(
+  bookingId: string,
+): Promise<void> {
+  // (1) pontos do serviço da própria cliente
+  const servico = await prisma.clubTransaction.findUnique({
+    where: { dedupKey: `service:${bookingId}` },
+  });
+  if (servico && servico.pontos > 0) {
+    await lancar({
+      customerId: servico.customerId,
+      pontos: -servico.pontos,
+      tipo: "service",
+      descricao: `Estorno — ${servico.descricao}`,
+      dedupKey: `estorno_service:${bookingId}`,
+      meta: { motivo: "ESTORNO", origem: servico.id, bookingId },
     });
   }
-  return { embaixadoraId: indicada.referredById, pontos };
+
+  // (2) bônus de indicação percentual da embaixadora
+  const indic = await prisma.clubTransaction.findUnique({
+    where: { dedupKey: `indicacao_pct:${bookingId}` },
+  });
+  if (indic && indic.pontos > 0) {
+    await lancar({
+      customerId: indic.customerId,
+      pontos: -indic.pontos,
+      tipo: MOTIVO_INDICACAO_PCT,
+      descricao: `Estorno — ${indic.descricao}`,
+      dedupKey: `estorno_indicacao_pct:${bookingId}`,
+      meta: { motivo: "ESTORNO", origem: indic.id, bookingId },
+    });
+  }
 }
 
 /**
@@ -177,7 +377,8 @@ const VOUCHER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 function gerarVoucherCodigo(): string {
   const bytes = randomBytes(6);
   let s = "";
-  for (let i = 0; i < 6; i++) s += VOUCHER_ALPHABET[bytes[i]! % VOUCHER_ALPHABET.length];
+  for (let i = 0; i < 6; i++)
+    s += VOUCHER_ALPHABET[bytes[i]! % VOUCHER_ALPHABET.length];
   return `MI-${s}`;
 }
 
@@ -191,7 +392,9 @@ export async function resgatarRecompensa(
   customerId: string,
   rewardId: string,
 ): Promise<ResgateResult> {
-  const reward = await prisma.clubReward.findUnique({ where: { id: rewardId } });
+  const reward = await prisma.clubReward.findUnique({
+    where: { id: rewardId },
+  });
   if (!reward || !reward.ativo) {
     return { ok: false, message: "Recompensa indisponível." };
   }
@@ -226,16 +429,22 @@ export async function resgatarRecompensa(
       },
       { isolationLevel: "Serializable" },
     );
-    if (!ok) return { ok: false, message: "Saldo insuficiente para esse resgate." };
+    if (!ok)
+      return { ok: false, message: "Saldo insuficiente para esse resgate." };
     return { ok: true, codigo };
   } catch {
     // Falha de serialização (corrida) ou código duplicado: pedir nova tentativa.
-    return { ok: false, message: "Não consegui concluir agora. Tente de novo." };
+    return {
+      ok: false,
+      message: "Não consegui concluir agora. Tente de novo.",
+    };
   }
 }
 
 /** Mi marca um voucher como entregue (idempotente; só sai de 'solicitado'). */
-export async function marcarVoucherEntregue(voucherId: string): Promise<boolean> {
+export async function marcarVoucherEntregue(
+  voucherId: string,
+): Promise<boolean> {
   const v = await prisma.clubVoucher.findUnique({ where: { id: voucherId } });
   if (!v || v.status !== "solicitado") return false;
   await prisma.clubVoucher.update({

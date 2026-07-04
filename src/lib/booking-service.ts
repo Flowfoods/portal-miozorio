@@ -88,7 +88,9 @@ export async function createBooking(
     return { ok: false, code: "invalid_phone", message: "WhatsApp inválido." };
   }
 
-  const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, { zone: tz });
+  const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, {
+    zone: tz,
+  });
   if (!startsAt.isValid) {
     return {
       ok: false,
@@ -241,7 +243,11 @@ export async function createManualBooking(
   // Multi-serviço: valida itens, carrega os serviços e monta os snapshots.
   const items = input.items ?? [];
   if (items.length === 0) {
-    return { ok: false, code: "invalid_service", message: "Escolha ao menos um serviço." };
+    return {
+      ok: false,
+      code: "invalid_service",
+      message: "Escolha ao menos um serviço.",
+    };
   }
   const services = await prisma.service.findMany({
     where: { id: { in: items.map((i) => i.serviceId) } },
@@ -267,12 +273,18 @@ export async function createManualBooking(
     };
   });
   if (resolved.some((r) => r === null)) {
-    return { ok: false, code: "invalid_service", message: "Serviço não encontrado." };
+    return {
+      ok: false,
+      code: "invalid_service",
+      message: "Serviço não encontrado.",
+    };
   }
   const rows = resolved as NonNullable<(typeof resolved)[number]>[];
   const primary = rows[0]!.service;
 
-  const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, { zone: tz });
+  const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, {
+    zone: tz,
+  });
   if (!startsAt.isValid) {
     return {
       ok: false,
@@ -376,7 +388,10 @@ export async function createManualBooking(
     return { ok: true, id: booking.id };
   } catch (e) {
     if (isExclusionViolation(e)) {
-      const clash = await findOverlappingBooking(startsAt.toJSDate(), endsAt.toJSDate());
+      const clash = await findOverlappingBooking(
+        startsAt.toJSDate(),
+        endsAt.toJSDate(),
+      );
       const who = clash?.customer.name.split(" ")[0];
       return {
         ok: false,
@@ -609,7 +624,9 @@ export async function markNoShow(id: string): Promise<AdminTransitionResult> {
 }
 
 /** Atendimento realizado — dispara o pós-atendimento no M4 (avaliação+foto). */
-export async function markCompleted(id: string): Promise<AdminTransitionResult> {
+export async function markCompleted(
+  id: string,
+): Promise<AdminTransitionResult> {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) {
     return { ok: false, code: "not_found", message: "Reserva não encontrada." };
@@ -643,7 +660,7 @@ export async function markCompleted(id: string): Promise<AdminTransitionResult> 
   //      emite parabéns via n8n.
   try {
     await creditarPontosServico(id);
-    await creditarPontosIndicacao(booking.customerId);
+    await creditarPontosIndicacao(booking.customerId, id);
     // (3) bônus de reagendamento (F5): só se o agendamento veio da retenção da
     //     Área da Cliente e a Mi ligou o incentivo (default 0). Idempotente.
     if (booking.source === "area_cliente") {
