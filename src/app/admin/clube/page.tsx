@@ -2,11 +2,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
+import RegraIndicacaoForm from "@/components/admin/RegraIndicacaoForm";
 import {
   adminCreateReward,
   adminUpdateReward,
   adminDeleteReward,
-  adminSetPointsPerReferral,
+  adminSetReferralRule,
   adminSetPointsEngajamento,
   adminMarkVoucherEntregue,
 } from "../actions";
@@ -51,10 +52,10 @@ export default async function AdminClubePage() {
       <ClientesHubNav />
       <h1 className="mb-2 text-3xl">Clube de fidelidade</h1>
       <p className="mb-6 text-sm text-mi-texto/70">
-        Suas clientes ganham pontos por atendimento (configure em Serviços) e por
-        indicação que se concretiza. Aqui você define os pontos por indicação e o
-        catálogo de recompensas. O saldo e o resgate de cada cliente ficam na
-        ficha dela.
+        Suas clientes ganham pontos por atendimento (configure em Serviços) e
+        por indicação que se concretiza. Aqui você define os pontos por
+        indicação e o catálogo de recompensas. O saldo e o resgate de cada
+        cliente ficam na ficha dela.
       </p>
 
       {/* Resgates a entregar (vouchers self-service do cliente) */}
@@ -81,7 +82,9 @@ export default async function AdminClubePage() {
                 <div className="text-sm">
                   <span className="font-medium">{v.customer.name}</span> ·{" "}
                   {v.rewardNome}{" "}
-                  <span className="font-mono text-mi-marrom-escuro">{v.codigo}</span>
+                  <span className="font-mono text-mi-marrom-escuro">
+                    {v.codigo}
+                  </span>
                   <span className="block text-xs text-mi-texto/55">
                     {v.custoPontos} pontos
                   </span>
@@ -97,27 +100,22 @@ export default async function AdminClubePage() {
         )}
       </section>
 
-      {/* Config: pontos por indicação */}
+      {/* Config: regra de indicação PERCENTUAL (substitui a pontuação fixa) */}
       <section className="mb-8 rounded-mi bg-mi-branco p-4 shadow-suave">
-        <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
-          Pontos por indicação
+        <h2 className="mb-1 font-titulo text-xl text-mi-marrom-escuro">
+          Indique e ganhe
         </h2>
-        <form action={adminSetPointsPerReferral} className="flex items-end gap-2">
-          <label className="text-xs">
-            Pontos quando uma indicada faz o 1º atendimento
-            <input
-              className="input-mi mt-1 w-28 !py-2"
-              name="pontos"
-              type="number"
-              min={0}
-              step={1}
-              defaultValue={settings.clubPointsPerReferral}
-            />
-          </label>
-          <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
-            Salvar
-          </button>
-        </form>
+        <p className="mb-3 text-xs text-mi-texto/60">
+          Quando a amiga indicada se cuida com a Mi e pontua, a indicadora ganha
+          um percentual dos pontos dela. Vale só para atendimentos futuros —
+          nunca recalcula pontos já dados.
+        </p>
+        <RegraIndicacaoForm
+          percentualInicial={settings.clubReferralPercent}
+          escopoInicial={settings.clubReferralScope}
+          ativoInicial={settings.clubReferralActive}
+          action={adminSetReferralRule}
+        />
       </section>
 
       {/* Config: pontos de engajamento (Área da Cliente — F5) */}

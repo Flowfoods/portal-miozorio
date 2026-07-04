@@ -110,7 +110,13 @@ function parseBookingItems(raw: FormDataEntryValue | null): {
     if (!Array.isArray(arr)) return [];
     return arr
       .filter(
-        (x): x is { serviceId: string; precoCobradoCents?: unknown; motivoAjuste?: unknown } =>
+        (
+          x,
+        ): x is {
+          serviceId: string;
+          precoCobradoCents?: unknown;
+          motivoAjuste?: unknown;
+        } =>
           !!x && typeof (x as { serviceId?: unknown }).serviceId === "string",
       )
       .map((x) => {
@@ -120,7 +126,10 @@ function parseBookingItems(raw: FormDataEntryValue | null): {
             : undefined;
         return {
           serviceId: x.serviceId,
-          precoCobradoCents: Math.max(0, Math.round(Number(x.precoCobradoCents) || 0)),
+          precoCobradoCents: Math.max(
+            0,
+            Math.round(Number(x.precoCobradoCents) || 0),
+          ),
           ...(motivo ? { motivoAjuste: motivo } : {}),
         };
       });
@@ -141,7 +150,12 @@ export async function adminQuickCreateCustomer(
   | {
       ok: true;
       existed: boolean;
-      customer: { id: string; name: string; phoneE164: string; strikes: number };
+      customer: {
+        id: string;
+        name: string;
+        phoneE164: string;
+        strikes: number;
+      };
     }
   | { ok: false; message: string }
 > {
@@ -153,7 +167,12 @@ export async function adminQuickCreateCustomer(
   return {
     ok: true,
     existed: r.existed,
-    customer: { id: c.id, name: c.name, phoneE164: c.phoneE164, strikes: c.strikes },
+    customer: {
+      id: c.id,
+      name: c.name,
+      phoneE164: c.phoneE164,
+      strikes: c.strikes,
+    },
   };
 }
 
@@ -241,12 +260,16 @@ export async function adminCreateManualBooking(
 
   const source = String(formData.get("source") ?? "");
   if (source !== "admin_phone" && source !== "admin_whatsapp") {
-    return { ok: false, message: "Informe como a cliente fechou (telefone ou WhatsApp)." };
+    return {
+      ok: false,
+      message: "Informe como a cliente fechou (telefone ou WhatsApp).",
+    };
   }
   const location = formData.get("location") === "home" ? "home" : "studio";
 
   const items = parseBookingItems(formData.get("items"));
-  if (items.length === 0) return { ok: false, message: "Escolha ao menos um serviço." };
+  if (items.length === 0)
+    return { ok: false, message: "Escolha ao menos um serviço." };
 
   // Foto de referência da cliente (opcional, LGPD): valida tipo/tamanho/consent
   // e processa ANTES de criar (falha cedo). Storage PRIVADO; nunca URL pública.
@@ -254,7 +277,10 @@ export async function adminCreateManualBooking(
   let photoKey: string | null = null;
   if (photo instanceof File && photo.size > 0) {
     if (formData.get("photoConsent") !== "on") {
-      return { ok: false, message: "Para anexar a foto, marque o consentimento da cliente." };
+      return {
+        ok: false,
+        message: "Para anexar a foto, marque o consentimento da cliente.",
+      };
     }
     if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
       return { ok: false, message: "A foto deve ser JPG, PNG ou WebP." };
@@ -263,9 +289,14 @@ export async function adminCreateManualBooking(
       return { ok: false, message: "Foto muito grande (máximo 5MB)." };
     }
     try {
-      photoKey = await processPrivatePhoto(Buffer.from(await photo.arrayBuffer()));
+      photoKey = await processPrivatePhoto(
+        Buffer.from(await photo.arrayBuffer()),
+      );
     } catch {
-      return { ok: false, message: "Não consegui processar a imagem. Tente outra foto." };
+      return {
+        ok: false,
+        message: "Não consegui processar a imagem. Tente outra foto.",
+      };
     }
   }
 
@@ -349,16 +380,12 @@ const reaisToCents = (v: FormDataEntryValue | null): number | null => {
   const raw = String(v ?? "").trim();
   if (!raw) return null;
   // Com vírgula ("1.250,00") o ponto é milhar; sem vírgula ("250.00") é decimal.
-  const s = raw.includes(",")
-    ? raw.replace(/\./g, "").replace(",", ".")
-    : raw;
+  const s = raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw;
   const n = Number(s);
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
 };
 
-export async function adminUpdateService(
-  formData: FormData,
-): Promise<void> {
+export async function adminUpdateService(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
@@ -369,7 +396,11 @@ export async function adminUpdateService(
   const priceHomeCents = reaisToCents(formData.get("priceHome"));
   const durationMin = Number(formData.get("durationMin"));
   const bufferMin = Number(formData.get("bufferMin"));
-  if (priceCents == null || !Number.isInteger(durationMin) || durationMin <= 0) {
+  if (
+    priceCents == null ||
+    !Number.isInteger(durationMin) ||
+    durationMin <= 0
+  ) {
     fail("Preço ou duração inválidos.");
   }
 
@@ -384,7 +415,10 @@ export async function adminUpdateService(
       priceHomeCents,
       durationMin,
       bufferMin: Number.isInteger(bufferMin) && bufferMin >= 0 ? bufferMin : 15,
-      clubPoints: Math.max(0, Math.trunc(Number(formData.get("clubPoints")) || 0)),
+      clubPoints: Math.max(
+        0,
+        Math.trunc(Number(formData.get("clubPoints")) || 0),
+      ),
       active: formData.get("active") === "on",
       pendingPrice: formData.get("pendingPrice") === "on",
       bookableOnline: lockedOffline
@@ -464,7 +498,10 @@ export async function adminCreateService(formData: FormData): Promise<void> {
       pendingPrice,
       requiresDeposit: formData.get("requiresDeposit") === "on",
       isCourse: category === "curso",
-      clubPoints: Math.max(0, Math.trunc(Number(formData.get("clubPoints")) || 0)),
+      clubPoints: Math.max(
+        0,
+        Math.trunc(Number(formData.get("clubPoints")) || 0),
+      ),
       active: true,
     },
   });
@@ -478,7 +515,9 @@ export async function adminDeleteService(id: string): Promise<void> {
   const service = await prisma.service.findUnique({
     where: { id },
     include: {
-      _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
+      _count: {
+        select: { bookings: true, eventSessions: true, waitlist: true },
+      },
     },
   });
   if (!service) fail("Serviço não encontrado.");
@@ -518,9 +557,7 @@ function parseDayRanges(raw: string): [string, string][] | null {
   return out;
 }
 
-export async function adminSaveSettings(
-  formData: FormData,
-): Promise<void> {
+export async function adminSaveSettings(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const numeric: Record<string, number> = {};
@@ -567,9 +604,7 @@ export async function adminSaveSettings(
 
 // ── Bloqueios de agenda ─────────────────────────────────────────────────────
 
-export async function adminCreateBlock(
-  formData: FormData,
-): Promise<void> {
+export async function adminCreateBlock(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const settings = await getSettings();
@@ -607,7 +642,9 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (name.length < 2) fail("Informe o nome.");
   if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
@@ -627,7 +664,9 @@ export async function adminUpdateUser(formData: FormData): Promise<void> {
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   if (name.length < 2) fail("Informe o nome.");
   if (!EMAIL_RE.test(email)) fail("E-mail inválido.");
 
@@ -782,9 +821,7 @@ export async function adminDeleteMedia(id: string): Promise<void> {
 
 // ── Clientes ────────────────────────────────────────────────────────────────
 
-export async function adminResetStrikes(
-  customerId: string,
-): Promise<void> {
+export async function adminResetStrikes(customerId: string): Promise<void> {
   await requireAdmin();
   await prisma.customer.update({
     where: { id: customerId },
@@ -821,7 +858,9 @@ export async function adminUpdateCustomer(formData: FormData): Promise<void> {
     if (taken) fail("Já existe outra cliente com esse WhatsApp.");
   }
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   if (email && !EMAIL_RE.test(email)) fail("E-mail inválido.");
 
   const birthRaw = String(formData.get("birthDate") ?? "").trim();
@@ -844,7 +883,14 @@ export async function adminUpdateCustomer(formData: FormData): Promise<void> {
 
   await prisma.customer.update({
     where: { id },
-    data: { name, phoneE164: phone, email: email || null, birthDate, guardianName, guardianPhone },
+    data: {
+      name,
+      phoneE164: phone,
+      email: email || null,
+      birthDate,
+      guardianName,
+      guardianPhone,
+    },
   });
   refreshFicha(id);
 }
@@ -872,7 +918,9 @@ export async function adminUpdateCustomerCare(
  * CRM: tags, origem (captação), opt-in de WhatsApp (R3/LGPD) e etapa do funil
  * de noiva. Os scores RFV/LTV são calculados pelo job (não editáveis aqui).
  */
-export async function adminUpdateCustomerCrm(formData: FormData): Promise<void> {
+export async function adminUpdateCustomerCrm(
+  formData: FormData,
+): Promise<void> {
   await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
@@ -1045,7 +1093,9 @@ function refreshDepoimentos() {
   revalidatePath("/"); // a home exibe os depoimentos publicados
 }
 
-export async function adminCreateTestimonial(formData: FormData): Promise<void> {
+export async function adminCreateTestimonial(
+  formData: FormData,
+): Promise<void> {
   await requireAdmin();
   const quote = String(formData.get("quote") ?? "").trim();
   const author = String(formData.get("author") ?? "").trim();
@@ -1060,7 +1110,9 @@ export async function adminCreateTestimonial(formData: FormData): Promise<void> 
   refreshDepoimentos();
 }
 
-export async function adminUpdateTestimonial(formData: FormData): Promise<void> {
+export async function adminUpdateTestimonial(
+  formData: FormData,
+): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const quote = String(formData.get("quote") ?? "").trim();
@@ -1123,7 +1175,9 @@ export async function adminRejeitarMomento(formData: FormData): Promise<void> {
 }
 
 /** Aprova o texto mas oculta (ou volta a mostrar) uma foto específica. */
-export async function adminToggleFotoMomento(formData: FormData): Promise<void> {
+export async function adminToggleFotoMomento(
+  formData: FormData,
+): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("fotoId") ?? "");
   const foto = await prisma.testimonialPhoto.findUnique({ where: { id } });
@@ -1261,6 +1315,53 @@ export async function adminSetPointsPerReferral(
   revalidatePath("/admin/clube");
 }
 
+/**
+ * Regra de indicação PERCENTUAL (nova): a Mi define o % dos pontos da indicada
+ * que a indicadora recebe, o escopo e liga/desliga o programa. Validação:
+ * percentual em [0, 100] com decimais; mudança vale só para eventos futuros
+ * (nunca recalcula créditos passados).
+ */
+export async function adminSetReferralRule(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const bruto = Number(
+    String(formData.get("percentual") ?? "").replace(",", "."),
+  );
+  if (!Number.isFinite(bruto) || bruto < 0 || bruto > 100) {
+    fail("Percentual inválido — informe um número entre 0 e 100.");
+  }
+  // Normaliza a no máx. 2 casas decimais (ex.: 12.5).
+  const percentual = Math.round(bruto * 100) / 100;
+
+  const escopoRaw = String(formData.get("escopo") ?? "");
+  const escopo =
+    escopoRaw === "TODOS_ATENDIMENTOS"
+      ? "TODOS_ATENDIMENTOS"
+      : "PRIMEIRO_ATENDIMENTO";
+
+  const ativo = formData.get("ativo") != null;
+
+  await prisma.$transaction([
+    prisma.businessSetting.upsert({
+      where: { key: "club_referral_percent" },
+      update: { value: percentual },
+      create: { key: "club_referral_percent", value: percentual },
+    }),
+    prisma.businessSetting.upsert({
+      where: { key: "club_referral_scope" },
+      update: { value: escopo },
+      create: { key: "club_referral_scope", value: escopo },
+    }),
+    prisma.businessSetting.upsert({
+      where: { key: "club_referral_active" },
+      update: { value: ativo },
+      create: { key: "club_referral_active", value: ativo },
+    }),
+  ]);
+  invalidateSettingsCache();
+  revalidatePath("/admin/clube");
+}
+
 /** Pontos de engajamento (F5/Área da Cliente): depoimento, foto, reagendamento. */
 export async function adminSetPointsEngajamento(
   formData: FormData,
@@ -1288,7 +1389,8 @@ export async function adminAdjustPoints(formData: FormData): Promise<void> {
   const customerId = String(formData.get("customerId") ?? "");
   const pontos = Math.trunc(Number(formData.get("pontos")) || 0);
   const descricao = String(formData.get("descricao") ?? "").trim();
-  if (pontos === 0) fail("Informe quantos pontos (positivo credita, negativo tira).");
+  if (pontos === 0)
+    fail("Informe quantos pontos (positivo credita, negativo tira).");
   if (descricao.length < 2) fail("Diga o motivo do ajuste.");
   await ajustarPontosManual(customerId, pontos, descricao);
   revalidatePath(`/admin/clientes/${customerId}`);
@@ -1333,7 +1435,8 @@ export async function adminCreatePacote(formData: FormData): Promise<void> {
   const categoria = String(formData.get("categoria") ?? "");
   const nome = String(formData.get("nome") ?? "").trim();
   const preco = String(formData.get("preco") ?? "").trim();
-  if (!CATEGORIAS_VITRINE.includes(categoria as never)) fail("Categoria inválida.");
+  if (!CATEGORIAS_VITRINE.includes(categoria as never))
+    fail("Categoria inválida.");
   if (nome.length < 2) fail("Dê um nome ao pacote.");
   if (!preco) fail("Informe o preço (texto livre, ex.: R$ 2.979).");
   await prisma.pacote.create({
@@ -1387,8 +1490,10 @@ export async function adminCreateFaq(formData: FormData): Promise<void> {
   const categoria = String(formData.get("categoria") ?? "");
   const pergunta = String(formData.get("pergunta") ?? "").trim();
   const resposta = String(formData.get("resposta") ?? "").trim();
-  if (!CATEGORIAS_VITRINE.includes(categoria as never)) fail("Categoria inválida.");
-  if (pergunta.length < 3 || resposta.length < 3) fail("Preencha pergunta e resposta.");
+  if (!CATEGORIAS_VITRINE.includes(categoria as never))
+    fail("Categoria inválida.");
+  if (pergunta.length < 3 || resposta.length < 3)
+    fail("Preencha pergunta e resposta.");
   await prisma.faq.create({
     data: {
       categoria,
@@ -1405,7 +1510,8 @@ export async function adminUpdateFaq(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   const pergunta = String(formData.get("pergunta") ?? "").trim();
   const resposta = String(formData.get("resposta") ?? "").trim();
-  if (pergunta.length < 3 || resposta.length < 3) fail("Preencha pergunta e resposta.");
+  if (pergunta.length < 3 || resposta.length < 3)
+    fail("Preencha pergunta e resposta.");
   const f = await prisma.faq.findUnique({ where: { id } });
   if (!f) fail("Pergunta não encontrada.");
   await prisma.faq.update({
@@ -1436,7 +1542,9 @@ export async function adminSetContent(formData: FormData): Promise<void> {
     const value = String(raw).trim();
     // Vazio ou igual ao padrão → remove o override (volta ao texto de fábrica).
     if (!value || value === f.default) {
-      await prisma.siteContent.delete({ where: { key: f.key } }).catch(() => null);
+      await prisma.siteContent
+        .delete({ where: { key: f.key } })
+        .catch(() => null);
     } else {
       await prisma.siteContent.upsert({
         where: { key: f.key },

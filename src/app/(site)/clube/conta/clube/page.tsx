@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { getClienteSession } from "@/lib/cliente-auth";
 import { getSaldoExtrato } from "@/lib/clube-pontos";
+import { getSettings } from "@/lib/settings";
 import { contarIndicacoesFechadas } from "@/lib/clube";
 import ContaShell from "@/components/clube/ContaShell";
 import { resgatarAction } from "../actions";
@@ -20,12 +21,18 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 const TIPO_LABEL: Record<string, string> = {
   service: "Atendimento",
   referral: "Indicação",
+  indicacao_percentual: "Indicação",
   redemption: "Resgate",
   manual: "Ajuste",
   depoimento: "Depoimento",
   foto: "Foto",
   reagendamento: "Voltou 💛",
 };
+
+/** Percentual amigável: 20 → "20", 12.5 → "12,5" (vírgula pt-BR). */
+function formatarPct(pct: number): string {
+  return String(pct).replace(".", ",");
+}
 
 /**
  * Aba Clube da Área da Cliente (F1): o conteúdo da antiga /clube/conta migrado
@@ -37,24 +44,31 @@ export default async function ClubeTabPage() {
   if (s.prov) redirect("/clube/conta/senha");
 
   // Isolamento: TUDO pelo id da sessão — nunca por parâmetro do request.
-  const [customer, { saldo, extrato }, recompensas, fechadas, vouchers] =
-    await Promise.all([
-      prisma.customer.findUnique({
-        where: { id: s.customerId },
-        select: { name: true, referralCode: true },
-      }),
-      getSaldoExtrato(s.customerId),
-      prisma.clubReward.findMany({
-        where: { ativo: true },
-        orderBy: { custoPontos: "asc" },
-      }),
-      contarIndicacoesFechadas(s.customerId),
-      prisma.clubVoucher.findMany({
-        where: { customerId: s.customerId },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-    ]);
+  const [
+    customer,
+    { saldo, extrato },
+    recompensas,
+    fechadas,
+    vouchers,
+    settings,
+  ] = await Promise.all([
+    prisma.customer.findUnique({
+      where: { id: s.customerId },
+      select: { name: true, referralCode: true },
+    }),
+    getSaldoExtrato(s.customerId),
+    prisma.clubReward.findMany({
+      where: { ativo: true },
+      orderBy: { custoPontos: "asc" },
+    }),
+    contarIndicacoesFechadas(s.customerId),
+    prisma.clubVoucher.findMany({
+      where: { customerId: s.customerId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+    getSettings(),
+  ]);
   if (!customer) redirect("/clube/entrar");
 
   const proximo = recompensas.find((r) => r.custoPontos > saldo);
@@ -101,10 +115,17 @@ export default async function ClubeTabPage() {
         <h2 className="font-titulo text-xl text-mi-marrom-escuro">
           Indique e ganhe
         </h2>
-        <p className="mt-1 font-corpo text-sm text-mi-texto/70">
-          {fechadas} amiga(s) já se cuidaram pela sua indicação. Você ganha
-          pontos quando elas são atendidas.
-        </p>
+        {settings.clubReferralActive ? (
+          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+            Indique uma amiga: quando ela se cuidar com a Mi, você ganha{" "}
+            <strong>{formatarPct(settings.clubReferralPercent)}%</strong> dos
+            pontos dela 🤎
+          </p>
+        ) : (
+          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+            {fechadas} amiga(s) já se cuidaram pela sua indicação 🤎
+          </p>
+        )}
         <a
           href={`https://wa.me/?text=${share}`}
           target="_blank"
@@ -120,7 +141,9 @@ export default async function ClubeTabPage() {
 
       {/* Recompensas (catálogo + resgate self-service) */}
       <section className="mt-6 rounded-mi bg-mi-branco p-5 shadow-suave">
-        <h2 className="font-titulo text-xl text-mi-marrom-escuro">Recompensas</h2>
+        <h2 className="font-titulo text-xl text-mi-marrom-escuro">
+          Recompensas
+        </h2>
         {recompensas.length === 0 ? (
           <p className="mt-2 font-corpo text-sm text-mi-texto/60">
             Em breve, recompensas pra você trocar seus pontos 💛
@@ -173,11 +196,15 @@ export default async function ClubeTabPage() {
                 >
                   <span className="min-w-0 truncate text-mi-texto/80">
                     {v.rewardNome} ·{" "}
-                    <span className="font-mono text-mi-marrom-escuro">{v.codigo}</span>
+                    <span className="font-mono text-mi-marrom-escuro">
+                      {v.codigo}
+                    </span>
                   </span>
                   <span
                     className={`shrink-0 text-xs ${
-                      v.status === "entregue" ? "text-emerald-700" : "text-amber-700"
+                      v.status === "entregue"
+                        ? "text-emerald-700"
+                        : "text-amber-700"
                     }`}
                   >
                     {v.status === "entregue" ? "entregue" : "mostre na visita"}
@@ -191,7 +218,9 @@ export default async function ClubeTabPage() {
 
       {/* Extrato */}
       <section className="mt-6">
-        <h2 className="mb-2 font-titulo text-xl text-mi-marrom-escuro">Extrato</h2>
+        <h2 className="mb-2 font-titulo text-xl text-mi-marrom-escuro">
+          Extrato
+        </h2>
         {extrato.length === 0 ? (
           <p className="rounded-mi bg-mi-branco p-6 text-center font-corpo text-sm text-mi-texto/55 shadow-suave">
             Seus pontos vão aparecer aqui depois do seu próximo atendimento 💛

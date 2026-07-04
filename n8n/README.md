@@ -17,12 +17,44 @@ Fluxo: **Webhook** → **Code (valida token + monta texto por `kind`)** →
 
 ### Contratos que o app emite
 
-| `kind` | Payload | Quando |
-|--------|---------|--------|
-| `club_points` | `{ kind, nome, telefone, pontos, motivo }` | Cliente ganha pontos no Clube (ex.: indicação concretizada) |
-| `booking_confirmation` | `{ kind, nome, telefone, servico, inicio }` (`inicio` = ISO) | Mi cria encaixe manual com "Avisar no WhatsApp" |
+| `kind`                      | Payload                                                                  | Quando                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `club_points`               | `{ kind, nome, telefone, pontos, motivo }`                               | Cliente ganha pontos no Clube                                                                           |
+| `club_points` (indicação %) | `{ kind, nome, telefone, pontos, saldo, amigaNome, motivo:"indicação" }` | **Bônus de indicação percentual** creditado à indicadora quando a amiga indicada conclui um atendimento |
+| `booking_confirmation`      | `{ kind, nome, telefone, servico, inicio }` (`inicio` = ISO)             | Mi cria encaixe manual com "Avisar no WhatsApp"                                                         |
 
 > Obs.: o Clube migrou para PONTOS — o evento antigo `club_milestone` (escada) foi substituído por `club_points`.
+
+#### `club_points` da indicação percentual (novo)
+
+Emitido por `creditarPontosIndicacao` (`src/lib/clube-pontos.ts`) **no mesmo
+instante** em que o bônus entra no ledger. Idempotente por atendimento:
+`dedupKey = club_points_indicacao:<bookingId>` (o WhatsApp nunca dispara 2x para
+o mesmo atendimento). **Falha de notificação NUNCA bloqueia o crédito** — o ponto
+já está gravado; o envio é best-effort com o retry padrão do fluxo.
+
+- `nome` — primeiro/nome da **indicadora** (quem recebe os pontos e a mensagem).
+- `telefone` — E.164 da indicadora.
+- `pontos` — bônus creditado agora (`floor(pontos_da_indicada × percentual)`).
+- `saldo` — saldo atualizado da indicadora após o crédito.
+- `amigaNome` — primeiro nome da **indicada** (a amiga que foi atendida).
+
+**Copy sugerida (APROVAR COM A MI):**
+
+> Sua amiga {amigaNome} foi atendida pela Mi e você ganhou {pontos} pontos! 🤎
+> Seu saldo: {saldo}.
+
+No Code Node, montar o texto assim (o template `msg.club_points` do site também
+funciona, mas não usa `saldo`/`amigaNome` — para a copy acima use um branch por
+`motivo === "indicação"`):
+
+```js
+if (kind === "club_points" && d.motivo === "indicação") {
+  texto =
+    `Sua amiga ${d.amigaNome} foi atendida pela Mi e você ganhou ` +
+    `${d.pontos} pontos! 🤎 Seu saldo: ${d.saldo}.`;
+}
+```
 
 ### Como importar
 
@@ -33,9 +65,9 @@ Fluxo: **Webhook** → **Code (valida token + monta texto por `kind`)** →
    - **Value**: a apikey da Evolution (pegue no Dokploy → compose `evo-miozorio`)
    - Salve como **"Evolution apikey"** e selecione-a no nó (substitui o placeholder
      `REPLACE_EVOLUTION_CRED_ID`).
-   > A URL e a instância (`https://evo.miozorio.com.br` / `miozorio`) são **literais**
-   > no nó (não são segredo). Só a apikey vai na credencial → **não precisa de variável
-   > de ambiente nem mexer no compose do host** (R9 mantido: a key fica na credencial).
+     > A URL e a instância (`https://evo.miozorio.com.br` / `miozorio`) são **literais**
+     > no nó (não são segredo). Só a apikey vai na credencial → **não precisa de variável
+     > de ambiente nem mexer no compose do host** (R9 mantido: a key fica na credencial).
 3. (`mi-ozorio-whatsapp` apenas) `MI_WEBHOOK_TOKEN` no Code Node — só se for usar o
    fluxo por **webhook**. ⚠️ Na arquitetura atual o **app fala direto com a Evolution**
    (`src/lib/notify.ts`); este workflow de webhook é **opcional/legado**.
@@ -66,13 +98,13 @@ excluindo o que está em `notification_log`) → **Code** (monta texto por `kind
 
 Cobre os 5 fluxos numa única query `UNION ALL`:
 
-| `kind` | Quem | Regra |
-|--------|------|-------|
-| `lembrete_24h` | quem tem agendamento | `booking.status = confirmed` com `starts_at` **amanhã** (lembrete da véspera) |
-| `aniversario` | membro do clube | `birth_date` (dia/mês) = hoje |
-| `aniversario_cliente` | qualquer cliente | 1º `completed` faz exatamente 1 ano hoje |
-| `pos_atendimento` | quem foi atendido | `completed` ontem (D+1; respeitar `photo_consent`, R18) |
-| `reconexao` | membro do clube | último `completed` há > 12 meses |
+| `kind`                | Quem                 | Regra                                                                         |
+| --------------------- | -------------------- | ----------------------------------------------------------------------------- |
+| `lembrete_24h`        | quem tem agendamento | `booking.status = confirmed` com `starts_at` **amanhã** (lembrete da véspera) |
+| `aniversario`         | membro do clube      | `birth_date` (dia/mês) = hoje                                                 |
+| `aniversario_cliente` | qualquer cliente     | 1º `completed` faz exatamente 1 ano hoje                                      |
+| `pos_atendimento`     | quem foi atendido    | `completed` ontem (D+1; respeitar `photo_consent`, R18)                       |
+| `reconexao`           | membro do clube      | último `completed` há > 12 meses                                              |
 
 > **`lembrete_24h`**: o cron roda 1×/dia (09:00), então é o lembrete da **véspera**
 > (não 24h exatas). `dedup_key = lembrete_24h:<booking_id>` — não reenvia se rodar 2× no dia.
@@ -83,6 +115,7 @@ Idempotência: `dedup_key` por (cliente, tipo, período) — ex.:
 dia não reenvia.
 
 ### Textos editáveis pela Mi (sem mexer no n8n)
+
 As mensagens **não são mais hardcoded** no Code node. A query `devidos hoje` traz a
 coluna `template` via `LEFT JOIN site_content` na chave `msg.<kind>`, com
 `COALESCE` para um default embutido no `CASE`. O nó **Montar mensagem** apenas
@@ -94,6 +127,7 @@ no workflow. ⚠️ Os defaults do `CASE` no SQL espelham `src/lib/content.ts`; 
 lá, atualize aqui também (ou apenas confie no override que a Mi salvar).
 
 ### Antes de ativar (precisa de validação)
+
 - ⚠️ **Credencial Header Auth "Evolution apikey"** (header `apikey` = key da Evolution)
   selecionada no nó `Evolution · sendText` (substitui `REPLACE_EVOLUTION_CRED_ID`).
   **Sem env do host** — ver "Como importar".
@@ -106,6 +140,7 @@ lá, atualize aqui também (ou apenas confie no override que a Mi salvar).
   ajuste a régua de tempo com a Mi se quiser.
 
 ### Combo recomendado de skills
+
 `engine-data-sync-pro` (schema do banco) → `n8n-workflow-architect` (gerar os
 crons) → `deploy-safeguard-hostinger` (subir) → `monitor-logistica-evolution`
 (monitorar envios).

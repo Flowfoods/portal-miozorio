@@ -8,6 +8,9 @@ export interface ClubLadderStep {
   beneficio: string;
 }
 
+/** Escopo do bônus de indicação percentual (R3, configurável pela Mi). */
+export type ReferralScope = "PRIMEIRO_ATENDIMENTO" | "TODOS_ATENDIMENTOS";
+
 export interface BusinessSettings {
   workingHours: WeeklyHours;
   courseWorkingHours: WeeklyHours;
@@ -23,6 +26,11 @@ export interface BusinessSettings {
   depositPolicy: { default: string; on_strikes: boolean };
   clubLadder: ClubLadderStep[];
   clubPointsPerReferral: number;
+  // Indicação PERCENTUAL: a indicadora ganha uma % dos pontos que a indicada
+  // ganhou no atendimento. Substitui a pontuação fixa (legado de leitura). R3.
+  clubReferralPercent: number; // 0–100, aceita decimais (ex.: 12.5)
+  clubReferralScope: ReferralScope;
+  clubReferralActive: boolean;
   // Área da Cliente (F1) — 0 = desligado até a Mi definir no admin (R3).
   clubPointsDepoimento: number;
   clubPointsFoto: number;
@@ -54,6 +62,9 @@ const DEFAULTS: BusinessSettings = {
   depositPolicy: { default: "none", on_strikes: true },
   clubLadder: DEFAULT_CLUB_LADDER,
   clubPointsPerReferral: 100,
+  clubReferralPercent: 20,
+  clubReferralScope: "PRIMEIRO_ATENDIMENTO",
+  clubReferralActive: true,
   clubPointsDepoimento: 0,
   clubPointsFoto: 0,
   clubPointsReagendamento: 0,
@@ -76,6 +87,10 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
   const str = (k: string, d: string): string => {
     const v = m.get(k);
     return typeof v === "string" ? v : d;
+  };
+  const bool = (k: string, d: boolean): boolean => {
+    const v = m.get(k);
+    return typeof v === "boolean" ? v : d;
   };
 
   const data: BusinessSettings = {
@@ -104,6 +119,19 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
     clubPointsPerReferral: num(
       "club_points_per_referral",
       DEFAULTS.clubPointsPerReferral,
+    ),
+    clubReferralPercent: (() => {
+      const v = num("club_referral_percent", DEFAULTS.clubReferralPercent);
+      // Blindagem: percentual sempre em [0, 100] (R3 valida na escrita também).
+      return Math.min(100, Math.max(0, v));
+    })(),
+    clubReferralScope:
+      m.get("club_referral_scope") === "TODOS_ATENDIMENTOS"
+        ? "TODOS_ATENDIMENTOS"
+        : DEFAULTS.clubReferralScope,
+    clubReferralActive: bool(
+      "club_referral_active",
+      DEFAULTS.clubReferralActive,
     ),
     clubPointsDepoimento: num(
       "club_points_depoimento",
