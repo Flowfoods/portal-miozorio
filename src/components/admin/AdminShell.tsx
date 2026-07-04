@@ -10,7 +10,14 @@ import AdminSidebar from "./AdminSidebar";
  */
 const AUTH_PAGES = ["/admin/login", "/admin/recuperar", "/admin/redefinir"];
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({
+  children,
+  badges,
+}: {
+  children: React.ReactNode;
+  /** Contadores por href (ex.: { "/admin/depoimentos": 3 }) — pílula no menu. */
+  badges?: Record<string, number>;
+}) {
   const pathname = usePathname();
   const isAuthPage = AUTH_PAGES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
@@ -26,7 +33,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-mi-superficie md:flex">
-      <AdminSidebar />
+      <AdminSidebar badges={badges} />
       <div className="min-w-0 flex-1 bg-mi-superficie">
         <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-10">
           {children}

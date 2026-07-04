@@ -17,7 +17,11 @@ import { ADMIN_NAV } from "./adminNavItems";
  */
 const STORAGE_KEY = "mi-admin-sidebar-collapsed";
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  badges,
+}: {
+  badges?: Record<string, number>;
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false); // recolher manual (lg)
   const [open, setOpen] = useState(false); // gaveta mobile
@@ -182,6 +186,7 @@ export default function AdminSidebar() {
           <ul className="flex flex-col gap-1">
             {ADMIN_NAV.map((item) => {
               const active = isActive(item.href);
+              const count = badges?.[item.href] ?? 0;
               return (
                 <li key={item.href}>
                   <Link
@@ -189,18 +194,43 @@ export default function AdminSidebar() {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     aria-current={active ? "page" : undefined}
-                    title={item.label}
-                    aria-label={item.label}
+                    title={
+                      count > 0 ? `${item.label} (${count} pendente(s))` : item.label
+                    }
+                    aria-label={
+                      count > 0 ? `${item.label}, ${count} pendente(s)` : item.label
+                    }
                     className={`flex min-h-[44px] items-center gap-3 rounded-mi px-3 font-corpo text-sm transition-colors md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center ${
                       active
                         ? "bg-mi-marrom text-mi-branco"
                         : "text-mi-texto hover:bg-mi-marrom/10"
                     }`}
                   >
-                    {item.icon}
-                    <span className="truncate inline md:hidden lg:inline group-data-[collapsed=true]:lg:hidden">
+                    <span className="relative shrink-0">
+                      {item.icon}
+                      {/* Trilho só-ícone (md, ou lg recolhido): ponto no canto */}
+                      {count > 0 && (
+                        <span
+                          aria-hidden
+                          className="absolute -right-1 -top-1 hidden h-2 w-2 rounded-full bg-mi-marrom ring-2 ring-mi-superficie-nav md:block lg:hidden group-data-[collapsed=true]:lg:block"
+                        />
+                      )}
+                    </span>
+                    <span className="inline flex-1 truncate md:hidden lg:inline group-data-[collapsed=true]:lg:hidden">
                       {item.label}
                     </span>
+                    {/* Expandido: pílula com o número */}
+                    {count > 0 && (
+                      <span
+                        className={`ml-auto inline min-w-[20px] rounded-full px-1.5 py-0.5 text-center font-corpo text-[11px] leading-none md:hidden lg:inline group-data-[collapsed=true]:lg:hidden ${
+                          active
+                            ? "bg-mi-branco text-mi-marrom"
+                            : "bg-mi-marrom text-mi-branco"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
