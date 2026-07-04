@@ -60,6 +60,20 @@ export async function buildEventMessage(
       data,
     });
   }
+  // Momentos (F3 — Área da Cliente)
+  if (kind === "momento_pendente") {
+    return aplicarTemplate(content["msg.momento_pendente"] ?? "", { nome });
+  }
+  if (kind === "momento_aprovado") {
+    const pts = String(d.pontos ?? "");
+    return aplicarTemplate(content["msg.momento_aprovado"] ?? "", {
+      nome,
+      pontos: pts ? `\n\nE você ganhou ${pts} pontos no Clube 🎁` : "",
+    });
+  }
+  if (kind === "momento_nao_publicado") {
+    return aplicarTemplate(content["msg.momento_nao_publicado"] ?? "", { nome });
+  }
   return null;
 }
 
