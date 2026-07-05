@@ -119,6 +119,34 @@ para a Mi em `/admin/config/acessos`.
 **Validação:** tsc 0 · lint 0 · **169 + 9 testes** verdes (novo `tests/authlog.test.ts`)
 · build EXIT 0. Cabeçalhos de segurança já existiam (HSTS/X-Frame/CSP) — conferidos.
 
+## Execução — FASE 2 (recuperação de senha real) ✅
+
+**2.1 Admin (e-mail)** — o fluxo já existia; nesta fase: TTL do token **1h → 30min**
+(`RESET_TTL_MS`), rejeição de **senha fraca** server-side (`senhaFraca` — lista local
++ só-dígitos/repetição; HIBP fica p/ depois), cópia do e-mail atualizada. Invalidação
+de sessão + e-mail "senha alterada" já entraram na F1.
+
+**2.2 Cliente (WhatsApp)** — a maior lacuna, agora fechada. `lib/cliente-recuperacao.ts`:
+código de 6 dígitos, **só SHA-256 no banco**, validade 10min, **máx. 3 tentativas**,
+reenvio com **cooldown de 60s**, uso único. Resposta **sempre neutra** (não revela se o
+número existe). Entre validar o código e trocar a senha há um "vale" curto assinado por
+HMAC (cookie httpOnly, path `/clube`, 10min). Ao concluir, a cliente **já entra logada**.
+Envio pelo WhatsApp (Evolution) **+ fallback por e-mail** se houver e-mail. Rate-limit por
+IP também nos pedidos de código. Modelo `ClubPasswordReset` (migration aditiva `20260705180000`).
+UI mobile-first em `/clube/recuperar` (stepper telefone → código → senha, `RecuperarForm`)
++ link "Esqueci minha senha" de volta no login.
+
+**2.3 Workflow n8n** — **decisão:** o código reusa o **envio direto na Evolution**
+(`sendEvolutionText`, a mesma fonte única do resto das notificações do app), env-gated e
+best-effort. Não foi criado um workflow n8n intermediário `auth.codigo_recuperacao`: seria
+uma camada a mais sem ganho (o app já fala TLS direto com a Evolution). Se um dia a Mi
+quiser template/retry no n8n, o webhook pode envelopar `sendEvolutionText` sem tocar na lib.
+
+**Preservação:** o 1º acesso da cliente (senha = telefone + troca forçada) segue **intacto** —
+tudo aqui é adição. O forçar-troca é mais seguro que só "nudge", então foi mantido.
+
+**Validação:** tsc 0 · lint 0 · build EXIT 0 · testes verdes.
+
 ## Aceite da FASE 0
 
 - ✅ Configuração do NextAuth mapeada (providers, callbacks, sessão JWT, tabelas admin×cliente).

@@ -10,6 +10,7 @@ import {
   RESET_TTL_MS,
   generateResetToken,
   hashResetToken,
+  senhaFraca,
 } from "@/lib/security";
 import { sendPasswordChangedEmail, sendPasswordResetEmail } from "@/lib/email";
 import { metaFromHeaders, recordAuth } from "@/lib/authlog";
@@ -77,6 +78,8 @@ export async function completePasswordReset(
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
   if (password.length < MIN_SENHA) return { error: SENHA_CURTA };
+  if (senhaFraca(password))
+    return { error: "Essa senha é fácil de adivinhar. Escolha outra mais forte." };
   if (password !== confirm) return { error: "As senhas não conferem." };
 
   const row = await prisma.passwordResetToken.findUnique({

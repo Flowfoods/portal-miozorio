@@ -84,6 +84,14 @@ export function logoutCliente(): void {
   cookies().delete(COOKIE);
 }
 
+/**
+ * Estabelece a sessão da cliente já com senha definitiva (prov=false). Usado
+ * pela recuperação por WhatsApp (F2.2), que ao trocar a senha já entra logada.
+ */
+export function iniciarSessaoCliente(customerId: string): void {
+  setCookie({ customerId, prov: false });
+}
+
 export type LoginResult =
   | { ok: true; mustChange: boolean }
   | { ok: false; message: string };

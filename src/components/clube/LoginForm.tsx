@@ -40,6 +40,14 @@ export default function LoginForm() {
       >
         Entrar
       </SubmitButton>
+      <p className="text-center font-corpo text-sm">
+        <a
+          href="/clube/recuperar"
+          className="text-mi-marrom underline underline-offset-4"
+        >
+          Esqueci minha senha
+        </a>
+      </p>
     </form>
   );
 }
