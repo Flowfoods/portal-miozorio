@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL, formatPhoneBR, waLink } from "@/lib/format";
 import { EVENTO_LABEL } from "@/lib/crm-listas";
+import { REGUA_LABEL } from "@/lib/reguas";
 import { lerAnamnese } from "@/lib/anamnesis";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
@@ -73,7 +74,13 @@ export default async function FichaClientePage({
     : [{ saldo: 0, extrato: [] as Awaited<ReturnType<typeof getSaldoExtrato>>["extrato"] }, []];
 
   // Atividade no site (F1/F3): resumo + últimos eventos, em linguagem leiga.
-  const [eventos, resumoAtividade] = await Promise.all([
+  const [enviosRecentes, eventos, resumoAtividade] = await Promise.all([
+    prisma.envioMensagem.findMany({
+      where: { customerId: customer.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { id: true, kind: true, status: true, createdAt: true },
+    }),
     prisma.clientEvent.findMany({
       where: { clientId: customer.id },
       orderBy: { createdAt: "desc" },
@@ -628,6 +635,28 @@ export default async function FichaClientePage({
             <p className="text-xs text-mi-texto/60">último acesso</p>
           </div>
         </div>
+        {enviosRecentes.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-1 text-xs font-medium text-mi-texto/60">
+              Mensagens (F4)
+            </p>
+            <ul className="space-y-1 text-sm">
+              {enviosRecentes.map((e) => (
+                <li key={e.id} className="flex justify-between gap-3">
+                  <span>
+                    {REGUA_LABEL[e.kind] ?? e.kind}
+                    <span className="ml-1.5 text-xs text-mi-texto/50">
+                      ({e.status === "aguardando" ? "na fila" : e.status})
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-mi-texto/50">
+                    {DateTime.fromJSDate(e.createdAt).setZone(tz).toFormat("dd/LL")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {eventos.length === 0 ? (
           <p className="text-sm text-mi-texto/60">
             Nenhuma atividade registrada ainda (o rastreio começou em jul/2026).

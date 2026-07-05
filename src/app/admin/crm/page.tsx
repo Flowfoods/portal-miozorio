@@ -120,6 +120,9 @@ export default async function CrmPage({
   );
   const segmentos = [...daRegua, ...orfaos];
   const listas = await contagensListas(cfgCrm);
+  const msgsAguardando = await prisma.envioMensagem.count({
+    where: { status: "aguardando" },
+  });
   const funilCount = new Map(
     funilGroups.map((g) => [String(g.funilEtapa), g._count._all]),
   );
@@ -237,6 +240,18 @@ export default async function CrmPage({
         </div>
       )}
 
+      {msgsAguardando > 0 && (
+        <Link
+          href="/admin/crm/mensagens"
+          className="mt-8 flex items-center justify-between rounded-mi bg-mi-marrom px-5 py-4 text-white shadow-suave"
+        >
+          <span className="font-medium">
+            💬 {msgsAguardando} mensagem(ns) esperando a sua aprovação
+          </span>
+          <span aria-hidden>→</span>
+        </Link>
+      )}
+
       <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">
         Listas de ação
       </h2>
@@ -283,6 +298,9 @@ export default async function CrmPage({
         </Link>
         <Link href="/admin/crm/jornadas" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Jornadas →
+        </Link>
+        <Link href="/admin/crm/mensagens" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
+          Mensagens →
         </Link>
         <Link href="/admin/crm/config" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Configurações do CRM →

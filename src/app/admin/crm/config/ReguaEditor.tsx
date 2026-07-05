@@ -32,6 +32,7 @@ export default function ReguaEditor({ initial }: Props) {
     initial.segmentos.map((s) => ({ ...s })),
   );
   const [sumida, setSumida] = useState(initial.limiares.sumidaDias);
+  const [reguas, setReguas] = useState(initial.reguas);
   const [leadFria, setLeadFria] = useState(initial.limiares.leadFriaDias);
   const [abandono, setAbandono] = useState(initial.limiares.abandonoTentativas);
 
@@ -56,6 +57,7 @@ export default function ReguaEditor({ initial }: Props) {
         leadFriaDias: leadFria,
         abandonoTentativas: abandono,
       },
+      reguas,
     };
   }
 
@@ -324,6 +326,82 @@ export default function ReguaEditor({ initial }: Props) {
             Abandono relevante após {numInput(abandono, setAbandono)}{" "}
             tentativa(s) sem agendar
           </label>
+        </div>
+      </section>
+
+      {/* Réguas de mensagens (F4) */}
+      <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="text-lg">Mensagens automáticas (réguas)</h2>
+        <p className="mt-1 text-sm text-mi-texto/70">
+          As réguas só <strong>sugerem</strong> mensagens na sua fila — nada é
+          enviado sem você ler, editar e mandar. Aqui você liga cada régua e
+          define o ritmo.
+        </p>
+        <div className="mt-3 space-y-2 text-sm">
+          {(
+            [
+              ["sumida", "Cliente sumida"],
+              ["abandono", "Não concluiu o agendamento"],
+              ["leadFria", "Boas-vindas (nunca acessou)"],
+            ] as const
+          ).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={reguas.ativas[k]}
+                onChange={(e) =>
+                  setReguas((r) => ({
+                    ...r,
+                    ativas: { ...r.ativas, [k]: e.target.checked },
+                  }))
+                }
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        <div className="mt-4 space-y-2 text-sm">
+          <label className="flex flex-wrap items-center gap-2">
+            Esperar{" "}
+            {numInput(reguas.intervaloPorClienteDias, (v) =>
+              setReguas((r) => ({ ...r, intervaloPorClienteDias: v })),
+            )}{" "}
+            dias entre mensagens para a mesma cliente
+          </label>
+          <label className="flex flex-wrap items-center gap-2">
+            No máximo{" "}
+            {numInput(reguas.maxSugestoesPorDia, (v) =>
+              setReguas((r) => ({ ...r, maxSugestoesPorDia: v })),
+            )}{" "}
+            sugestões novas por dia
+          </label>
+        </div>
+        <div className="mt-4 space-y-3">
+          {(
+            [
+              ["sumida", "Mensagem para cliente sumida"],
+              ["abandono", "Mensagem para quem não concluiu"],
+              ["leadFria", "Mensagem de boas-vindas"],
+            ] as const
+          ).map(([k, label]) => (
+            <label key={k} className="block text-xs">
+              {label}{" "}
+              <span className="text-mi-texto/50">
+                (use {"{nome}"} e {"{dias}"})
+              </span>
+              <textarea
+                value={reguas.templates[k]}
+                onChange={(e) =>
+                  setReguas((r) => ({
+                    ...r,
+                    templates: { ...r.templates, [k]: e.target.value },
+                  }))
+                }
+                rows={2}
+                className="input-mi mt-1 w-full !py-2 text-sm"
+              />
+            </label>
+          ))}
         </div>
       </section>
 
