@@ -6,6 +6,7 @@ import { formatBRL } from "@/lib/format";
 import { formatPeriodoExtenso } from "@/lib/periods";
 import { periodoDaRequest } from "@/lib/periods-server";
 import { getCrmConfig, nomesSegmentos } from "@/lib/crm-config";
+import { contagensListas } from "@/lib/crm-listas";
 import PeriodSelector from "@/components/admin/PeriodSelector";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
 
@@ -118,6 +119,7 @@ export default async function CrmPage({
     (n): n is string => !!n && !daRegua.includes(n),
   );
   const segmentos = [...daRegua, ...orfaos];
+  const listas = await contagensListas(cfgCrm);
   const funilCount = new Map(
     funilGroups.map((g) => [String(g.funilEtapa), g._count._all]),
   );
@@ -234,6 +236,27 @@ export default async function CrmPage({
           })}
         </div>
       )}
+
+      <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">
+        Listas de ação
+      </h2>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { id: "sumidas", label: "Sumidas", n: listas.sumidas },
+          { id: "leads", label: "Nunca entraram", n: listas.leadsFrias },
+          { id: "visitou", label: "Visitou e não marcou", n: listas.visitouNaoMarcou },
+          { id: "indicacao", label: "Engajadas na indicação", n: listas.engajadas },
+        ].map((c) => (
+          <Link
+            key={c.id}
+            href={`/admin/crm/listas?tipo=${c.id}`}
+            className="rounded-mi bg-mi-branco p-4 text-center shadow-suave transition hover:bg-mi-bege/40"
+          >
+            <p className="font-titulo text-2xl text-mi-marrom-escuro">{c.n}</p>
+            <p className="mt-1 text-xs text-mi-texto/60">{c.label}</p>
+          </Link>
+        ))}
+      </div>
 
       <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">Funil de noiva</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
