@@ -60,6 +60,42 @@ export const crmConfigSchema = z.object({
     leadFriaDias: z.number().int().min(1).max(365),
     abandonoTentativas: z.number().int().min(1).max(50),
   }),
+  /**
+   * Réguas de mensagens (F4). REGRA DA CASA: nenhuma mensagem sai sozinha —
+   * a régua só SUGERE; a Mi edita/personaliza e envia na fila. Ritmo e
+   * quantidade abaixo são dela. `.default()` = retrocompat com configs antigas.
+   */
+  reguas: z
+    .object({
+      ativas: z.object({
+        sumida: z.boolean(),
+        abandono: z.boolean(),
+        leadFria: z.boolean(),
+      }),
+      /** Nunca sugerir p/ quem recebeu mensagem há menos de N dias. */
+      intervaloPorClienteDias: z.number().int().min(1).max(365),
+      /** Máximo de sugestões novas por dia (não afogar a fila da Mi). */
+      maxSugestoesPorDia: z.number().int().min(1).max(100),
+      templates: z.object({
+        sumida: z.string().trim().min(5).max(600),
+        abandono: z.string().trim().min(5).max(600),
+        leadFria: z.string().trim().min(5).max(600),
+      }),
+    })
+    .default({
+      ativas: { sumida: false, abandono: false, leadFria: false },
+      intervaloPorClienteDias: 7,
+      maxSugestoesPorDia: 10,
+      templates: {
+        // <!-- APROVAR COM A MI: copies das réguas -->
+        sumida:
+          "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — bora marcar um horário pra gente se ver de novo?",
+        abandono:
+          "Oi {nome}! Vi que você deu uma olhadinha nos horários 💛 Ficou alguma dúvida? Posso te ajudar a escolher o melhor.",
+        leadFria:
+          "Oi {nome}! Aqui é a Mi 💛 Que alegria ter você por perto — quer conhecer o estúdio ou tirar alguma dúvida?",
+      },
+    }),
 });
 
 export type CrmConfigData = z.infer<typeof crmConfigSchema>;
@@ -82,6 +118,20 @@ export const DEFAULT_CRM_CONFIG: CrmConfigData = {
     { nome: "Fiéis" }, // resto (f = 3, ainda ativa)
   ],
   limiares: { sumidaDias: 120, leadFriaDias: 14, abandonoTentativas: 2 },
+  reguas: {
+    ativas: { sumida: false, abandono: false, leadFria: false },
+    intervaloPorClienteDias: 7,
+    maxSugestoesPorDia: 10,
+    templates: {
+      // <!-- APROVAR COM A MI: copies das réguas -->
+      sumida:
+        "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — bora marcar um horário pra gente se ver de novo?",
+      abandono:
+        "Oi {nome}! Vi que você deu uma olhadinha nos horários 💛 Ficou alguma dúvida? Posso te ajudar a escolher o melhor.",
+      leadFria:
+        "Oi {nome}! Aqui é a Mi 💛 Que alegria ter você por perto — quer conhecer o estúdio ou tirar alguma dúvida?",
+    },
+  },
 };
 
 /** Nomes únicos na ordem de aparição (pro dashboard/filtros/cores). */
@@ -172,6 +222,27 @@ export function diffCrmConfig(
   if (la.abandonoTentativas !== lb.abandonoTentativas) {
     out.push(
       `Abandono relevante após: ${la.abandonoTentativas} → ${lb.abandonoTentativas} tentativas`,
+    );
+  }
+  const ra = antes.reguas;
+  const rb = depois.reguas;
+  const onOff = (b: boolean) => (b ? "ligada" : "desligada");
+  for (const k of ["sumida", "abandono", "leadFria"] as const) {
+    if (ra.ativas[k] !== rb.ativas[k]) {
+      out.push(`Régua ${k}: ${onOff(ra.ativas[k])} → ${onOff(rb.ativas[k])}`);
+    }
+    if (ra.templates[k] !== rb.templates[k]) {
+      out.push(`Mensagem da régua ${k} editada`);
+    }
+  }
+  if (ra.intervaloPorClienteDias !== rb.intervaloPorClienteDias) {
+    out.push(
+      `Intervalo por cliente: ${ra.intervaloPorClienteDias} → ${rb.intervaloPorClienteDias} dias`,
+    );
+  }
+  if (ra.maxSugestoesPorDia !== rb.maxSugestoesPorDia) {
+    out.push(
+      `Sugestões por dia: ${ra.maxSugestoesPorDia} → ${rb.maxSugestoesPorDia}`,
     );
   }
   return out;

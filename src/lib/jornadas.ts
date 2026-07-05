@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
 import { getSiteContent, aplicarTemplate } from "./content";
-import { sendEvolutionText, evolutionConfigured } from "./notify";
 
 /**
  * Motor de Jornadas (CRM — Pilar 3): fluxos de relacionamento por comportamento.
@@ -115,7 +114,8 @@ async function elegiveis(gatilho: string): Promise<Elegivel[]> {
 }
 
 export interface JornadaResumo {
-  enviados: number;
+  /** F4: jornadas não enviam mais — SUGEREM na fila de aprovação da Mi. */
+  sugeridos: number;
   falhas: number;
   porGatilho: Record<string, number>;
   skipped?: string;
@@ -123,12 +123,10 @@ export interface JornadaResumo {
 
 /**
  * Processa todas as jornadas ATIVAS: para cada elegível, cria o EnvioMensagem
- * (dedup) e envia pela Evolution. Best-effort por item.
+ * já com o texto pronto em status `aguardando` — a FILA (/admin/crm/mensagens)
+ * é quem envia, depois que a Mi editar/personalizar (regra da casa, F4).
  */
 export async function processarJornadas(): Promise<JornadaResumo> {
-  if (!evolutionConfigured()) {
-    return { enviados: 0, falhas: 0, porGatilho: {}, skipped: "evolution-nao-configurada" };
-  }
   const [jornadas, content] = await Promise.all([
     prisma.jornada.findMany({
       where: { ativo: true },
@@ -137,7 +135,7 @@ export async function processarJornadas(): Promise<JornadaResumo> {
     getSiteContent(),
   ]);
 
-  const resumo: JornadaResumo = { enviados: 0, falhas: 0, porGatilho: {} };
+  const resumo: JornadaResumo = { sugeridos: 0, falhas: 0, porGatilho: {} };
   for (const j of jornadas) {
     const etapa = j.etapas[0];
     if (!etapa) continue;
@@ -149,38 +147,23 @@ export async function processarJornadas(): Promise<JornadaResumo> {
         resumo.falhas++;
         continue;
       }
-      // Cria o registro (dedup_key único) ANTES de enviar — corrida/duplicado pula.
-      let envId: string;
+      // Cria a SUGESTÃO (dedup_key único — corrida/duplicado pula, R10).
+      // Envio real só na fila, com o texto que a Mi aprovar.
       try {
-        const env = await prisma.envioMensagem.create({
+        await prisma.envioMensagem.create({
           data: {
             customerId: e.customerId,
             jornadaId: j.id,
             kind: j.gatilho,
             dedupKey: e.dedupKey,
-            status: "pendente",
+            status: "aguardando",
+            texto: text,
           },
         });
-        envId = env.id;
-      } catch {
-        continue; // já existe ou corrida — não reenvia (R10)
-      }
-      try {
-        await sendEvolutionText(number, text);
-        await prisma.envioMensagem.update({
-          where: { id: envId },
-          data: { status: "enviado", enviadoEm: new Date() },
-        });
-        resumo.enviados++;
+        resumo.sugeridos++;
         resumo.porGatilho[j.gatilho] = (resumo.porGatilho[j.gatilho] ?? 0) + 1;
-      } catch (err) {
-        await prisma.envioMensagem
-          .update({
-            where: { id: envId },
-            data: { status: "falha", erro: String(err).slice(0, 300) },
-          })
-          .catch(() => {});
-        resumo.falhas++;
+      } catch {
+        continue; // já existe (R10)
       }
     }
   }

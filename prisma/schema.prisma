@@ -702,7 +702,10 @@ model EnvioMensagem {
   etapaId    String?   @map("etapa_id") @db.Uuid
   canal      String    @default("whatsapp")
   kind       String
+  // aguardando (fila de aprovação da Mi — F4) | pendente | enviado | falha | cancelado
   status     String    @default("pendente")
+  // Texto FINAL da mensagem (F4): proposto pela régua, editável pela Mi na fila.
+  texto      String?
   erro       String?
   dedupKey   String?   @unique @map("dedup_key")
   agendadoEm DateTime? @map("agendado_em") @db.Timestamptz
