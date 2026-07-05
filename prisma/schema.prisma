@@ -581,6 +581,21 @@ model ClientEvent {
   @@map("client_events")
 }
 
+/// CRM 2.0 F2 — configuração da régua RFV editável pela Mi (R15: nada de faixa
+/// hardcoded). VERSIONADA: cada salvamento é uma linha nova (nunca UPDATE) — a
+/// linha mais recente é a vigente e a própria tabela é o histórico
+/// (quem mudou, quando, de → para via diff entre versões consecutivas).
+/// Shape do `config` validado por zod em src/lib/crm-config.ts.
+model CrmConfig {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  config    Json
+  criadoPor String?  @map("criado_por") // e-mail da conta do painel que salvou
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@map("crm_config")
+}
+
 // ─────────────────────────── CRM — Jornadas ───────────────────────────
 
 /// Definição de uma jornada (fluxo automático por comportamento). gatilho =

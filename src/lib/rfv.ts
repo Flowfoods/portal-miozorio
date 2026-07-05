@@ -1,4 +1,9 @@
 import { prisma } from "./prisma";
+import {
+  getCrmConfig,
+  type CrmConfigData,
+  type RegraSegmento,
+} from "./crm-config";
 
 /**
  * Matriz RFV (Recência, Frequência, Valor) — motor de segmentação do CRM.
@@ -116,12 +121,74 @@ export function computeRFV(rows: RFVRow[]): RFVScore[] {
   return rows.map((row) => scoreRow(row, cutsR, cutsF, cutsV));
 }
 
-/** SQL dos agregados da base ativa (≥1 concluído, sem etapa de funil — R2). */
-const AGG_SQL = `
+// ── F2 — pontuação por FAIXAS FIXAS configuráveis (crm-config) ───────────────
+// O modelo por quintis acima fica como legado/testes; o job usa a config da Mi.
+
+export type Cortes4 = [number, number, number, number];
+
+/**
+ * Nota 1–5 por cortes fixos crescentes. Padrão (maior=melhor): a nota sobe ao
+ * ATINGIR cada corte. `invert` (recência): value ≤ c1 → 5 … > c4 → 1.
+ */
+export function scoreFixed(value: number, cortes: Cortes4, invert = false): number {
+  let s = 1;
+  for (const c of cortes) if (value >= (invert ? c + 1 : c)) s++;
+  s = Math.min(5, Math.max(1, s));
+  return invert ? 6 - s : s;
+}
+
+/**
+ * Segmento por regras ordenadas (primeira que casa vence). Regra sem condição
+ * casa sempre; se nada casar, vale o nome da última regra (rede de segurança).
+ */
+export function matchSegmento(
+  r: number,
+  f: number,
+  v: number,
+  regras: RegraSegmento[],
+): string {
+  for (const g of regras) {
+    if (g.rMin !== undefined && r < g.rMin) continue;
+    if (g.rMax !== undefined && r > g.rMax) continue;
+    if (g.fMin !== undefined && f < g.fMin) continue;
+    if (g.fMax !== undefined && f > g.fMax) continue;
+    if (g.vMin !== undefined && v < g.vMin) continue;
+    if (g.vMax !== undefined && v > g.vMax) continue;
+    return g.nome;
+  }
+  return regras[regras.length - 1]!.nome;
+}
+
+/** Pontua toda a base com a config da Mi (puro — testável). */
+export function computeRFVConfig(
+  rows: RFVRow[],
+  cfg: CrmConfigData,
+): RFVScore[] {
+  return rows.map((row) => {
+    const rScore = scoreFixed(row.r_days, cfg.recenciaDias, true);
+    const fScore = scoreFixed(row.f, cfg.frequencia);
+    const vScore = scoreFixed(row.v, cfg.valorCents);
+    const ticketMedio = row.f > 0 ? Math.round(row.v / row.f) : 0;
+    return {
+      id: row.id,
+      rScore,
+      fScore,
+      vScore,
+      rfvSegmento: matchSegmento(rScore, fScore, vScore, cfg.segmentos),
+      ltvPrevistoCents: ltvPrevistoCents(ticketMedio, row.f),
+    };
+  });
+}
+
+/** SQL dos agregados da base ativa (≥1 concluído, sem etapa de funil — R2).
+ *  A janela de F/V vem da config (int validado por zod → interpolação segura). */
+function aggSql(janelaMeses: number): string {
+  const m = Math.max(1, Math.min(60, Math.trunc(janelaMeses)));
+  return `
 SELECT c.id,
        EXTRACT(DAY FROM (now() - MAX(b.starts_at)))::int AS r_days,
-       count(*) FILTER (WHERE b.starts_at >= now() - INTERVAL '12 months')::int AS f,
-       COALESCE(sum(b.price_cents) FILTER (WHERE b.starts_at >= now() - INTERVAL '12 months'), 0)::int AS v,
+       count(*) FILTER (WHERE b.starts_at >= now() - INTERVAL '${m} months')::int AS f,
+       COALESCE(sum(b.price_cents) FILTER (WHERE b.starts_at >= now() - INTERVAL '${m} months'), 0)::int AS v,
        count(*)::int AS total,
        COALESCE(sum(b.price_cents), 0)::int AS v_total
 FROM customers c
@@ -129,24 +196,40 @@ JOIN bookings b ON b.customer_id = c.id AND b.status = 'completed'
 WHERE c.funil_etapa IS NULL
 GROUP BY c.id
 `;
+}
 
-/** Busca os agregados da base ativa. */
-export function fetchRFVRows(): Promise<RFVRow[]> {
-  return prisma.$queryRawUnsafe<RFVRow[]>(AGG_SQL);
+/** Busca os agregados da base ativa (janela em meses da config). */
+export function fetchRFVRows(janelaMeses = 12): Promise<RFVRow[]> {
+  return prisma.$queryRawUnsafe<RFVRow[]>(aggSql(janelaMeses));
+}
+
+/** Contagem por segmento de um rascunho de config — prévia SEM gravar (F2). */
+export async function previewSegmentacao(cfg: CrmConfigData): Promise<{
+  base: number;
+  porSegmento: Record<string, number>;
+}> {
+  const rows = await fetchRFVRows(cfg.janelaMeses);
+  const porSegmento: Record<string, number> = {};
+  for (const s of computeRFVConfig(rows, cfg)) {
+    porSegmento[s.rfvSegmento] = (porSegmento[s.rfvSegmento] ?? 0) + 1;
+  }
+  return { base: rows.length, porSegmento };
 }
 
 /**
  * Job diário: recalcula RFV de toda a base ativa e grava nos clientes. Best-effort
  * por linha; retorna o resumo. Quem saiu da base ativa não é zerado aqui (mantém
- * o último score; ajuste futuro se preciso).
+ * o último score; ajuste futuro se preciso). Desde a F2 usa a régua da Mi
+ * (crm-config); sem config salva, os defaults reproduzem o comportamento antigo.
  */
 export async function recalcularRFV(): Promise<{
   base: number;
   atualizados: number;
   porSegmento: Record<string, number>;
 }> {
-  const rows = await fetchRFVRows();
-  const scores = computeRFV(rows);
+  const cfg = await getCrmConfig();
+  const rows = await fetchRFVRows(cfg.janelaMeses);
+  const scores = computeRFVConfig(rows, cfg);
   const porSegmento: Record<string, number> = {};
   let atualizados = 0;
   const agora = new Date();
