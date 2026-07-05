@@ -147,6 +147,32 @@ tudo aqui é adição. O forçar-troca é mais seguro que só "nudge", então fo
 
 **Validação:** tsc 0 · lint 0 · build EXIT 0 · testes verdes.
 
+## Execução — FASE 3 (Passkeys / Face ID / biometria) ✅
+
+WebAuthn com `@simplewebauthn/server@13` + `browser@13`. Modelo único `Passkey`
+(migration `20260705190000`) servindo os dois portais via `area`+`subjectId`.
+`lib/webauthn.ts`: rpID/origin derivados do host do request (prod e localhost),
+challenge em cookie httpOnly assinado (HMAC, 5min), helpers base64url e userHandle
+`area:subjectId` (login discoverable/usernameless).
+
+**Rotas** `/api/auth/passkey/{register,authenticate}/{options,verify}`. Cadastro
+exige sessão (`sujeitoAtual` — subjectId sempre da sessão, nunca do request).
+Login da **cliente** pela rota verify (sessão via cookie); login do **admin** pelo
+provider **`passkey`** do NextAuth (mantém o token_version/invalidação). Contador
+de assinatura atualizado a cada uso (anti-clonagem). Gerência (ativar/listar/
+renomear/remover) em Configurações (admin) e Meu perfil (cliente); trocar senha
+**não** remove passkeys (avisado na UI). Botão "Entrar com Face ID/biometria" nas
+duas telas de login (some se o navegador não suporta). **Senha continua como fallback.**
+
+**Nota de segurança:** o challenge é de uso único no fluxo da cliente (a rota o
+limpa). No login do admin (provider NextAuth, que não escreve cookies) a proteção
+contra replay vem do contador + TTL curto do challenge (5min); autenticadores que
+não incrementam contador têm essa janela — aceitável para um recurso adicional com
+senha de fallback. **Verificação em dispositivo real (Face ID no iPhone, biometria
+Android/desktop) é aceite manual do Rodolfo** (não dá para exercitar WebAuthn no CI).
+
+**Validação:** tsc 0 · lint 0 · build EXIT 0 · 178 testes.
+
 ## Aceite da FASE 0
 
 - ✅ Configuração do NextAuth mapeada (providers, callbacks, sessão JWT, tabelas admin×cliente).

@@ -453,6 +453,26 @@ model ClubPasswordReset {
   @@map("club_password_resets")
 }
 
+/// Auth F3 — Passkey (WebAuthn / Face ID / biometria). Serve os DOIS portais:
+/// `area` (admin|cliente) + `subjectId` (adminUserId ou customerId). É SEMPRE
+/// adicional — a senha continua como fallback. Guarda a chave pública (não há
+/// segredo do lado do servidor); `counter` valida anti-clonagem.
+model Passkey {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  area         String // admin | cliente
+  subjectId    String    @map("subject_id") @db.Uuid
+  credentialId String    @unique @map("credential_id") // base64url
+  publicKey    String    @map("public_key") // base64url da COSE public key
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  deviceName   String    @map("device_name")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz
+
+  @@index([area, subjectId])
+  @@map("passkeys")
+}
+
 /// Auth F1.2 — auditoria de autenticação dos DOIS portais (admin e cliente).
 /// NUNCA guarda senha/token/código, só metadados. O IP entra hasheado (SHA-256,
 /// LGPD); o identificador da cliente entra mascarado (••••1234). Também serve de

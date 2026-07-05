@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import PasswordField from "@/components/auth/PasswordField";
+import PasskeyLoginButton from "@/components/auth/PasskeyLoginButton";
 
 // Mensagem ÚNICA (anti-enumeração): nunca diferencia "e-mail não existe" de
 // "senha errada". Tom da Mi.
@@ -92,6 +93,14 @@ function LoginForm() {
           {loading ? "Entrando…" : "Entrar"}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3 text-xs text-mi-texto/40">
+        <span className="h-px flex-1 bg-mi-cinza" />
+        ou
+        <span className="h-px flex-1 bg-mi-cinza" />
+      </div>
+      <PasskeyLoginButton area="admin" />
+
       <p className="mt-6 text-center text-sm">
         <Link href="/admin/recuperar" className="text-mi-marrom underline">
           Esqueci a senha

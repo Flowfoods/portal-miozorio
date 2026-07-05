@@ -2,9 +2,11 @@ import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { prisma } from "./prisma";
 import { lockoutMs } from "./security";
 import { isIpThrottled, metaFromHeaders, recordAuth } from "./authlog";
+import { challengeFromCookieHeader, fromB64url } from "./webauthn";
 
 /**
  * Autenticação do painel /admin (M5): credentials (e-mail + senha bcrypt)
@@ -76,6 +78,81 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           tokenVersion: user.tokenVersion,
+        } as unknown as { id: string; email: string; name: string };
+      },
+    }),
+    // Login por PASSKEY do admin (Auth F3). Verifica a asserção WebAuthn e
+    // devolve o admin — a senha continua como fallback (provider acima).
+    CredentialsProvider({
+      id: "passkey",
+      name: "Passkey",
+      credentials: { assertion: { label: "assertion", type: "text" } },
+      async authorize(credentials, req) {
+        const meta = metaFromHeaders(req?.headers);
+        if (!credentials?.assertion) return null;
+        let response: { id?: string };
+        try {
+          response = JSON.parse(credentials.assertion);
+        } catch {
+          return null;
+        }
+        if (!response?.id) return null;
+
+        const expectedChallenge = challengeFromCookieHeader(
+          (req?.headers as Record<string, string> | undefined)?.cookie ?? null,
+        );
+        if (!expectedChallenge) return null;
+
+        const cred = await prisma.passkey.findUnique({
+          where: { credentialId: response.id },
+        });
+        if (!cred || cred.area !== "admin") return null;
+
+        const h = (req?.headers ?? {}) as Record<string, string>;
+        const host = h["x-forwarded-host"] ?? h["host"] ?? "localhost:3000";
+        const proto =
+          h["x-forwarded-proto"] ?? (host.startsWith("localhost") ? "http" : "https");
+        const rpID = host.split(":")[0]!;
+        const origin = `${proto}://${host}`;
+
+        let verification;
+        try {
+          verification = await verifyAuthenticationResponse({
+            response: response as never,
+            expectedChallenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+            requireUserVerification: false,
+            credential: {
+              id: cred.credentialId,
+              publicKey: fromB64url(cred.publicKey),
+              counter: Number(cred.counter),
+              transports: cred.transports as never,
+            },
+          });
+        } catch {
+          return null;
+        }
+        if (!verification.verified) return null;
+
+        const u = await prisma.adminUser.findUnique({
+          where: { id: cred.subjectId },
+        });
+        if (!u || !u.active) return null;
+
+        await prisma.passkey.update({
+          where: { id: cred.id },
+          data: {
+            counter: BigInt(verification.authenticationInfo.newCounter),
+            lastUsedAt: new Date(),
+          },
+        });
+        await recordAuth("admin", "passkey_login", u.email, meta);
+        return {
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          tokenVersion: u.tokenVersion,
         } as unknown as { id: string; email: string; name: string };
       },
     }),

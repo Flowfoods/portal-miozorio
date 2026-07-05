@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getSettings } from "@/lib/settings";
+import { sujeitoAtual, listarPasskeysDoSujeito } from "@/lib/passkeys";
+import PasskeyManager from "@/components/auth/PasskeyManager";
 import { adminSaveSettings } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,14 @@ const NUMERIC_FIELDS: { key: string; label: string; hint: string }[] = [
 
 export default async function AdminConfigPage() {
   const s = await getSettings(true);
+  const suj = await sujeitoAtual("admin");
+  const passkeys = suj
+    ? (await listarPasskeysDoSujeito("admin", suj.subjectId)).map((p) => ({
+        ...p,
+        createdAt: p.createdAt.toISOString(),
+        lastUsedAt: p.lastUsedAt ? p.lastUsedAt.toISOString() : null,
+      }))
+    : [];
 
   const numericValue: Record<string, number> = {
     buffer_min: s.bufferMin,
@@ -112,6 +122,15 @@ export default async function AdminConfigPage() {
         >
           Ver acessos →
         </Link>
+      </section>
+
+      <section className="mt-6 rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="mb-1 text-lg">Entrar com Face ID / biometria</h2>
+        <p className="mb-3 text-xs text-mi-texto/60">
+          Ative para entrar no painel com o reconhecimento do seu aparelho — sem
+          digitar senha. A senha continua funcionando normalmente.
+        </p>
+        <PasskeyManager area="admin" passkeys={passkeys} />
       </section>
     </>
   );

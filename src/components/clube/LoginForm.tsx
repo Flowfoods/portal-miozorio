@@ -4,6 +4,7 @@ import { useFormState } from "react-dom";
 import { entrarAction, type ClienteFormState } from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
 import PasswordField from "@/components/auth/PasswordField";
+import PasskeyLoginButton from "@/components/auth/PasskeyLoginButton";
 import { PhoneField, FormError } from "./ClubFields";
 
 /** Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone. */
@@ -48,6 +49,13 @@ export default function LoginForm() {
           Esqueci minha senha
         </a>
       </p>
+
+      <div className="flex items-center gap-3 text-xs text-mi-texto/40">
+        <span className="h-px flex-1 bg-mi-cinza" />
+        ou
+        <span className="h-px flex-1 bg-mi-cinza" />
+      </div>
+      <PasskeyLoginButton area="cliente" />
     </form>
   );
 }

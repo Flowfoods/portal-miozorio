@@ -3,8 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getClienteSession } from "@/lib/cliente-auth";
+import { listarPasskeysDoSujeito } from "@/lib/passkeys";
 import { formatPhoneBR } from "@/lib/format";
 import ContaShell from "@/components/clube/ContaShell";
+import PasskeyManager from "@/components/auth/PasskeyManager";
 import { sairAction } from "../actions";
 
 export const metadata: Metadata = {
@@ -29,6 +31,14 @@ export default async function PerfilPage() {
     select: { name: true, phoneE164: true, email: true, clubJoinedAt: true },
   });
   if (!customer) redirect("/clube/entrar");
+
+  const passkeys = (await listarPasskeysDoSujeito("cliente", s.customerId)).map(
+    (p) => ({
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      lastUsedAt: p.lastUsedAt ? p.lastUsedAt.toISOString() : null,
+    }),
+  );
 
   return (
     <ContaShell ativo="perfil">
@@ -60,6 +70,17 @@ export default async function PerfilPage() {
         <p className="border-t border-mi-cinza/60 pt-3 font-corpo text-xs text-mi-texto/60">
           Precisa atualizar algum dado? É só falar com a Mi no WhatsApp 💛
         </p>
+      </section>
+
+      <section className="mt-6 rounded-mi bg-mi-branco p-5 shadow-suave">
+        <h2 className="font-titulo text-lg text-mi-marrom-escuro">
+          Entrar com Face ID / biometria
+        </h2>
+        <p className="mb-3 mt-1 font-corpo text-xs text-mi-texto/60">
+          Ative para entrar sem digitar senha, usando o reconhecimento do seu
+          celular. Sua senha continua valendo 💛
+        </p>
+        <PasskeyManager area="cliente" passkeys={passkeys} />
       </section>
 
       <section className="mt-6 space-y-3">
