@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
+import { formatBRL } from "@/lib/format";
+import { formatPeriodoExtenso } from "@/lib/periods";
+import { periodoDaRequest } from "@/lib/periods-server";
+import PeriodSelector from "@/components/admin/PeriodSelector";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +45,29 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-export default async function CrmPage() {
+export default async function CrmPage({
+  searchParams,
+}: {
+  searchParams: { periodo?: string; de?: string; ate?: string };
+}) {
+  const { timezone: tz } = await getSettings();
+
+  // Recorte de VISUALIZAÇÃO por período (F4) — não altera a lógica RFV (job diário).
+  const pr = periodoDaRequest("crm", searchParams, {
+    fallback: "ultimos30",
+    zone: tz,
+  });
+  const range = { gte: pr.period.from, lte: pr.period.to };
+
+  const [novasClientes, atendidos, faturamentoAgg] = await Promise.all([
+    prisma.customer.count({ where: { createdAt: range } }),
+    prisma.booking.count({ where: { status: "completed", startsAt: range } }),
+    prisma.booking.aggregate({
+      where: { status: "completed", startsAt: range },
+      _sum: { priceCents: true },
+    }),
+  ]);
+
   const [segGroups, funilGroups, ltvAgg, ultimoCalc, recompraRows, aniversRows] =
     await Promise.all([
     prisma.customer.groupBy({
@@ -100,6 +127,34 @@ export default async function CrmPage() {
   return (
     <>
       <ClientesHubNav />
+
+      {/* Atividade no período (F4 — recorte de visualização) */}
+      <PeriodSelector
+        modulo="crm"
+        preset={pr.period.preset}
+        deISO={pr.period.deISO}
+        ateISO={pr.period.ateISO}
+        extenso={formatPeriodoExtenso(pr.period, tz)}
+        error={pr.error}
+      />
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <Card
+          label="Novas clientes no período"
+          value={String(novasClientes)}
+          hint="cadastros no intervalo"
+        />
+        <Card
+          label="Atendimentos no período"
+          value={String(atendidos)}
+          hint="concluídos"
+        />
+        <Card
+          label="Faturamento do período"
+          value={formatBRL(faturamentoAgg._sum.priceCents ?? 0)}
+          hint="atendimentos concluídos"
+        />
+      </section>
+
       <div className="mb-6">
         <h1 className="text-3xl">CRM</h1>
         <p className="mt-1 text-sm text-mi-texto/60">

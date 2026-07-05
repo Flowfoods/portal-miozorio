@@ -188,6 +188,7 @@ model Customer {
 
   @@index([referredById])
   @@index([rfvSegmento])
+  @@index([createdAt]) // novas clientes no período (F4)
   @@map("customers")
 }
 
@@ -277,6 +278,7 @@ model ClubTransaction {
   customer Customer @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
+  @@index([createdAt]) // extrato/totais por período (F4)
   @@map("club_transactions")
 }
 

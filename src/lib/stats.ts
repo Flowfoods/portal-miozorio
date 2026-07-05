@@ -167,18 +167,21 @@ export function monthRange(
 const TTL_MS = 5 * 60_000;
 const cache = new Map<string, { at: number; data: Resumo }>();
 
-/** Resumo do período (default: mês atual). Cacheado por 5min por período. */
-export async function getResumo(mes?: string): Promise<{ resumo: Resumo; label: string; mesAtual: string }> {
+/**
+ * Resumo de um INTERVALO arbitrário [start, end) — F3 do período global.
+ * Cache de 5min por intervalo (mesma política do mensal).
+ */
+export async function getResumoRange(
+  start: DateTime,
+  end: DateTime,
+): Promise<Resumo> {
   const settings = await getSettings();
   const zone = settings.timezone;
   const now = DateTime.now().setZone(zone);
-  const { start, end, label } = monthRange(mes, now);
-  const key = start.toFormat("yyyy-MM");
+  const key = `${start.toISODate()}..${end.toISODate()}`;
 
   const cached = cache.get(key);
-  if (cached && Date.now() - cached.at < TTL_MS) {
-    return { resumo: cached.data, label, mesAtual: now.toFormat("yyyy-MM") };
-  }
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.data;
 
   const rows = await prisma.booking.findMany({
     where: { startsAt: { gte: start.toJSDate(), lt: end.toJSDate() } },
@@ -201,7 +204,7 @@ export async function getResumo(mes?: string): Promise<{ resumo: Resumo; label: 
     serviceName: r.service.name,
   }));
 
-  // Ocupação só conta dias já decorridos (não inflar com o futuro do mês).
+  // Ocupação só conta dias já decorridos (não inflar com o futuro do período).
   const occEnd = DateTime.min(end, now.plus({ days: 1 }).startOf("day"));
   const availableMin = availableMinutesInRange(
     settings.workingHours,
@@ -212,5 +215,16 @@ export async function getResumo(mes?: string): Promise<{ resumo: Resumo; label: 
 
   const data = computeResumo(bookings, availableMin);
   cache.set(key, { at: Date.now(), data });
-  return { resumo: data, label, mesAtual: now.toFormat("yyyy-MM") };
+  return data;
+}
+
+/** Resumo do mês (retrocompat do M14; default: mês atual). */
+export async function getResumo(
+  mes?: string,
+): Promise<{ resumo: Resumo; label: string; mesAtual: string }> {
+  const settings = await getSettings();
+  const now = DateTime.now().setZone(settings.timezone);
+  const { start, end, label } = monthRange(mes, now);
+  const resumo = await getResumoRange(start, end);
+  return { resumo, label, mesAtual: now.toFormat("yyyy-MM") };
 }

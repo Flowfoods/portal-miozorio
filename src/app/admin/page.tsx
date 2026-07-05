@@ -9,6 +9,10 @@ import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import PainelHoje from "@/components/admin/PainelHoje";
 import WeekAgenda from "@/components/admin/WeekAgenda";
 import RescheduleForm from "@/components/admin/RescheduleForm";
+import PeriodSelector from "@/components/admin/PeriodSelector";
+import AgendaPeriodo from "@/components/admin/AgendaPeriodo";
+import { periodoDaRequest } from "@/lib/periods-server";
+import { buildPeriod, formatPeriodoExtenso } from "@/lib/periods";
 import {
   adminConfirmBooking,
   adminCancelBooking,
@@ -165,17 +169,35 @@ function weekStartSaturday(day: DateTime): DateTime {
 export default async function AdminAgendaPage({
   searchParams,
 }: {
-  searchParams: { data?: string; vista?: string };
+  searchParams: {
+    data?: string;
+    vista?: string;
+    periodo?: string;
+    de?: string;
+    ate?: string;
+  };
 }) {
   const settings = await getSettings();
   const tz = settings.timezone;
   const today = DateTime.now().setZone(tz).startOf("day");
   const isWeek = searchParams.vista === "semana";
 
+  // Navegação fina (?data=/?vista=) SEMPRE vence o período — preserva todos os
+  // deep links existentes (/admin?data=...#b-id) e os botões ←/→ do dia.
+  const modoDia = Boolean(searchParams.data || searchParams.vista);
+  const pr = modoDia
+    ? null
+    : periodoDaRequest("agenda", searchParams, { fallback: "hoje", zone: tz });
+  const periodoAtivo = pr && pr.period.preset !== "hoje" ? pr.period : null;
+
   const requested = searchParams.data
     ? DateTime.fromISO(searchParams.data, { zone: tz }).startOf("day")
     : today;
   const day = requested.isValid ? requested : today;
+
+  // Props do seletor: em modo dia/hoje ele mostra o dia navegado por extenso.
+  const selDia = buildPeriod("hoje", day.toISODate() ?? "", day.toISODate() ?? "", tz);
+  const sel = periodoAtivo ?? selDia;
 
   const weekStart = weekStartSaturday(day);
   const weekEnd = weekStart.plus({ days: 7 });
@@ -225,6 +247,15 @@ export default async function AdminAgendaPage({
   const withView = (iso: string) =>
     isWeek ? `/admin?vista=semana&data=${iso}` : `/admin?data=${iso}`;
 
+  // Visão de período (F2): agrupamento por dia no intervalo selecionado.
+  const periodoBookings = periodoAtivo
+    ? await prisma.booking.findMany({
+        where: { startsAt: { gte: periodoAtivo.from, lte: periodoAtivo.to } },
+        include: { customer: true, service: true },
+        orderBy: { startsAt: "asc" },
+      })
+    : [];
+
   return (
     <>
       <PainelHoje />
@@ -237,6 +268,28 @@ export default async function AdminAgendaPage({
         </p>
       </div>
 
+      <PeriodSelector
+        modulo="agenda"
+        preset={sel.preset}
+        deISO={sel.deISO}
+        ateISO={sel.ateISO}
+        extenso={formatPeriodoExtenso(sel, tz)}
+        error={pr?.error}
+      />
+
+      {periodoAtivo ? (
+        <AgendaPeriodo bookings={periodoBookings} tz={tz} />
+      ) : (
+        <AgendaDiaSemana />
+      )}
+    </>
+  );
+
+  // Visão dia/semana original (preset "Hoje" — comportamento preservado; os
+  // botões ←/→ seguem como navegação fina dentro do preset).
+  function AgendaDiaSemana() {
+    return (
+    <>
       {/* Novo agendamento (encaixe manual M10.1) + toggle Dia/Semana */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <NovoAgendamento
@@ -297,7 +350,8 @@ export default async function AdminAgendaPage({
         />
       )}
     </>
-  );
+    );
+  }
 }
 
 function DayView({
