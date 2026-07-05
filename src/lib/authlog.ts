@@ -23,7 +23,9 @@ export type AuthEvent =
   | "recover_request" // cliente pediu código de recuperação
   | "recover_ok" // cliente validou o código e trocou a senha
   | "recover_fail" // código errado/expirado
-  | "password_changed"; // troca de senha logada (cliente/admin)
+  | "password_changed" // troca de senha logada (cliente/admin)
+  | "passkey_added" // cadastrou uma passkey (Face ID/biometria)
+  | "passkey_login"; // entrou por passkey
 
 export interface AuthMeta {
   ip?: string | null;

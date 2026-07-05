@@ -29,11 +29,11 @@ export async function sendPasswordResetEmail(
         </a>
       </p>
       <p style="font-size:13px;color:#8A7361">
-        O link vale por 1 hora. Se não foi você que pediu, pode ignorar este e-mail —
+        O link vale por 30 minutos. Se não foi você que pediu, pode ignorar este e-mail —
         sua senha continua a mesma.
       </p>
     </div>`;
-  const text = `Redefinir sua senha do painel da Mi Ozorio.\n\nAbra: ${link}\n\nO link vale por 1 hora. Se não foi você que pediu, ignore este e-mail.`;
+  const text = `Redefinir sua senha do painel da Mi Ozorio.\n\nAbra: ${link}\n\nO link vale por 30 minutos. Se não foi você que pediu, ignore este e-mail.`;
 
   const res = await fetch(RESEND_ENDPOINT, {
     method: "POST",
@@ -78,6 +78,24 @@ async function sendEmail(
     const body = await res.text().catch(() => "");
     throw new Error(`Resend respondeu ${res.status}: ${body}`);
   }
+}
+
+/** Fallback por e-mail do código de recuperação da cliente (Auth F2.2). */
+export async function sendClubRecoveryEmail(
+  to: string,
+  code: string,
+): Promise<void> {
+  const html = `
+    <div style="font-family:Georgia,'Times New Roman',serif;color:#5C4A3D;max-width:480px;margin:0 auto;padding:24px">
+      <h1 style="font-size:22px;font-weight:400;color:#8A7361">Seu código do Clube 💛</h1>
+      <p>Use o código abaixo para recuperar o acesso ao Clube Mi Ozorio:</p>
+      <p style="font-size:32px;letter-spacing:6px;font-weight:600;color:#5C4A3D;margin:16px 0">${code}</p>
+      <p style="font-size:13px;color:#8A7361">
+        Ele vale por 10 minutos. Se não foi você que pediu, pode ignorar este e-mail.
+      </p>
+    </div>`;
+  const text = `Seu código do Clube Mi Ozorio é ${code}. Vale por 10 minutos. Se não foi você, ignore este e-mail.`;
+  await sendEmail(to, "Seu código do Clube — Mi Ozorio", html, text);
 }
 
 /** Aviso pós-troca: "sua senha foi alterada" (segurança — Auth F1.2/2.1). */

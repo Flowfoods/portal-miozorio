@@ -33,8 +33,34 @@ export function lockoutMs(failedAttempts: number): number {
 
 // ── M13.4 — token de redefinição de senha ────────────────────────────────────
 
-/** Validade do link de redefinição (1 hora). */
-export const RESET_TTL_MS = 60 * 60 * 1000;
+/** Validade do link de redefinição (30 min — F2.1). */
+export const RESET_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Bloqueia as senhas mais óbvias (server-side), sem depender de rede. Não é o
+ * HIBP completo — é a rede de segurança contra o pior caso ("12345678",
+ * "senha123"…). Retorna true se a senha for fraca demais para aceitar.
+ */
+const SENHAS_OBVIAS = new Set([
+  "12345678",
+  "123456789",
+  "1234567890",
+  "12345678910",
+  "senha1234",
+  "password",
+  "password1",
+  "qwertyuiop",
+  "aaaaaaaaaaaa",
+  "miozorio",
+]);
+export function senhaFraca(pwd: string): boolean {
+  const p = pwd.toLowerCase();
+  if (SENHAS_OBVIAS.has(p)) return true;
+  // Só dígitos ou só um caractere repetido = adivinhável demais.
+  if (/^\d+$/.test(p)) return true;
+  if (/^(.)\1+$/.test(p)) return true;
+  return false;
+}
 
 /** Token cru, alta entropia (32 bytes), vai só no e-mail — nunca ao banco. */
 export function generateResetToken(): string {
