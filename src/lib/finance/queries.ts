@@ -58,18 +58,27 @@ function instantRange(ano: number, mes: number, tz: string) {
 }
 
 /**
- * Monta o movimento de um mês conforme o regime. Só lançamentos ativos
- * (soft-delete respeitado). atendimentos/no-show vêm dos bookings concluídos
- * pela data do evento (startsAt), independente do regime.
+ * Intervalo financeiro nas duas convenções do banco (compatível com o Period
+ * da lib de períodos — F3): instantes p/ timestamptz e UTC-meia-noite p/ DATE.
  */
-export async function fetchMovimento(
-  ano: number,
-  mes: number,
+export interface RangeFin {
+  from: Date; // instante inicial (00:00 SP)
+  to: Date; // instante final (23:59:59.999 SP)
+  dateFrom: Date; // competência (DATE) inclusiva
+  dateTo: Date;
+}
+
+/**
+ * Monta o movimento de um INTERVALO arbitrário conforme o regime (F3 — período
+ * global). Só lançamentos ativos (soft-delete respeitado). atendimentos/no-show
+ * vêm dos bookings pela data do evento (startsAt), independente do regime.
+ */
+export async function fetchMovimentoRange(
+  range: RangeFin,
   regime: Regime,
 ): Promise<MovimentoMensal> {
-  const { timezone: tz } = await getSettings();
-  const comp = competenceRange(ano, mes);
-  const inst = instantRange(ano, mes, tz);
+  const comp = { gte: range.dateFrom, lte: range.dateTo };
+  const inst = { gte: range.from, lte: range.to };
 
   const receitaWhere =
     regime === "competencia"
@@ -122,6 +131,43 @@ export async function fetchMovimento(
     noShowCount: noShow._count,
     noShowValorCents: noShow._sum.priceCents ?? 0,
   };
+}
+
+/** Wrapper de MÊS (retrocompat: serieMensal, resumoDoMes, PainelHoje). */
+export async function fetchMovimento(
+  ano: number,
+  mes: number,
+  regime: Regime,
+): Promise<MovimentoMensal> {
+  const { timezone: tz } = await getSettings();
+  const comp = competenceRange(ano, mes);
+  const inst = instantRange(ano, mes, tz);
+  return fetchMovimentoRange(
+    {
+      from: inst.gte,
+      to: new Date(inst.lt.getTime() - 1),
+      dateFrom: comp.gte,
+      dateTo: new Date(comp.lt.getTime() - 1),
+    },
+    regime,
+  );
+}
+
+export interface ResumoPeriodo {
+  dre: DRE;
+  kpis: KPIs;
+  alertas: string[];
+}
+
+/** DRE + KPIs + alertas de um intervalo arbitrário (F3). */
+export async function resumoDoPeriodo(
+  range: RangeFin,
+  regime: Regime,
+): Promise<ResumoPeriodo> {
+  const mov = await fetchMovimentoRange(range, regime);
+  const dre = montarDRE(mov);
+  const kpis = kpisDoMes(mov, dre);
+  return { dre, kpis, alertas: alertasDoMes(dre, kpis) };
 }
 
 export interface ResumoMes {
@@ -202,15 +248,13 @@ export interface FatiaCategoria {
   cents: number;
 }
 
-/** Quebra de receita e despesa por categoria (donuts). Ordenado por valor desc. */
-export async function breakdownDoMes(
-  ano: number,
-  mes: number,
+/** Quebra por categoria (donuts) de um INTERVALO arbitrário (F3). */
+export async function breakdownDoPeriodo(
+  range: RangeFin,
   regime: Regime,
 ): Promise<{ receita: FatiaCategoria[]; despesa: FatiaCategoria[] }> {
-  const { timezone: tz } = await getSettings();
-  const comp = competenceRange(ano, mes);
-  const inst = instantRange(ano, mes, tz);
+  const comp = { gte: range.dateFrom, lte: range.dateTo };
+  const inst = { gte: range.from, lte: range.to };
   const recWhere =
     regime === "competencia"
       ? { active: true, competenceDate: comp }

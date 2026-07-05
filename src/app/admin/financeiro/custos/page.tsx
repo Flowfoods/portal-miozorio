@@ -1,4 +1,5 @@
 import { DateTime } from "luxon";
+import { TZ_PADRAO } from "@/lib/periods";
 import { prisma } from "@/lib/prisma";
 import { formatBRL } from "@/lib/format";
 import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
@@ -11,7 +12,11 @@ export const dynamic = "force-dynamic";
 const NATURE_LABEL: Record<string, string> = { fixed: "fixo", variable: "variável" };
 
 function mesRange(iso: string) {
-  const base = /^\d{4}-\d{2}$/.test(iso) ? DateTime.fromISO(`${iso}-01`, { zone: "utc" }) : DateTime.utc();
+  // Default = mês corrente resolvido em SP (fix F3: às 21h de SP o mês não
+  // pode "virar" pelo relógio UTC). A fronteira segue UTC (coluna DATE).
+  const mesAtualSP = DateTime.now().setZone(TZ_PADRAO).toFormat("yyyy-MM");
+  const mes = /^\d{4}-\d{2}$/.test(iso) ? iso : mesAtualSP;
+  const base = DateTime.fromISO(`${mes}-01`, { zone: "utc" });
   const start = base.startOf("month");
   return { gte: start.toJSDate(), lt: start.plus({ months: 1 }).toJSDate(), iso: start.toFormat("yyyy-MM") };
 }

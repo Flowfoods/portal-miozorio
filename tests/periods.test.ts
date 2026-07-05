@@ -5,6 +5,7 @@ import {
   buildPeriod,
   parsePeriodo,
   periodoQuery,
+  periodoAnterior,
   formatPeriodoExtenso,
   TZ_PADRAO,
 } from "@/lib/periods";
@@ -148,6 +149,30 @@ describe("parsePeriodo — contrato único (URL → Period)", () => {
     const r = parsePeriodo({ periodo: "semestre" }, { fallback: "hoje", now });
     expect(r.period.preset).toBe("hoje");
     expect(r.error).toBeUndefined();
+  });
+});
+
+describe("periodoAnterior — janela anterior equivalente", () => {
+  it("últimos 7 → os 7 dias imediatamente anteriores", () => {
+    const p = buildPeriod("ultimos7", "2026-06-29", "2026-07-05");
+    const ant = periodoAnterior(p);
+    expect(ant.deISO).toBe("2026-06-22");
+    expect(ant.ateISO).toBe("2026-06-28");
+    expect(ant.dias).toBe(7);
+  });
+
+  it("mês cheio na virada de mês/ano", () => {
+    const jan = buildPeriod("personalizado", "2026-01-01", "2026-01-31");
+    const ant = periodoAnterior(jan);
+    expect(ant.deISO).toBe("2025-12-01"); // 31 dias antes de 01/01
+    expect(ant.ateISO).toBe("2025-12-31");
+  });
+
+  it("um dia → o dia anterior", () => {
+    const dia = buildPeriod("hoje", "2026-03-01", "2026-03-01");
+    const ant = periodoAnterior(dia);
+    expect(ant.deISO).toBe("2026-02-28"); // fevereiro comum
+    expect(ant.ateISO).toBe("2026-02-28");
   });
 });
 

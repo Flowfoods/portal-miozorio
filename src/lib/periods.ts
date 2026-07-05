@@ -170,6 +170,18 @@ export function periodoQuery(p: Period): string {
     : `periodo=${p.preset}`;
 }
 
+/**
+ * Período anterior EQUIVALENTE (F3 — comparação do financeiro): janela do mesmo
+ * tamanho terminando no dia anterior ao início. Ex.: últimos 7 dias → os 7 dias
+ * imediatamente anteriores; mês (1º–30) → os 30 dias antes do dia 1º.
+ */
+export function periodoAnterior(p: Period, zone: string = TZ_PADRAO): Period {
+  const de = DateTime.fromISO(p.deISO, { zone });
+  const ateAnt = de.minus({ days: 1 });
+  const deAnt = ateAnt.minus({ days: p.dias - 1 });
+  return buildPeriod("personalizado", iso(deAnt), iso(ateAnt), zone);
+}
+
 /** "1 de junho — 30 de junho de 2026" (pt-BR; ano só quando muda/é passado). */
 export function formatPeriodoExtenso(p: Period, zone: string = TZ_PADRAO): string {
   const de = DateTime.fromISO(p.deISO, { zone }).setLocale("pt-BR");

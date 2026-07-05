@@ -3,6 +3,7 @@ import {
   parsePeriodo,
   type ParsePeriodoOpts,
   type ParsePeriodoResult,
+  type Period,
 } from "./periods";
 
 /**
@@ -13,7 +14,10 @@ import {
 export function periodoDaRequest(
   modulo: string,
   searchParams: { periodo?: string; de?: string; ate?: string },
-  opts: ParsePeriodoOpts = {},
+  opts: ParsePeriodoOpts & {
+    /** Default custom do módulo quando não há URL nem cookie (ex.: mês corrente). */
+    fallbackPeriod?: Period;
+  } = {},
 ): ParsePeriodoResult {
   const temUrl = searchParams.periodo || searchParams.de || searchParams.ate;
   if (temUrl) return parsePeriodo(searchParams, opts);
@@ -23,5 +27,6 @@ export function periodoDaRequest(
     const sp = Object.fromEntries(new URLSearchParams(cookie));
     return parsePeriodo(sp, opts);
   }
+  if (opts.fallbackPeriod) return { period: opts.fallbackPeriod };
   return parsePeriodo({}, opts);
 }

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { getResumo } from "@/lib/stats";
+import { getResumo, getResumoRange } from "@/lib/stats";
+import { getSettings } from "@/lib/settings";
+import { formatPeriodoExtenso } from "@/lib/periods";
+import { periodoDaRequest } from "@/lib/periods-server";
+import PeriodSelector from "@/components/admin/PeriodSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +38,30 @@ function Card({
 export default async function ResumoPage({
   searchParams,
 }: {
-  searchParams: { mes?: string };
+  searchParams: { mes?: string; periodo?: string; de?: string; ate?: string };
 }) {
-  const { resumo, label, mesAtual } = await getResumo(searchParams.mes);
+  const { timezone: tz } = await getSettings();
+
+  // Período global (F3): se a URL/cookie trouxer período, ele manda; o legado
+  // ?mes= e a navegação ←/→ mensal continuam funcionando no modo mês.
+  const temPeriodo = Boolean(
+    searchParams.periodo || searchParams.de || searchParams.ate,
+  );
+  const pr = temPeriodo
+    ? periodoDaRequest("resumo", searchParams, { zone: tz, fallback: "ultimos30" })
+    : null;
+
+  const periodResumo = pr
+    ? await getResumoRange(
+        DateTime.fromISO(pr.period.deISO, { zone: tz }).startOf("day"),
+        DateTime.fromISO(pr.period.ateISO, { zone: tz })
+          .plus({ days: 1 })
+          .startOf("day"),
+      )
+    : null;
+
+  const { resumo: resumoMes, label, mesAtual } = await getResumo(searchParams.mes);
+  const resumo = periodResumo ?? resumoMes;
   const sel = searchParams.mes && /^\d{4}-\d{2}$/.test(searchParams.mes)
     ? searchParams.mes
     : mesAtual;
@@ -47,30 +72,53 @@ export default async function ResumoPage({
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Resumo</h1>
-        <div className="flex items-center gap-2 text-sm">
-          <Link
-            href={`/admin/resumo?mes=${prev}`}
-            className="rounded-mi border border-mi-cinza px-3 py-1.5"
-          >
-            ←
-          </Link>
-          <span className="min-w-36 text-center capitalize">{label}</span>
-          {podeAvancar ? (
+        {!pr && (
+          <div className="flex items-center gap-2 text-sm">
             <Link
-              href={`/admin/resumo?mes=${next}`}
+              href={`/admin/resumo?mes=${prev}`}
               className="rounded-mi border border-mi-cinza px-3 py-1.5"
             >
-              →
+              ←
             </Link>
-          ) : (
-            <span className="rounded-mi border border-mi-cinza/40 px-3 py-1.5 text-mi-texto/30">
-              →
-            </span>
-          )}
-        </div>
+            <span className="min-w-36 text-center capitalize">{label}</span>
+            {podeAvancar ? (
+              <Link
+                href={`/admin/resumo?mes=${next}`}
+                className="rounded-mi border border-mi-cinza px-3 py-1.5"
+              >
+                →
+              </Link>
+            ) : (
+              <span className="rounded-mi border border-mi-cinza/40 px-3 py-1.5 text-mi-texto/30">
+                →
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {pr && (
+        <PeriodSelector
+          modulo="resumo"
+          preset={pr.period.preset}
+          deISO={pr.period.deISO}
+          ateISO={pr.period.ateISO}
+          extenso={formatPeriodoExtenso(pr.period, tz)}
+          error={pr.error}
+        />
+      )}
+      {!pr && (
+        <p className="mb-4 text-sm text-mi-texto/60">
+          <Link
+            href="/admin/resumo?periodo=ultimos30"
+            className="text-mi-marrom underline underline-offset-4"
+          >
+            Ver por período (7/30 dias, personalizado…)
+          </Link>
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Faturamento" value={brl(resumo.faturamentoCents)} hint="atendimentos realizados" />
