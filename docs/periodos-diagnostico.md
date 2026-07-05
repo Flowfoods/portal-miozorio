@@ -89,3 +89,15 @@ nasce para os searchParams das páginas e para futuras APIs.
 | 5 | — | Consistência visual, estados vazios, roteiro de regressão, deploy (gate) |
 
 **Aceite da FASE 0:** ✅ inventário completo; ✅ nenhuma mudança de comportamento.
+
+---
+
+## 6. Execução — o que foi entregue e desvios documentados
+
+| Fase | Entregue | Desvios (deliberados) |
+|---|---|---|
+| F1 | `lib/periods.ts` (23 testes: viradas de mês, fev 28/29, bissexto, virada de ano, fronteira 23h30 SP) · `<PeriodSelector />` · contrato `parsePeriodo`/`periodoDaRequest` · cookie httpOnly por módulo | Sem página-demo descartável — validação por build + integração imediata na Agenda (mesmo PR). Date range = inputs nativos `type=date` (pt-BR, mobile); calendário custom fica como evolução |
+| F2 | Agenda: seletor + visão de período agrupada por dia (totais: atendimentos, receita estimada, cancelamentos, faltas) | Navegação fina `?data=`/`?vista=` SEMPRE vence o período (preserva deep links e o hábito diário da Mi). Índice `bookings(starts_at)` já existia — sem migration |
+| F3 | Financeiro por intervalo (`fetchMovimentoRange`/`resumoDoPeriodo`/`breakdownDoPeriodo`) + comparação com período anterior equivalente (`periodoAnterior`, testada) · Resumo com `getResumoRange` · fix do bug UTC do mês default em custos/receitas | Default do Financeiro/Resumo = mês corrente (comportamento atual preservado; `?mes=` legado segue funcionando). Gráfico de barras segue mensal (6 meses) — granularidade diária do gráfico deferida. No Resumo, o modo mês (com ←/→) é o default; período entra por link/URL |
+| F4 | Clube: movimento do período (emitidos/resgatados/indicações/vouchers) · CRM: atividade no período (novas clientes, atendimentos, faturamento) sem tocar no RFV · migration aditiva de índices (`club_transactions.created_at`, `customers.created_at`) | O filtro "novas no período" vive no CRM (hub analítico) — a lista de Clientes não exibe dado por data, então não recebeu seletor |
+| F5 | Build + suíte completa + guardião de navegação; roteiro manual mobile fica como aceite do Rodolfo pós-deploy | E2E Playwright segue indisponível (sem staging com DB/browser no CI) |

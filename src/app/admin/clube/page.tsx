@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
+import { formatPeriodoExtenso } from "@/lib/periods";
+import { periodoDaRequest } from "@/lib/periods-server";
+import { MOTIVO_INDICACAO_PCT } from "@/lib/clube-pontos";
+import PeriodSelector from "@/components/admin/PeriodSelector";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
 import RegraIndicacaoForm from "@/components/admin/RegraIndicacaoForm";
 import {
@@ -19,9 +23,22 @@ export const dynamic = "force-dynamic";
  * catálogo de recompensas e vê o saldo de cada membro. Pontos por serviço
  * ficam em /admin/servicos; saldo/extrato/resgate por cliente, na ficha.
  */
-export default async function AdminClubePage() {
-  const [settings, rewards, membros, saldos, vouchers] = await Promise.all([
-    getSettings(),
+export default async function AdminClubePage({
+  searchParams,
+}: {
+  searchParams: { periodo?: string; de?: string; ate?: string };
+}) {
+  const settings = await getSettings();
+
+  // Período global (F4): recorte do MOVIMENTO (pontos/indicações/resgates).
+  // Catálogo, config e saldos de membros seguem all-time (são estado, não fluxo).
+  const pr = periodoDaRequest("clube", searchParams, {
+    fallback: "ultimos30",
+    zone: settings.timezone,
+  });
+  const range = { gte: pr.period.from, lte: pr.period.to };
+
+  const [rewards, membros, saldos, vouchers, emitidos, resgatados, indicacoes, vouchersPeriodo] = await Promise.all([
     prisma.clubReward.findMany({ orderBy: [{ sort: "asc" }, { nome: "asc" }] }),
     prisma.customer.findMany({
       where: { clubJoinedAt: { not: null } },
@@ -38,6 +55,23 @@ export default async function AdminClubePage() {
       include: { customer: { select: { name: true } } },
       orderBy: { createdAt: "asc" },
     }),
+    // Movimento do período (índice novo em created_at — F4).
+    prisma.clubTransaction.aggregate({
+      where: { createdAt: range, pontos: { gt: 0 } },
+      _sum: { pontos: true },
+    }),
+    prisma.clubTransaction.aggregate({
+      where: { createdAt: range, tipo: "redemption" },
+      _sum: { pontos: true },
+    }),
+    prisma.clubTransaction.count({
+      where: {
+        createdAt: range,
+        pontos: { gt: 0 },
+        tipo: { in: ["referral", MOTIVO_INDICACAO_PCT] },
+      },
+    }),
+    prisma.clubVoucher.count({ where: { createdAt: range } }),
   ]);
 
   const saldoPorCliente = new Map(
@@ -57,6 +91,38 @@ export default async function AdminClubePage() {
         indicação e o catálogo de recompensas. O saldo e o resgate de cada
         cliente ficam na ficha dela.
       </p>
+
+      {/* Movimento do período (F4 — período global) */}
+      <PeriodSelector
+        modulo="clube"
+        preset={pr.period.preset}
+        deISO={pr.period.deISO}
+        ateISO={pr.period.ateISO}
+        extenso={formatPeriodoExtenso(pr.period, settings.timezone)}
+        error={pr.error}
+      />
+      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Pontos emitidos</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
+            {emitidos._sum.pontos ?? 0}
+          </p>
+        </div>
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Pontos resgatados</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
+            {Math.abs(resgatados._sum.pontos ?? 0)}
+          </p>
+        </div>
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Indicações convertidas</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{indicacoes}</p>
+        </div>
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Resgates (vouchers)</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{vouchersPeriodo}</p>
+        </div>
+      </section>
 
       {/* Resgates a entregar (vouchers self-service do cliente) */}
       <section className="mb-8">
