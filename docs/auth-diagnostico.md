@@ -173,6 +173,56 @@ Android/desktop) é aceite manual do Rodolfo** (não dá para exercitar WebAuthn
 
 **Validação:** tsc 0 · lint 0 · build EXIT 0 · 178 testes.
 
+## Execução — FASE 4 (evoluções extras) ✅ parcial (escopo consciente)
+
+**Entregue (F4.3 — página de conta):** admin logado troca a própria senha
+**pedindo a atual** (`conta-actions.ts`, rejeita senha fraca, `token_version++` →
+derruba as sessões e reloga) e **"Sair de todos os dispositivos"** (mesmo bump).
+UI em Configurações (`AdminContaForm`). Somado às passkeys (F3) e à troca do
+cliente (F2), a "página de conta" dos dois portais está coberta.
+
+**Deferido de propósito (com racional):**
+- **2FA por código (admin) + "lembrar dispositivo":** as **passkeys** (F3) já dão
+  autenticação forte, resistente a phishing. 2FA-por-código adicionaria atrito com
+  ganho marginal para um estúdio de operadora única, e mexeria no fluxo do NextAuth
+  (duas fases). Fica como opção futura.
+- **Lista de "sessões ativas" por dispositivo (admin):** a sessão do admin é JWT
+  **stateless** (sem store) — listar dispositivo a dispositivo exigiria uma tabela
+  de sessões. O **"Sair de todos"** entrega o efeito prático (revogação global).
+- **Alerta de login em dispositivo novo:** o `AuthLog` já registra todo login com
+  IP hasheado/UA; o disparo proativo (WhatsApp/e-mail) fica como incremento sobre
+  esse dado.
+- **Link mágico da cliente ("entrar sem senha"):** a cliente já tem **recuperação
+  por WhatsApp** (F2.2) + **Face ID** (F3), que resolvem o caso "esqueci a senha".
+  O link mágico seria um terceiro caminho para o mesmo fim — adiado por redundância.
+
+## FASE 5 — Auditoria, testes e deploy
+
+**Checklist de segurança (`sec-audit-fraud-guard`):**
+- ✅ **Enumeração de contas impossível:** login admin (msg única), login cliente
+  (msg única), reset admin (resposta neutra), recuperação cliente (neutra em todos
+  os passos), passkey (discoverable, não revela).
+- ✅ **Nada em claro no banco:** senhas bcrypt(12); tokens de reset e códigos SHA-256;
+  passkey guarda só chave pública; IP hasheado; telefone mascarado no log.
+- ✅ **Uso único + expiração:** reset admin (30min, single-use, invalida anteriores),
+  código cliente (10min, 3 tentativas, single-use), challenge WebAuthn (5min, limpo).
+- ✅ **Rate-limit em todas as rotas sensíveis:** trava por conta (admin+cliente) +
+  rate-limit por IP (login e pedido de código).
+- ✅ **Logs sem dado sensível:** nunca senha/token/código; IP hasheado; UA truncado.
+- ✅ **Invalidação de sessão:** `token_version` no admin (reset, troca, sair-de-todos).
+- ✅ **Cabeçalhos:** HSTS, X-Frame DENY, CSP (já existiam); cookies httpOnly/secure/sameSite.
+
+**Roteiro de teste manual (aceite do Rodolfo — o que o CI não exercita):**
+matriz admin × cliente × { senha, reset e-mail (30min), reset WhatsApp (código/3
+tentativas/reenvio 60s), **passkey iPhone (Face ID)**, passkey Android/desktop,
+caps lock, ver senha, rate-limit, sair-de-todos }. Regressão crítica: cliente
+existente entra com credenciais atuais; 1º acesso (senha=telefone) intacto.
+
+**Deploy:** migrations aditivas (`auth_log`+`token_version`, `club_password_resets`,
+`passkeys`) rodam no boot. Envs já existentes: `RESEND_API_KEY`/`EMAIL_FROM`,
+`EVOLUTION_*`, `NEXTAUTH_SECRET`. **Nenhuma env nova** (rpID do WebAuthn é derivado
+do host do request — não precisa configurar).
+
 ## Aceite da FASE 0
 
 - ✅ Configuração do NextAuth mapeada (providers, callbacks, sessão JWT, tabelas admin×cliente).

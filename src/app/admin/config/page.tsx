@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { sujeitoAtual, listarPasskeysDoSujeito } from "@/lib/passkeys";
 import PasskeyManager from "@/components/auth/PasskeyManager";
+import AdminContaForm from "@/components/admin/AdminContaForm";
 import { adminSaveSettings } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -131,6 +132,11 @@ export default async function AdminConfigPage() {
           digitar senha. A senha continua funcionando normalmente.
         </p>
         <PasskeyManager area="admin" passkeys={passkeys} />
+      </section>
+
+      <section className="mt-6 rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="mb-3 text-lg">Minha senha e sessões</h2>
+        <AdminContaForm />
       </section>
     </>
   );
