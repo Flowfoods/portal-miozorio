@@ -3,6 +3,7 @@
 import { useFormState } from "react-dom";
 import { entrarAction, type ClienteFormState } from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
+import PasswordField from "@/components/auth/PasswordField";
 import { PhoneField, FormError } from "./ClubFields";
 
 /** Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone. */
@@ -23,12 +24,10 @@ export default function LoginForm() {
         <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
           Senha
         </span>
-        <input
+        <PasswordField
           name="password"
-          type="password"
           required
           autoComplete="current-password"
-          className="input-mi"
         />
         <span className="mt-1 block font-corpo text-xs text-mi-texto/55">
           No primeiro acesso, sua senha é o seu próprio telefone (só os números).

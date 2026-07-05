@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { adminSaveSettings } from "../actions";
 
@@ -98,6 +99,20 @@ export default async function AdminConfigPage() {
           Salvar configurações
         </button>
       </form>
+
+      <section className="mt-8 rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="mb-1 text-lg">Acessos & segurança</h2>
+        <p className="mb-3 text-xs text-mi-texto/60">
+          Quem entrou no painel e na área da cliente, tentativas sem sucesso e
+          trocas de senha.
+        </p>
+        <Link
+          href="/admin/config/acessos"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white"
+        >
+          Ver acessos →
+        </Link>
+      </section>
     </>
   );
 }

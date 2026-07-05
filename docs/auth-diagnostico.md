@@ -93,6 +93,32 @@ em prod e domínio verificado.
 6. **Passkeys / Face ID (FASE 3)** — `@simplewebauthn`, modelo `Passkey`, adicional (senha continua fallback).
 7. **2FA opcional + link mágico + sessões ativas (FASE 4)** — conveniência/camada extra.
 
+## Execução — FASE 1 (fundamentos + UX) ✅
+
+**Base:** branch `feat/auth-evolucao` construída sobre `feat/crm2-f1-eventos` (o
+`cliente-auth.ts` já ciente do tracking — evita conflito quando o CRM2 F1 mergear).
+
+**1.1 UX dos formulários** — componente único `components/auth/PasswordField.tsx`
+(ver/ocultar senha com alvo ≥44px e aria, aviso de Caps Lock, medidor de força
+opcional), aplicado nos 4 forms (login admin, redefinir admin, login cliente,
+nova senha cliente). Login admin: mensagem única "E-mail ou senha incorretos.
+Tente novamente 🤎" (anti-enumeração), shake no card (`mi-shake`, respeita
+reduced-motion), foco de volta no campo, spinner + trava de duplo submit,
+`inputmode`/`autocomplete` corretos.
+
+**1.2 Server-side** — modelo `AuthLog` (migration aditiva `20260705140000`,
+sem PII: IP hasheado SHA-256, telefone mascarado ••••1234, nunca senha/token) +
+`lib/authlog.ts` (best-effort, nunca bloqueia login). Eventos gravados em admin
+(`auth.ts`) e cliente (`cliente-auth.ts`): login_ok/fail, locked, throttled,
+reset_*, password_changed. **Rate-limit por IP** (defesa-em-profundidade além da
+trava por conta) via contagem de falhas recentes por `ip_hash`. **Invalidação de
+sessão** do admin por `token_version` no JWT (redefinir a senha sobe a versão e
+derruba os JWTs antigos) + e-mail "sua senha foi alterada". Página de auditoria
+para a Mi em `/admin/config/acessos`.
+
+**Validação:** tsc 0 · lint 0 · **169 + 9 testes** verdes (novo `tests/authlog.test.ts`)
+· build EXIT 0. Cabeçalhos de segurança já existiam (HSTS/X-Frame/CSP) — conferidos.
+
 ## Aceite da FASE 0
 
 - ✅ Configuração do NextAuth mapeada (providers, callbacks, sessão JWT, tabelas admin×cliente).
