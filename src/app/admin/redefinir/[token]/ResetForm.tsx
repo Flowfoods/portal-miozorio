@@ -3,6 +3,7 @@
 import { useFormState } from "react-dom";
 import { completePasswordReset, type ResetState } from "../../reset-actions";
 import SubmitButton from "@/components/admin/SubmitButton";
+import PasswordField from "@/components/auth/PasswordField";
 import { MIN_SENHA } from "@/lib/security";
 
 /** Form de nova senha (M13.4). Recebe o token cru via prop (hidden field). */
@@ -16,18 +17,15 @@ export default function ResetForm({ token }: { token: string }) {
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="token" value={token} />
-      <input
-        className="input-mi"
-        type="password"
+      <PasswordField
         name="password"
         placeholder={`Nova senha (mín. ${MIN_SENHA})`}
         minLength={MIN_SENHA}
         autoComplete="new-password"
+        showStrength
         required
       />
-      <input
-        className="input-mi"
-        type="password"
+      <PasswordField
         name="confirm"
         placeholder="Repita a nova senha"
         minLength={MIN_SENHA}

@@ -7,6 +7,7 @@ import {
   type ClienteFormState,
 } from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
+import PasswordField from "@/components/auth/PasswordField";
 import { FormError } from "./ClubFields";
 
 /**
@@ -24,13 +25,12 @@ export default function SenhaForm({ provisoria }: { provisoria: boolean }) {
         <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
           Nova senha
         </span>
-        <input
+        <PasswordField
           name="password"
-          type="password"
           required
           minLength={6}
           autoComplete="new-password"
-          className="input-mi"
+          showStrength
         />
         <span className="mt-1 block font-corpo text-xs text-mi-texto/55">
           Pelo menos 6 caracteres, diferente do seu telefone.

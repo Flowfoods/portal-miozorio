@@ -412,6 +412,9 @@ model AdminUser {
   // M13.2 — bloqueio progressivo de login (anti brute-force, por conta).
   failedAttempts Int       @default(0) @map("failed_attempts")
   lockedUntil    DateTime? @map("locked_until") @db.Timestamptz
+  // Auth F1.2 — invalidação de sessões: o JWT carrega esta versão; ao trocar a
+  // senha o número sobe e todos os tokens antigos deixam de valer.
+  tokenVersion   Int       @default(0) @map("token_version")
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("admin_users")
@@ -430,6 +433,24 @@ model PasswordResetToken {
 
   @@index([adminUserId])
   @@map("password_reset_tokens")
+}
+
+/// Auth F1.2 — auditoria de autenticação dos DOIS portais (admin e cliente).
+/// NUNCA guarda senha/token/código, só metadados. O IP entra hasheado (SHA-256,
+/// LGPD); o identificador da cliente entra mascarado (••••1234). Também serve de
+/// base para o rate-limit por IP (contagem de falhas recentes por ip_hash).
+model AuthLog {
+  id         BigInt   @id @default(autoincrement())
+  area       String // admin | cliente
+  event      String // login_ok | login_fail | locked | reset_request | reset_done | recover_request | recover_ok ...
+  identifier String? // e-mail (admin) ou telefone mascarado (cliente)
+  ipHash     String?  @map("ip_hash")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([area, event, createdAt])
+  @@index([ipHash, createdAt])
+  @@map("auth_log")
 }
 
 /// Fotos do site (M8.4): hero, página Sobre, portfólio e cards de serviço.

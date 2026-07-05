@@ -90,10 +90,21 @@
 .mi-item-in {
   animation: miItemIn 0.35s ease-out both;
 }
+/* Erro de login (Auth F1.1): tremor sutil no card, sem exagero. */
+@keyframes miShake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+.mi-shake {
+  animation: miShake 0.4s ease-in-out;
+}
 @media (prefers-reduced-motion: reduce) {
   .mi-drawer-in,
   .mi-fade-in,
-  .mi-item-in {
+  .mi-item-in,
+  .mi-shake {
     animation: none;
   }
 }

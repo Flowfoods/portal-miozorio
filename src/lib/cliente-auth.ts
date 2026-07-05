@@ -1,10 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { normalizeE164BR } from "./phone";
 import { lockoutMs } from "./security";
 import { EV, getSid, mergeAnonToClient, track } from "./tracking";
+import { isIpThrottled, maskPhone, metaFromHeaders, recordAuth } from "./authlog";
 
 /**
  * Autenticação do PORTAL DO CLIENTE (Clube) — separada da do /admin (NextAuth).
@@ -101,11 +102,27 @@ export async function loginCliente(
   const phone = normalizeE164BR(phoneRaw);
   if (!phone || !password) return { ok: false, message: GENERIC };
 
+  const meta = metaFromHeaders(headers());
+  const ident = maskPhone(phone);
+
+  // Rate-limit por IP (defesa-em-profundidade além da trava por conta).
+  if (await isIpThrottled(meta.ip)) {
+    await recordAuth("cliente", "throttled", ident, meta);
+    return {
+      ok: false,
+      message: "Muitas tentativas. Tente de novo em alguns minutos.",
+    };
+  }
+
   const c = await prisma.customer.findUnique({ where: { phoneE164: phone } });
   // Só membros do clube acessam; resposta genérica não revela existência (LGPD).
-  if (!c || !c.clubJoinedAt) return { ok: false, message: GENERIC };
+  if (!c || !c.clubJoinedAt) {
+    await recordAuth("cliente", "login_fail", ident, meta);
+    return { ok: false, message: GENERIC };
+  }
 
   if (c.clubLockedUntil && c.clubLockedUntil > new Date()) {
+    await recordAuth("cliente", "locked", ident, meta);
     return {
       ok: false,
       message: "Muitas tentativas. Tente de novo em alguns minutos.",
@@ -129,6 +146,7 @@ export async function loginCliente(
         clubLockedUntil: ms > 0 ? new Date(Date.now() + ms) : c.clubLockedUntil,
       },
     });
+    await recordAuth("cliente", ms > 0 ? "locked" : "login_fail", ident, meta);
     return { ok: false, message: GENERIC };
   }
 
@@ -140,6 +158,7 @@ export async function loginCliente(
   }
 
   setCookie({ customerId: c.id, prov: c.clubPasswordProvisoria });
+  await recordAuth("cliente", "login_ok", ident, meta);
   // Tracking F1 (best-effort): amarra a sessão anônima à cliente e registra o
   // login. Nunca bloqueia o login se algo falhar.
   const sid = getSid();
@@ -188,5 +207,11 @@ export async function setClientePassword(
     },
   });
   setCookie({ customerId: c.id, prov: false });
+  await recordAuth(
+    "cliente",
+    "password_changed",
+    maskPhone(c.phoneE164),
+    metaFromHeaders(headers()),
+  );
   return { ok: true };
 }

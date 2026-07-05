@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import {
@@ -10,7 +11,8 @@ import {
   generateResetToken,
   hashResetToken,
 } from "@/lib/security";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordChangedEmail, sendPasswordResetEmail } from "@/lib/email";
+import { metaFromHeaders, recordAuth } from "@/lib/authlog";
 
 /**
  * Fluxo PÚBLICO de redefinição de senha do painel (M13.4).
@@ -34,6 +36,8 @@ export async function requestPasswordReset(
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return { error: "E-mail inválido." };
+
+  await recordAuth("admin", "reset_request", email, metaFromHeaders(headers()));
 
   const user = await prisma.adminUser.findUnique({ where: { email } });
   if (user && user.active) {
@@ -82,15 +86,18 @@ export async function completePasswordReset(
     return { error: "Esse link expirou ou já foi usado. Peça um novo." };
   }
 
-  await prisma.$transaction([
+  const [conta] = await prisma.$transaction([
     prisma.adminUser.update({
       where: { id: row.adminUserId },
       data: {
         passwordHash: bcrypt.hashSync(password, 12),
-        // Concluir o reset destrava a conta (M13.2).
+        // Concluir o reset destrava a conta (M13.2)…
         failedAttempts: 0,
         lockedUntil: null,
+        // …e invalida TODAS as sessões JWT antigas (Auth F1.2).
+        tokenVersion: { increment: 1 },
       },
+      select: { email: true },
     }),
     prisma.passwordResetToken.update({
       where: { id: row.id },
@@ -102,6 +109,19 @@ export async function completePasswordReset(
       data: { usedAt: new Date() },
     }),
   ]);
+
+  await recordAuth(
+    "admin",
+    "reset_done",
+    conta.email,
+    metaFromHeaders(headers()),
+  );
+  // Aviso "sua senha foi alterada" (best-effort, não bloqueia o fluxo).
+  try {
+    await sendPasswordChangedEmail(conta.email);
+  } catch (e) {
+    console.error("reset: falha ao avisar troca de senha", e);
+  }
 
   redirect("/admin/login?reset=ok");
 }
