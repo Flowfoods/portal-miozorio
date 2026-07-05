@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { normalizeE164BR } from "./phone";
 import { lockoutMs } from "./security";
+import { EV, getSid, mergeAnonToClient, track } from "./tracking";
 
 /**
  * Autenticação do PORTAL DO CLIENTE (Clube) — separada da do /admin (NextAuth).
@@ -139,6 +140,11 @@ export async function loginCliente(
   }
 
   setCookie({ customerId: c.id, prov: c.clubPasswordProvisoria });
+  // Tracking F1 (best-effort): amarra a sessão anônima à cliente e registra o
+  // login. Nunca bloqueia o login se algo falhar.
+  const sid = getSid();
+  await mergeAnonToClient(c.id, sid);
+  await track({ tipo: EV.LOGIN_CLUBE, clientId: c.id, sessionId: sid });
   return { ok: true, mustChange: c.clubPasswordProvisoria };
 }
 

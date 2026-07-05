@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBookingBody } from "@/lib/validation";
 import { createBooking } from "@/lib/booking-service";
+import { EV, getSid, track } from "@/lib/tracking";
+import { getClienteSession } from "@/lib/cliente-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,15 @@ export async function POST(req: NextRequest) {
       { status },
     );
   }
+  // Tracking F1 (server-authoritative): a cliente concluiu o fluxo de agendar.
+  // serviceId não é PII; sanitizeMeta descarta o que não for primitivo simples.
+  await track({
+    tipo: EV.AGENDAMENTO_CONCLUIDO,
+    sessionId: getSid(),
+    clientId: getClienteSession()?.customerId ?? null,
+    metadata: { servico: parsed.data.serviceId, local: parsed.data.location },
+  });
+
   return NextResponse.json(
     { id: result.id, holdExpiresAt: result.holdExpiresAt },
     { status: 201 },

@@ -1,6 +1,7 @@
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 import FloatingWhatsApp from "@/components/site/FloatingWhatsApp";
+import Tracker from "@/components/track/Tracker";
 
 /**
  * Layout do site PÚBLICO (route group `(site)`): Header + Footer + CTA flutuante.
@@ -16,6 +17,7 @@ export default function SiteLayout({
       {children}
       <Footer />
       <FloatingWhatsApp />
+      <Tracker />
     </>
   );
 }
