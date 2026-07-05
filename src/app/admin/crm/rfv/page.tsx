@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPhoneBR, waLink } from "@/lib/format";
+import { getCrmConfig, nomesSegmentos } from "@/lib/crm-config";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,6 @@ const brl = (cents: number) =>
     maximumFractionDigits: 0,
   });
 
-const SEGMENTOS = ["Campeãs", "Fiéis", "Promissoras", "Em risco", "Hibernando"];
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
@@ -26,8 +26,14 @@ export default async function CrmRfvPage({
 }: {
   searchParams: { seg?: string };
 }) {
+  // Nomes válidos vêm da régua editável (F2) + segmentos antigos ainda gravados.
+  const SEGMENTOS = nomesSegmentos(await getCrmConfig());
   const seg =
-    searchParams.seg && SEGMENTOS.includes(searchParams.seg)
+    searchParams.seg &&
+    (SEGMENTOS.includes(searchParams.seg) ||
+      (await prisma.customer.count({
+        where: { rfvSegmento: searchParams.seg },
+      })) > 0)
       ? searchParams.seg
       : null;
 

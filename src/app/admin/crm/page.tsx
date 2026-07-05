@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { formatPeriodoExtenso } from "@/lib/periods";
 import { periodoDaRequest } from "@/lib/periods-server";
+import { getCrmConfig, nomesSegmentos } from "@/lib/crm-config";
 import PeriodSelector from "@/components/admin/PeriodSelector";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
 
@@ -17,13 +18,14 @@ const brl = (cents: number) =>
     maximumFractionDigits: 0,
   });
 
-// Ordem e cor (token) de cada segmento RFV.
-const SEGMENTOS = [
-  { nome: "Campeãs", cor: "bg-mi-marrom" },
-  { nome: "Fiéis", cor: "bg-mi-marrom/70" },
-  { nome: "Promissoras", cor: "bg-mi-marrom/50" },
-  { nome: "Em risco", cor: "bg-mi-marrom/30" },
-  { nome: "Hibernando", cor: "bg-mi-cinza" },
+// Cores por posição — os NOMES vêm da régua editável (crm-config, F2).
+const PALETA = [
+  "bg-mi-marrom",
+  "bg-mi-marrom/70",
+  "bg-mi-marrom/50",
+  "bg-mi-marrom/30",
+  "bg-mi-cinza",
+  "bg-mi-cinza/60",
 ] as const;
 
 const FUNIL: { etapa: string; label: string }[] = [
@@ -108,6 +110,14 @@ export default async function CrmPage({
   ]);
 
   const segCount = new Map(segGroups.map((g) => [g.rfvSegmento, g._count._all]));
+  // Nomes/ordem dos segmentos vêm da régua editável (F2); segmentos "órfãos"
+  // (renomeados) ainda no banco aparecem no fim até o próximo recálculo.
+  const cfgCrm = await getCrmConfig();
+  const daRegua = nomesSegmentos(cfgCrm);
+  const orfaos = Array.from(segCount.keys()).filter(
+    (n): n is string => !!n && !daRegua.includes(n),
+  );
+  const segmentos = [...daRegua, ...orfaos];
   const funilCount = new Map(
     funilGroups.map((g) => [String(g.funilEtapa), g._count._all]),
   );
@@ -200,20 +210,21 @@ export default async function CrmPage({
         </p>
       ) : (
         <div className="space-y-2">
-          {SEGMENTOS.map((s) => {
-            const n = segCount.get(s.nome) ?? 0;
+          {segmentos.map((nome, idx) => {
+            const n = segCount.get(nome) ?? 0;
             const w = baseTotal > 0 ? Math.round((n / baseTotal) * 100) : 0;
+            const cor = PALETA[Math.min(idx, PALETA.length - 1)]!;
             return (
               <Link
-                key={s.nome}
-                href={`/admin/crm/rfv?seg=${encodeURIComponent(s.nome)}`}
+                key={nome}
+                href={`/admin/crm/rfv?seg=${encodeURIComponent(nome)}`}
                 className="flex items-center gap-3 rounded-mi bg-mi-branco px-4 py-3 shadow-suave transition hover:bg-mi-bege/40"
               >
                 <span className="w-28 shrink-0 font-medium text-mi-marrom-escuro">
-                  {s.nome}
+                  {nome}
                 </span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-mi-cinza/40">
-                  <span className={`block h-full ${s.cor}`} style={{ width: `${w}%` }} />
+                  <span className={`block h-full ${cor}`} style={{ width: `${w}%` }} />
                 </span>
                 <span className="w-10 shrink-0 text-right text-sm text-mi-texto/70">
                   {n}
@@ -249,6 +260,9 @@ export default async function CrmPage({
         </Link>
         <Link href="/admin/crm/jornadas" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Jornadas →
+        </Link>
+        <Link href="/admin/crm/config" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
+          Configurações do CRM →
         </Link>
         <Link href="/admin/clientes" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Todas as clientes →
