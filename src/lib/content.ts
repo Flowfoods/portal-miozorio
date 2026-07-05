@@ -416,6 +416,63 @@ export const CONTENT_FIELDS: ContentField[] = [
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}. Enviado automaticamente no dia certo.",
   },
+  // F5 — rascunhos de WhatsApp por etapa do funil de noiva. NUNCA enviados
+  // sozinhos: o botão abre o WhatsApp com o texto pronto e a Mi edita antes.
+  // <!-- APROVAR COM A MI: copies do funil -->
+  {
+    key: "msg.funil_lead",
+    label: "WhatsApp · funil — Lead",
+    default:
+      "Oi, {nome}! 💛 Que alegria receber seu contato — me conta um pouquinho do seu grande dia? Assim já preparo tudo com carinho.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Lead. Disponível: {nome}.",
+  },
+  {
+    key: "msg.funil_previa_agendada",
+    label: "WhatsApp · funil — Prévia agendada",
+    default:
+      "Oi, {nome}! Sua prévia está chegando 💛 Separe suas referências e venha decidida — vai ser lindo. Qualquer dúvida antes, me chama!",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Prévia agendada. Disponível: {nome}.",
+  },
+  {
+    key: "msg.funil_previa_feita",
+    label: "WhatsApp · funil — Prévia feita",
+    default:
+      "Oi, {nome}! Amei nossa prévia 💛 O que achou do resultado? Se quiser garantir a data, é só me avisar que preparo o contrato.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Prévia feita. Disponível: {nome}.",
+  },
+  {
+    key: "msg.funil_contrato_fechado",
+    label: "WhatsApp · funil — Contrato fechado",
+    default:
+      "Oi, {nome}! Contrato guardadinho e data reservada só pra você 💛 Agora é contagem regressiva — qualquer coisa que precisar, estou aqui.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Contrato fechado. Disponível: {nome}.",
+  },
+  {
+    key: "msg.funil_evento",
+    label: "WhatsApp · funil — Semana do evento",
+    default:
+      "Oi, {nome}! Tá chegando! 💛 Confirma comigo os horários do grande dia? Já deixei tudo separado com muito carinho.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Evento. Disponível: {nome}.",
+  },
+  {
+    key: "msg.funil_pos_evento",
+    label: "WhatsApp · funil — Pós-evento",
+    default:
+      "Oi, {nome}! Ainda emocionada com o seu dia 💛 Foi uma honra fazer parte. Quando as fotos chegarem, me mostra? E conta como foi a experiência!",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp · Funil de noiva",
+    ajuda: "Rascunho do botão da etapa Pós-evento. Disponível: {nome}.",
+  },
 ];
 
 /**

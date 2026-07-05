@@ -938,12 +938,30 @@ export async function adminUpdateCustomerCrm(
     ? (etapaRaw as FunilEtapa)
     : null;
 
+  // F5: mudança de etapa do funil → registra transição (tempo por etapa) e
+  // marca desde quando está na etapa nova (alerta de parada).
+  const etapaMudou = funilEtapa !== customer.funilEtapa;
+  if (etapaMudou) {
+    await prisma.funilEvento
+      .create({
+        data: {
+          customerId: id,
+          de: customer.funilEtapa ?? null,
+          para: funilEtapa ?? "saiu",
+        },
+      })
+      .catch(() => {});
+  }
+
   await prisma.customer.update({
     where: { id },
     data: {
       tags,
       origem,
       funilEtapa,
+      ...(etapaMudou
+        ? { funilEtapaDesde: funilEtapa ? new Date() : null }
+        : {}),
       whatsappOptIn: optIn,
       // registra o 1º opt-in; mantém o histórico se já existia (LGPD)
       whatsappOptInAt:

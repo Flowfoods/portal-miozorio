@@ -35,6 +35,9 @@ export default function ReguaEditor({ initial }: Props) {
   const [reguas, setReguas] = useState(initial.reguas);
   const [leadFria, setLeadFria] = useState(initial.limiares.leadFriaDias);
   const [abandono, setAbandono] = useState(initial.limiares.abandonoTentativas);
+  const [funilParada, setFunilParada] = useState(
+    initial.limiares.funilParadaDias,
+  );
 
   const [preview, setPreview] = useState<{
     base: number;
@@ -56,6 +59,7 @@ export default function ReguaEditor({ initial }: Props) {
         sumidaDias: sumida,
         leadFriaDias: leadFria,
         abandonoTentativas: abandono,
+        funilParadaDias: funilParada,
       },
       reguas,
     };
@@ -325,6 +329,10 @@ export default function ReguaEditor({ initial }: Props) {
           <label className="flex flex-wrap items-center gap-2">
             Abandono relevante após {numInput(abandono, setAbandono)}{" "}
             tentativa(s) sem agendar
+          </label>
+          <label className="flex flex-wrap items-center gap-2">
+            Noiva parada no funil após {numInput(funilParada, setFunilParada)}{" "}
+            dias na mesma etapa
           </label>
         </div>
       </section>

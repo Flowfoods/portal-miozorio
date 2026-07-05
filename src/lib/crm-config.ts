@@ -59,6 +59,8 @@ export const crmConfigSchema = z.object({
     sumidaDias: z.number().int().min(1).max(3650),
     leadFriaDias: z.number().int().min(1).max(365),
     abandonoTentativas: z.number().int().min(1).max(50),
+    /** F5: alerta de lead parada no funil de noiva (dias na mesma etapa). */
+    funilParadaDias: z.number().int().min(1).max(365).default(14),
   }),
   /**
    * Réguas de mensagens (F4). REGRA DA CASA: nenhuma mensagem sai sozinha —
@@ -117,7 +119,12 @@ export const DEFAULT_CRM_CONFIG: CrmConfigData = {
     { nome: "Promissoras", fMax: 2 },
     { nome: "Fiéis" }, // resto (f = 3, ainda ativa)
   ],
-  limiares: { sumidaDias: 120, leadFriaDias: 14, abandonoTentativas: 2 },
+  limiares: {
+    sumidaDias: 120,
+    leadFriaDias: 14,
+    abandonoTentativas: 2,
+    funilParadaDias: 14,
+  },
   reguas: {
     ativas: { sumida: false, abandono: false, leadFria: false },
     intervaloPorClienteDias: 7,
@@ -222,6 +229,11 @@ export function diffCrmConfig(
   if (la.abandonoTentativas !== lb.abandonoTentativas) {
     out.push(
       `Abandono relevante após: ${la.abandonoTentativas} → ${lb.abandonoTentativas} tentativas`,
+    );
+  }
+  if (la.funilParadaDias !== lb.funilParadaDias) {
+    out.push(
+      `Noiva parada no funil após: ${la.funilParadaDias} → ${lb.funilParadaDias} dias`,
     );
   }
   const ra = antes.reguas;
