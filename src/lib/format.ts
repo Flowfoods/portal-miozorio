@@ -36,6 +36,11 @@ export function waLink(phoneE164: string): string {
   return `https://wa.me/${phoneE164.replace(/\D/g, "")}`;
 }
 
+/** wa.me com mensagem pré-preenchida (a Mi revisa antes de enviar). */
+export function waLinkMsg(phoneE164: string, msg: string): string {
+  return `${waLink(phoneE164)}?text=${encodeURIComponent(msg)}`;
+}
+
 /** Data ISO "2026-06-13" → "sábado, 13 de junho". */
 export function formatDateLong(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);

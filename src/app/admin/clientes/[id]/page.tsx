@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL, formatPhoneBR, waLink } from "@/lib/format";
+import { EVENTO_LABEL } from "@/lib/crm-listas";
 import { lerAnamnese } from "@/lib/anamnesis";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
@@ -70,6 +71,33 @@ export default async function FichaClientePage({
         }),
       ])
     : [{ saldo: 0, extrato: [] as Awaited<ReturnType<typeof getSaldoExtrato>>["extrato"] }, []];
+
+  // Atividade no site (F1/F3): resumo + últimos eventos, em linguagem leiga.
+  const [eventos, resumoAtividade] = await Promise.all([
+    prisma.clientEvent.findMany({
+      where: { clientId: customer.id },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: { id: true, tipo: true, createdAt: true },
+    }),
+    prisma.$queryRawUnsafe<
+      { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[]
+    >(
+      `SELECT
+         COUNT(*) FILTER (WHERE tipo = 'SESSAO_INICIADA'
+           AND created_at >= now() - INTERVAL '30 days')::int AS "visitas30",
+         COUNT(*) FILTER (WHERE tipo IN ('INICIOU_AGENDAMENTO','ABANDONOU_AGENDAMENTO')
+           AND created_at >= now() - INTERVAL '30 days')::int AS "tentativas30",
+         MAX(created_at) FILTER (WHERE tipo IN ('SESSAO_INICIADA','LOGIN_CLUBE')) AS "ultimoAcesso"
+       FROM client_events WHERE client_id = $1`,
+      customer.id,
+    ),
+  ]);
+  const atividade = resumoAtividade[0] ?? {
+    visitas30: 0,
+    tentativas30: 0,
+    ultimoAcesso: null,
+  };
 
   const tz = settings.timezone;
   const now = DateTime.now().setZone(tz);
@@ -568,6 +596,57 @@ export default async function FichaClientePage({
           )}
         </section>
       </div>
+
+      {/* Atividade no site (F3 — comportamento first-party) */}
+      <section className="mb-8 rounded-mi bg-mi-branco p-5 shadow-suave">
+        <h2 className="mb-2 text-xl">Atividade no site</h2>
+        <p className="mb-4 text-sm text-mi-texto/70">
+          O que ela fez no portal — visitas, tentativas de agendamento e
+          compartilhamentos.
+        </p>
+        <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+          <div className="rounded-mi bg-mi-bege/60 p-3">
+            <p className="font-titulo text-2xl text-mi-marrom-escuro">
+              {atividade.visitas30}
+            </p>
+            <p className="text-xs text-mi-texto/60">visitas (30 dias)</p>
+          </div>
+          <div className="rounded-mi bg-mi-bege/60 p-3">
+            <p className="font-titulo text-2xl text-mi-marrom-escuro">
+              {atividade.tentativas30}
+            </p>
+            <p className="text-xs text-mi-texto/60">tentativas de agendar</p>
+          </div>
+          <div className="rounded-mi bg-mi-bege/60 p-3">
+            <p className="font-titulo text-2xl text-mi-marrom-escuro">
+              {atividade.ultimoAcesso
+                ? DateTime.fromJSDate(atividade.ultimoAcesso)
+                    .setZone(tz)
+                    .toFormat("dd/LL")
+                : "—"}
+            </p>
+            <p className="text-xs text-mi-texto/60">último acesso</p>
+          </div>
+        </div>
+        {eventos.length === 0 ? (
+          <p className="text-sm text-mi-texto/60">
+            Nenhuma atividade registrada ainda (o rastreio começou em jul/2026).
+          </p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {eventos.map((e) => (
+              <li key={String(e.id)} className="flex justify-between gap-3">
+                <span>{EVENTO_LABEL[e.tipo] ?? e.tipo}</span>
+                <span className="shrink-0 text-mi-texto/50">
+                  {DateTime.fromJSDate(e.createdAt)
+                    .setZone(tz)
+                    .toFormat("dd/LL HH:mm")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Histórico */}
       <section>
