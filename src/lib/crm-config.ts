@@ -61,6 +61,8 @@ export const crmConfigSchema = z.object({
     abandonoTentativas: z.number().int().min(1).max(50),
     /** F5: alerta de lead parada no funil de noiva (dias na mesma etapa). */
     funilParadaDias: z.number().int().min(1).max(365).default(14),
+    /** F6/LGPD: reter eventos de comportamento por N meses (job de limpeza). */
+    retencaoEventosMeses: z.number().int().min(1).max(60).default(24),
   }),
   /**
    * Réguas de mensagens (F4). REGRA DA CASA: nenhuma mensagem sai sozinha —
@@ -124,6 +126,7 @@ export const DEFAULT_CRM_CONFIG: CrmConfigData = {
     leadFriaDias: 14,
     abandonoTentativas: 2,
     funilParadaDias: 14,
+    retencaoEventosMeses: 24,
   },
   reguas: {
     ativas: { sumida: false, abandono: false, leadFria: false },
@@ -234,6 +237,11 @@ export function diffCrmConfig(
   if (la.funilParadaDias !== lb.funilParadaDias) {
     out.push(
       `Noiva parada no funil após: ${la.funilParadaDias} → ${lb.funilParadaDias} dias`,
+    );
+  }
+  if (la.retencaoEventosMeses !== lb.retencaoEventosMeses) {
+    out.push(
+      `Guardar atividade do site por: ${la.retencaoEventosMeses} → ${lb.retencaoEventosMeses} meses`,
     );
   }
   const ra = antes.reguas;

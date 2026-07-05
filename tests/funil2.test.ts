@@ -27,3 +27,18 @@ describe("funil 2.0 (F5)", () => {
     }
   });
 });
+
+describe("retenção de eventos (F6)", () => {
+  it("retencaoEventosMeses tem default 24 retrocompatível", async () => {
+    const { crmConfigSchema, DEFAULT_CRM_CONFIG } = await import("@/lib/crm-config");
+    const antiga = JSON.parse(JSON.stringify(DEFAULT_CRM_CONFIG)) as {
+      limiares: Record<string, number>;
+    };
+    delete antiga.limiares.retencaoEventosMeses;
+    const parsed = crmConfigSchema.safeParse(antiga);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.limiares.retencaoEventosMeses).toBe(24);
+    }
+  });
+});

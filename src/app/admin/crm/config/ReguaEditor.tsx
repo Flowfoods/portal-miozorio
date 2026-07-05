@@ -38,6 +38,9 @@ export default function ReguaEditor({ initial }: Props) {
   const [funilParada, setFunilParada] = useState(
     initial.limiares.funilParadaDias,
   );
+  const [retencao, setRetencao] = useState(
+    initial.limiares.retencaoEventosMeses,
+  );
 
   const [preview, setPreview] = useState<{
     base: number;
@@ -60,6 +63,7 @@ export default function ReguaEditor({ initial }: Props) {
         leadFriaDias: leadFria,
         abandonoTentativas: abandono,
         funilParadaDias: funilParada,
+        retencaoEventosMeses: retencao,
       },
       reguas,
     };
@@ -333,6 +337,10 @@ export default function ReguaEditor({ initial }: Props) {
           <label className="flex flex-wrap items-center gap-2">
             Noiva parada no funil após {numInput(funilParada, setFunilParada)}{" "}
             dias na mesma etapa
+          </label>
+          <label className="flex flex-wrap items-center gap-2">
+            Guardar a atividade do site por {numInput(retencao, setRetencao)}{" "}
+            meses (LGPD)
           </label>
         </div>
       </section>
