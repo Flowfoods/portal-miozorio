@@ -185,6 +185,7 @@ model Customer {
   clubVouchers ClubVoucher[]
   envios       EnvioMensagem[]
   testimonials Testimonial[]
+  events       ClientEvent[]
 
   @@index([referredById])
   @@index([rfvSegmento])
@@ -556,6 +557,28 @@ model NotificationLog {
   booking Booking? @relation(fields: [bookingId], references: [id])
 
   @@map("notification_log")
+}
+
+/// CRM 2.0 F1 — eventos de comportamento first-party (sem libs de terceiros).
+/// clientId null = visitante anônimo, amarrado por sessionId (cookie mi_sid, sem
+/// PII); no login do Clube os eventos da sessão anônima são vinculados à cliente
+/// (merge). `metadata` NUNCA guarda dado sensível (R18): sem alergia/anamnese/PII.
+/// Excluído em cascata com a cliente (LGPD). Retenção configurável (job de limpeza).
+model ClientEvent {
+  id        BigInt   @id @default(autoincrement())
+  clientId  String?  @map("client_id") @db.Uuid
+  sessionId String   @map("session_id") // cookie mi_sid (anônimo)
+  tipo      String // SESSAO_INICIADA | VISUALIZOU_AGENDAMENTO | AGENDAMENTO_CONCLUIDO | ...
+  origem    String   @default("web") // web | whatsapp
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  client Customer? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, tipo, createdAt])
+  @@index([tipo, createdAt])
+  @@index([sessionId])
+  @@map("client_events")
 }
 
 // ─────────────────────────── CRM — Jornadas ───────────────────────────

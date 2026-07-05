@@ -34,6 +34,20 @@ export default function PrivacidadePage() {
 
         <section>
           <h2 className="font-titulo text-2xl text-mi-marrom-escuro">
+            Como você usa o site
+          </h2>
+          <p className="mt-2 text-sm">
+            Para melhorar a sua experiência, registro de forma simples como o
+            site é usado — por exemplo, quando alguém abre a página de
+            agendamento ou compartilha o link de indicação. Isso me ajuda a
+            deixar tudo mais fácil pra você. Não uso ferramentas de
+            rastreamento de terceiros e nunca guardo dados sensíveis (como
+            alergias) junto dessas informações de navegação.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-titulo text-2xl text-mi-marrom-escuro">
             Dados sensíveis e de menores
           </h2>
           <p className="mt-2 text-sm">

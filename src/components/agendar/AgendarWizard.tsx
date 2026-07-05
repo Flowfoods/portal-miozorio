@@ -13,6 +13,7 @@ import Chip from "@/components/ui/Chip";
 import WeekStrip, { type DiaStrip } from "@/components/ui/WeekStrip";
 import Botao from "@/components/ui/Botao";
 import BarraResumo from "./BarraResumo";
+import { trackClient } from "@/lib/track-client";
 
 interface ApiService {
   id: string;
@@ -89,6 +90,36 @@ export default function AgendarWizard() {
   // marca a origem p/ o bônus de reagendamento na conclusão (F5).
   const daAreaCliente = search.get("origem") === "cuidar";
   const preselectDone = useRef(false);
+
+  // Tracking F1 (funil de agendamento). Refs para o handler de saída da página.
+  const iniciouRef = useRef(false);
+  const concluiuRef = useRef(false);
+
+  // VISUALIZOU ao entrar; ABANDONOU ao sair se começou e não concluiu.
+  useEffect(() => {
+    trackClient("VISUALIZOU_AGENDAMENTO");
+    const onLeave = () => {
+      if (iniciouRef.current && !concluiuRef.current) {
+        trackClient("ABANDONOU_AGENDAMENTO");
+      }
+    };
+    window.addEventListener("pagehide", onLeave);
+    return () => window.removeEventListener("pagehide", onLeave);
+  }, []);
+
+  // INICIOU na 1ª escolha de serviço (cobre seleção manual e pré-seleção).
+  useEffect(() => {
+    if (service && !iniciouRef.current) {
+      iniciouRef.current = true;
+      trackClient("INICIOU_AGENDAMENTO", { servico: service.code });
+    }
+  }, [service]);
+
+  // Marca concluído (o servidor já registra AGENDAMENTO_CONCLUIDO de forma
+  // autoritativa; aqui só evita o falso "abandono" ao sair após concluir).
+  useEffect(() => {
+    if (confirmed) concluiuRef.current = true;
+  }, [confirmed]);
 
   useEffect(() => {
     fetch("/api/services")
