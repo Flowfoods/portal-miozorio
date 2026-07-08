@@ -112,6 +112,20 @@ export default async function AdminConfigPage() {
       </form>
 
       <section className="mt-8 rounded-mi bg-mi-branco p-4 shadow-suave">
+        <h2 className="mb-1 text-lg">WhatsApp</h2>
+        <p className="mb-3 text-xs text-mi-texto/60">
+          Conecte o WhatsApp que envia lembretes, confirmações e o código de
+          recuperação das clientes (pareamento por QR, como o WhatsApp Web).
+        </p>
+        <Link
+          href="/admin/config/whatsapp"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white"
+        >
+          Conectar WhatsApp →
+        </Link>
+      </section>
+
+      <section className="mt-6 rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="mb-1 text-lg">Acessos & segurança</h2>
         <p className="mb-3 text-xs text-mi-texto/60">
           Quem entrou no painel e na área da cliente, tentativas sem sucesso e
