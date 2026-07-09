@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { getSiteContent, aplicarTemplate } from "./content";
-import { sendEvolutionText, evolutionConfigured } from "./notify";
+import { evolutionConfigured } from "./notify";
+import { sendTransactional } from "./whatsapp/service";
 
 /**
  * Lembretes automáticos por TEMPO (rodam 1×/dia pelo cron do portal —
@@ -211,7 +212,12 @@ export async function previewDueReminders(): Promise<ReminderPreview> {
   return { total: rows.length, porTipo, amostra };
 }
 
-/** Roda os lembretes do dia (best-effort, idempotente, env-gated). */
+/**
+ * Roda os lembretes do dia. Agora passam pelo OUTBOX (WhatsAppService): envio
+ * TRANSACIONAL imediato + retry no worker. O notification_log segue como guarda
+ * do "devido" (o DUE_SQL não reseleciona amanhã); a idempotência do envio é do
+ * dedupeKey do outbox. Best-effort, env-gated.
+ */
 export async function runDailyReminders(): Promise<ReminderSummary> {
   if (!evolutionConfigured()) {
     return {
@@ -225,7 +231,30 @@ export async function runDailyReminders(): Promise<ReminderSummary> {
     fetchDueReminders(),
     getSiteContent(),
   ]);
-  return processReminders(rows, content, sendEvolutionText, (kind, dedupKey) =>
-    prisma.notificationLog.create({ data: { kind, dedupKey } }).then(() => {}),
-  );
+  const summary: ReminderSummary = { enviados: 0, falhas: 0, porTipo: {} };
+  for (const r of rows) {
+    const number = String(r.telefone ?? "").replace(/\D/g, "");
+    const text = buildReminderText(content, r);
+    if (!number || !text) {
+      summary.falhas++;
+      continue;
+    }
+    const ok = await sendTransactional({
+      telefone: number,
+      texto: text,
+      dedupeKey: `rmd:${r.dedup_key}`,
+      templateKey: r.kind,
+    });
+    // Marca como tratado no due-guard (outbox cuida de eventual retry).
+    await prisma.notificationLog
+      .create({ data: { kind: r.kind, dedupKey: r.dedup_key } })
+      .catch(() => {});
+    if (ok) {
+      summary.enviados++;
+      summary.porTipo[r.kind] = (summary.porTipo[r.kind] ?? 0) + 1;
+    } else {
+      summary.falhas++;
+    }
+  }
+  return summary;
 }

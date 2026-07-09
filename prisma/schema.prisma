@@ -166,6 +166,10 @@ model Customer {
   origem           String? // captação (instagram, indicação...) p/ cadastro manual; quando há booking, deriva do source
   whatsappOptIn    Boolean     @default(false) @map("whatsapp_opt_in") // opt-in p/ jornadas de relacionamento (R3/LGPD)
   whatsappOptInAt  DateTime?   @map("whatsapp_opt_in_at") @db.Timestamptz
+  // Opt-out de MARKETING (Campanhas F1). Default true p/ a base atual; "SAIR"/
+  // "PARAR" no WhatsApp seta false. Só bloqueia envios tipo=CAMPANHA.
+  aceitaMarketing  Boolean     @default(true) @map("aceita_marketing")
+  aceitaMarketingEm DateTime?  @map("aceita_marketing_em") @db.Timestamptz
   funilEtapa       FunilEtapa? @map("funil_etapa") // só noiva/debutante (fora da matriz RFV)
   funilEtapaDesde  DateTime?   @map("funil_etapa_desde") @db.Timestamptz // F5: entrou na etapa atual em
   funilValorCents  Int?        @map("funil_valor_cents") // F5: valor estimado do contrato (pipeline)
@@ -619,6 +623,33 @@ model NotificationLog {
   booking Booking? @relation(fields: [bookingId], references: [id])
 
   @@map("notification_log")
+}
+
+/// Outbox de WhatsApp (Campanhas F1) — porta ÚNICA de saída rastreável. Toda
+/// mensagem vira uma linha aqui: idempotência por dedupeKey, retry com backoff,
+/// status consultável no admin. tipo=CAMPANHA respeita opt-out (aceitaMarketing);
+/// TRANSACIONAL (confirmação/lembrete/código) nunca é bloqueado por opt-out.
+model WhatsAppMessage {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clienteId      String?   @map("cliente_id") @db.Uuid
+  telefone       String // E.164 (só dígitos no envio)
+  tipo           String // TRANSACIONAL | CAMPANHA
+  templateKey    String?   @map("template_key")
+  texto          String
+  payload        Json?
+  status         String    @default("QUEUED") // QUEUED|SENT|DELIVERED|FAILED|OPTED_OUT
+  tentativas     Int       @default(0)
+  proximaTentativa DateTime? @map("proxima_tentativa") @db.Timestamptz
+  erro           String?
+  campanhaId     String?   @map("campanha_id") @db.Uuid
+  dedupeKey      String    @unique @map("dedupe_key")
+  criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  enviadoEm      DateTime? @map("enviado_em") @db.Timestamptz
+
+  @@index([status, proximaTentativa])
+  @@index([tipo, status, criadoEm])
+  @@index([clienteId])
+  @@map("whatsapp_message")
 }
 
 /// CRM 2.0 F1 — eventos de comportamento first-party (sem libs de terceiros).

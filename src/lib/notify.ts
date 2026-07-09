@@ -1,5 +1,5 @@
-import { prisma } from "./prisma";
 import { getSiteContent, aplicarTemplate } from "./content";
+import { sendTransactional } from "./whatsapp/service";
 
 /**
  * Envio de WhatsApp do Clube/encaixe (M4) — direto na Evolution dedicada da Mi.
@@ -77,65 +77,28 @@ export async function buildEventMessage(
   return null;
 }
 
-/** True se as 3 envs da Evolution estão setadas (URL/KEY/INSTANCE). */
-export function evolutionConfigured(): boolean {
-  return !!(
-    process.env.EVOLUTION_API_URL &&
-    process.env.EVOLUTION_API_KEY &&
-    process.env.EVOLUTION_INSTANCE
-  );
-}
+// Envio de baixo nível vive em ./whatsapp/evolution (evita ciclo com o service).
+// Reexportado aqui por retrocompatibilidade dos importadores existentes.
+export { evolutionConfigured, sendEvolutionText } from "./whatsapp/evolution";
 
 /**
- * Envia UM texto pela Evolution (sendText). Fonte única do request HTTP —
- * usada pelos eventos do app (dispatchEvent) e pelo cron diário de lembretes
- * (src/lib/reminders.ts). Lança se a Evolution não estiver configurada ou se a
- * API responder erro; quem chama decide o tratamento (best-effort).
+ * Envia o WhatsApp do evento (best-effort, idempotente, env-gated). Agora passa
+ * pelo outbox (WhatsAppService) — dedupeKey garante idempotência e o envio fica
+ * rastreável com retry. TRANSACIONAL (não bloqueado por opt-out).
  */
-export async function sendEvolutionText(
-  number: string,
-  text: string,
-): Promise<void> {
-  const base = process.env.EVOLUTION_API_URL;
-  const apikey = process.env.EVOLUTION_API_KEY;
-  const instance = process.env.EVOLUTION_INSTANCE;
-  if (!base || !apikey || !instance) {
-    throw new Error("Evolution não configurada");
-  }
-  const res = await fetch(
-    `${base.replace(/\/$/, "")}/message/sendText/${instance}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey },
-      body: JSON.stringify({ number, text }),
-    },
-  );
-  if (!res.ok) throw new Error(`Evolution respondeu ${res.status}`);
-}
-
-/** Envia o WhatsApp do evento (best-effort, idempotente, env-gated). */
 export async function dispatchEvent(input: EventInput): Promise<void> {
-  if (!evolutionConfigured()) return; // ainda não configurado
-
   try {
-    // Idempotência (R10): já enviamos este evento? Então não repete.
-    const exists = await prisma.notificationLog.findUnique({
-      where: { dedupKey: input.dedupKey },
-    });
-    if (exists) return;
-
     const number = String(input.data.telefone ?? "").replace(/\D/g, "");
     const text = await buildEventMessage(input.kind, input.data);
     if (!number || !text) return;
-
-    await sendEvolutionText(number, text);
-
-    await prisma.notificationLog.create({
-      data: { kind: input.kind, dedupKey: input.dedupKey },
+    await sendTransactional({
+      telefone: number,
+      texto: text,
+      dedupeKey: input.dedupKey,
+      templateKey: input.kind,
+      clienteId: (input.data.clienteId as string | undefined) ?? null,
     });
   } catch (e) {
-    // Best-effort: registra e segue — o atendimento não pode falhar por causa
-    // de uma notificação (ex.: cert ainda inválido faz isso falhar aqui).
     console.error("notify: falha ao enviar WhatsApp", input.kind, e);
   }
 }
