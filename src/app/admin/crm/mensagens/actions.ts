@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendEvolutionText, evolutionConfigured } from "@/lib/notify";
+import { evolutionConfigured } from "@/lib/notify";
+import { sendTransactional } from "@/lib/whatsapp/service";
 import { gerarSugestoes } from "@/lib/reguas";
 
 /**
@@ -48,16 +49,18 @@ export async function enviarMensagemAction(
   }
 
   const number = envio.customer.phoneE164.replace(/\D/g, "");
-  try {
-    await sendEvolutionText(number, texto);
+  // Passa pelo outbox (rastreável + retry). A fila já checou o opt-in acima.
+  const ok = await sendTransactional({
+    telefone: number,
+    texto,
+    dedupeKey: `fila:${id}`,
+    clienteId: envio.customerId,
+    templateKey: envio.kind,
+  });
+  if (!ok) {
     await prisma.envioMensagem.update({
       where: { id },
-      data: { status: "enviado", texto, enviadoEm: new Date() },
-    });
-  } catch (e) {
-    await prisma.envioMensagem.update({
-      where: { id },
-      data: { status: "falha", texto, erro: String(e).slice(0, 300) },
+      data: { status: "falha", texto, erro: "envio não confirmado" },
     });
     revalidatePath("/admin/crm/mensagens");
     return {
@@ -65,6 +68,10 @@ export async function enviarMensagemAction(
       message: "O WhatsApp não respondeu — a mensagem ficou marcada como falha.",
     };
   }
+  await prisma.envioMensagem.update({
+    where: { id },
+    data: { status: "enviado", texto, enviadoEm: new Date() },
+  });
   revalidatePath("/admin/crm/mensagens");
   revalidatePath("/admin/crm");
   return { ok: true };

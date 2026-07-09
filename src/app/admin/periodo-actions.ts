@@ -10,7 +10,7 @@ import { requireAdmin } from "@/lib/auth";
  * ("periodo=ultimos7" ou "de=...&ate=..."); a leitura reusa o parsePeriodo.
  */
 
-const MODULOS = ["agenda", "financeiro", "resumo", "crm", "clube", "clientes"] as const;
+const MODULOS = ["agenda", "financeiro", "resumo", "crm", "clube", "clientes", "mensagens"] as const;
 export type PeriodoModulo = (typeof MODULOS)[number];
 
 const UM_ANO_S = 365 * 24 * 60 * 60;
