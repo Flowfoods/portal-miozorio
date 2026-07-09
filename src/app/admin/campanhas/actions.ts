@@ -45,6 +45,7 @@ export async function criarCampanhaAction(
   nome: string,
   corpo: string,
   segmento: SegmentoConfig,
+  agendadaParaISO?: string | null,
 ): Promise<CriarResult> {
   await requireAdmin();
   if (nome.trim().length < 2) return { ok: false, message: "Dê um nome à campanha." };
@@ -57,11 +58,15 @@ export async function criarCampanhaAction(
         "Noiva/Debutante não recebe link de agendamento. Use {link_agenda} (vira WhatsApp) ou tire o /agendar.",
     };
   }
+  // "Quando": data futura → AGENDADA (o cron dispara); sem data → RASCUNHO (Mi dispara).
+  const quando = agendadaParaISO ? new Date(agendadaParaISO) : null;
+  const agendada = quando && !Number.isNaN(quando.getTime()) && quando > new Date();
   const c = await prisma.campanha.create({
     data: {
       nome: nome.trim(),
       tipo: "PONTUAL",
-      status: "RASCUNHO",
+      status: agendada ? "AGENDADA" : "RASCUNHO",
+      agendadaPara: agendada ? quando : null,
       segmentoConfig: segmento as object,
       corpo: corpo.trim(),
     },

@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { DateTime } from "luxon";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { formatBRL } from "@/lib/format";
+import { TZ_PADRAO } from "@/lib/periods";
 import { PRESETS_AUTOMATICOS } from "@/lib/campanhas/service";
 import { ativarPresetAction, alternarStatusAction } from "./actions";
 
@@ -15,10 +18,25 @@ const STATUS_TOM: Record<string, string> = {
 
 export default async function CampanhasPage() {
   await requireAdmin();
-  const campanhas = await prisma.campanha.findMany({
-    orderBy: { criadoEm: "desc" },
-    include: { _count: { select: { envios: true } } },
-  });
+  const inicioMes = DateTime.now().setZone(TZ_PADRAO).startOf("month").toJSDate();
+  const [campanhas, msgsMes, enviosAgg] = await Promise.all([
+    prisma.campanha.findMany({
+      orderBy: { criadoEm: "desc" },
+      include: { _count: { select: { envios: true } } },
+    }),
+    prisma.whatsAppMessage.count({
+      where: { tipo: "CAMPANHA", criadoEm: { gte: inicioMes } },
+    }),
+    prisma.campanhaEnvio.aggregate({
+      where: { whatsappMessageId: { not: null } },
+      _count: { _all: true, convertidoEm: true },
+      _sum: { receitaCents: true },
+    }),
+  ]);
+  const enviosTotal = enviosAgg._count._all;
+  const convertidas = enviosAgg._count.convertidoEm;
+  const taxa = enviosTotal ? Math.round((convertidas / enviosTotal) * 100) : 0;
+  const receita = enviosAgg._sum.receitaCents ?? 0;
   const auto = campanhas.filter((c) => c.tipo === "AUTOMATICA");
   const pontuais = campanhas.filter((c) => c.tipo === "PONTUAL");
   const ativa = (rec: string) => auto.find((c) => c.recorrencia === rec)?.status === "ATIVA";
@@ -31,6 +49,25 @@ export default async function CampanhasPage() {
           + Nova campanha
         </Link>
       </div>
+
+      <section className="mb-6 grid grid-cols-3 gap-3">
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Mensagens no mês</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{msgsMes}</p>
+        </div>
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Conversão média</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
+            {enviosTotal ? `${taxa}%` : "—"}
+          </p>
+        </div>
+        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Receita atribuída</p>
+          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
+            {receita ? formatBRL(receita) : "—"}
+          </p>
+        </div>
+      </section>
 
       <section className="mb-8">
         <h2 className="mb-2 text-lg">Automáticas</h2>

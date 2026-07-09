@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NovaCampanhaPage() {
   await requireAdmin();
-  const [servicos, segs] = await Promise.all([
+  const [servicos, segs, templates] = await Promise.all([
     prisma.service.findMany({
       where: { active: true },
       orderBy: { name: "asc" },
@@ -17,6 +17,10 @@ export default async function NovaCampanhaPage() {
       where: { rfvSegmento: { not: null } },
       distinct: ["rfvSegmento"],
       select: { rfvSegmento: true },
+    }),
+    prisma.campanhaTemplate.findMany({
+      orderBy: { criadoEm: "asc" },
+      select: { id: true, nome: true, corpo: true },
     }),
   ]);
   const rfvSegmentos = segs
@@ -31,7 +35,11 @@ export default async function NovaCampanhaPage() {
         </Link>
       </div>
       <h1 className="mb-6 text-3xl">Nova campanha</h1>
-      <CampanhaBuilder servicos={servicos} rfvSegmentos={rfvSegmentos} />
+      <CampanhaBuilder
+        servicos={servicos}
+        rfvSegmentos={rfvSegmentos}
+        templates={templates}
+      />
     </>
   );
 }
