@@ -134,6 +134,24 @@ export const ADMIN_NAV: AdminNavItem[] = [
     ),
   },
   {
+    href: "/admin/campanhas",
+    label: "Campanhas",
+    icon: (
+      <I>
+        <path d="M3 11l18-6-6 18-3-7-9-5z" />
+      </I>
+    ),
+  },
+  {
+    href: "/admin/mensagens",
+    label: "Mensagens",
+    icon: (
+      <I>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </I>
+    ),
+  },
+  {
     href: "/admin/usuarias",
     label: "Usuárias",
     icon: (

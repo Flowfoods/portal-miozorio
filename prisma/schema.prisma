@@ -652,6 +652,56 @@ model WhatsAppMessage {
   @@map("whatsapp_message")
 }
 
+/// Central de Campanhas (F2) — "o Repediu da Mi". PONTUAL (dispara 1×) ou
+/// AUTOMATICA (gatilho recorrente). segmentoConfig = filtros combináveis (AND)
+/// que LEEM o CRM/RFV existente (não duplicam lógica). janelaConversaoDias =
+/// quantos dias após o envio um agendamento conta como conversão.
+model Campanha {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                String
+  tipo                String // PONTUAL | AUTOMATICA
+  status              String    @default("RASCUNHO") // RASCUNHO|AGENDADA|ATIVA|PAUSADA|CONCLUIDA
+  segmentoConfig      Json      @map("segmento_config")
+  corpo               String // texto da mensagem (com variáveis {nome} etc.)
+  agendadaPara        DateTime? @map("agendada_para") @db.Timestamptz
+  recorrencia         String? // preset da automática: sentimos_falta|aniversario|recompra|pos_evento
+  modoAprovacao       Boolean   @default(true) @map("modo_aprovacao")
+  janelaConversaoDias Int       @default(7) @map("janela_conversao_dias")
+  criadoEm            DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  envios CampanhaEnvio[]
+
+  @@index([tipo, status])
+  @@map("campanha")
+}
+
+/// Biblioteca de textos prontos (F3 popula 8). Ponto de partida editável.
+model CampanhaTemplate {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome     String
+  corpo    String
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  @@map("campanha_template")
+}
+
+/// Um envio de campanha ↔ mensagem do outbox + conversão (agendou na janela).
+model CampanhaEnvio {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campanhaId        String    @map("campanha_id") @db.Uuid
+  clienteId         String    @map("cliente_id") @db.Uuid
+  whatsappMessageId String?   @map("whatsapp_message_id") @db.Uuid
+  convertidoEm      DateTime? @map("convertido_em") @db.Timestamptz
+  receitaCents      Int?      @map("receita_cents")
+  criadoEm          DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  campanha Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+
+  @@unique([campanhaId, clienteId])
+  @@index([campanhaId])
+  @@map("campanha_envio")
+}
+
 /// CRM 2.0 F1 — eventos de comportamento first-party (sem libs de terceiros).
 /// clientId null = visitante anônimo, amarrado por sessionId (cookie mi_sid, sem
 /// PII); no login do Clube os eventos da sessão anônima são vinculados à cliente
