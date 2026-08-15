@@ -5,6 +5,10 @@ import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
 import Botao from "@/components/ui/Botao";
 
+// Mesma armadilha de /noivas: prerender único no build (sem DATABASE_URL) fazia
+// a página servir o fallback do código em vez dos pacotes do banco.
+export const revalidate = 3600;
+
 export const metadata: Metadata = pageMeta({
   path: "/debutantes",
   title: "Debutantes · 15 anos · Mi Ozorio",
