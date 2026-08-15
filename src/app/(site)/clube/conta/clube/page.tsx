@@ -38,10 +38,17 @@ function formatarPct(pct: number): string {
  * Aba Clube da Área da Cliente (F1): o conteúdo da antiga /clube/conta migrado
  * INTACTO — saldo/progresso, indicação, recompensas+resgate e extrato.
  */
-export default async function ClubeTabPage() {
+export default async function ClubeTabPage({
+  searchParams,
+}: {
+  searchParams?: { erro?: string; resgate?: string };
+}) {
   const s = getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha");
+
+  const erroResgate = searchParams?.erro?.slice(0, 160) ?? null;
+  const resgateOk = searchParams?.resgate === "ok";
 
   // Isolamento: TUDO pelo id da sessão — nunca por parâmetro do request.
   const [
@@ -144,6 +151,22 @@ export default async function ClubeTabPage() {
         <h2 className="font-titulo text-xl text-mi-marrom-escuro">
           Recompensas
         </h2>
+        {erroResgate && (
+          <p
+            role="alert"
+            className="mt-3 rounded-mi bg-red-50 px-4 py-3 font-corpo text-sm text-red-800"
+          >
+            {erroResgate}
+          </p>
+        )}
+        {resgateOk && (
+          <p
+            role="status"
+            className="mt-3 rounded-mi bg-mi-bege px-4 py-3 font-corpo text-sm text-mi-marrom-escuro"
+          >
+            Resgate feito! Combine comigo no WhatsApp quando quiser usar 💛
+          </p>
+        )}
         {recompensas.length === 0 ? (
           <p className="mt-2 font-corpo text-sm text-mi-texto/80">
             Em breve, recompensas pra você trocar seus pontos 💛

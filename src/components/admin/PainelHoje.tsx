@@ -126,7 +126,7 @@ function Atalho({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex min-h-[40px] items-center rounded-mi border border-mi-cinza bg-mi-superficie-elevada px-4 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-bege/40"
+      className="inline-flex min-h-[44px] items-center rounded-mi border border-mi-cinza bg-mi-superficie-elevada px-4 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-bege/40"
     >
       {label}
     </Link>

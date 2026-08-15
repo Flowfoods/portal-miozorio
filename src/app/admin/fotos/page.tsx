@@ -64,7 +64,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
           <form action={adminToggleMediaPublished.bind(null, asset.id)}>
             <button
               type="submit"
-              className="min-h-[40px] rounded-mi bg-mi-marrom-escuro px-3 text-xs text-white hover:bg-mi-marrom"
+              className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-3 text-xs text-white hover:bg-mi-marrom"
             >
               {asset.published ? "Ocultar do site" : "Publicar no site"}
             </button>
@@ -75,7 +75,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
           >
             <button
               type="submit"
-              className="min-h-[40px] px-2 text-xs text-red-700 underline-offset-2 hover:underline"
+              className="min-h-[44px] px-2 text-xs text-red-700 underline-offset-2 hover:underline"
             >
               Excluir
             </button>

@@ -376,7 +376,7 @@ export default function NovoAgendamento({
                 key={loc}
                 type="button"
                 onClick={() => setLocation(loc)}
-                className={`min-h-[38px] rounded-[10px] px-3 text-sm transition-colors ${
+                className={`min-h-[44px] rounded-[10px] px-3 text-sm transition-colors ${
                   location === loc
                     ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
                     : "text-mi-marrom"
@@ -544,7 +544,7 @@ export default function NovoAgendamento({
                   type="button"
                   disabled={!newCustomerReady || creatingCustomer}
                   onClick={handleCreateCustomer}
-                  className="mt-2 min-h-[40px] w-full rounded-mi border border-mi-marrom px-4 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-cinza/50 disabled:opacity-50"
+                  className="mt-2 min-h-[44px] w-full rounded-mi border border-mi-marrom px-4 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-cinza/50 disabled:opacity-50"
                 >
                   {creatingCustomer ? "Cadastrando…" : "Cadastrar cliente"}
                 </button>
@@ -653,7 +653,7 @@ export default function NovoAgendamento({
                   key={val}
                   type="button"
                   onClick={() => setSource(val)}
-                  className={`min-h-[36px] rounded-[10px] px-3 transition-colors ${
+                  className={`min-h-[44px] rounded-[10px] px-3 transition-colors ${
                     source === val
                       ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
                       : "text-mi-marrom"
