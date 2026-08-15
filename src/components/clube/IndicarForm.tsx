@@ -85,7 +85,7 @@ export default function IndicarForm({
       <FormError error={state?.error} />
       <SubmitButton
         pendingLabel="Enviando…"
-        className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+        className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
       >
         Quero me cuidar com a Mi
       </SubmitButton>

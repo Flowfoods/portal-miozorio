@@ -51,7 +51,7 @@ export default function AdminContaForm() {
         {ok && <p className="text-sm text-emerald-700">{ok}</p>}
         <SubmitButton
           pendingLabel="Salvando…"
-          className="rounded-mi bg-mi-marrom px-4 py-2.5 text-sm text-white transition-opacity disabled:opacity-60"
+          className="rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white transition-opacity disabled:opacity-60"
         >
           Trocar senha
         </SubmitButton>
@@ -61,7 +61,7 @@ export default function AdminContaForm() {
         <p className="mb-2 text-xs text-mi-texto/80">
           Encerra a sessão em todos os aparelhos (inclusive aqui).
         </p>
-        <button className="rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white">
+        <button className="rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white">
           Sair de todos os dispositivos
         </button>
       </form>

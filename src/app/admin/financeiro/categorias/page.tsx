@@ -63,7 +63,7 @@ export default async function CategoriasPage() {
             <input type="color" name="color" defaultValue="#8A7361" className="input-mi !h-10 !py-1" />
           </label>
           <div className="sm:col-span-2">
-            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom px-5 py-2.5 text-sm text-white">
+            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom-escuro px-5 py-2.5 text-sm text-white">
               Criar categoria
             </SubmitButton>
           </div>

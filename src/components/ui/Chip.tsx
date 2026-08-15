@@ -21,7 +21,7 @@ export default function Chip({
 }: ChipProps) {
   const classes = `inline-flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full px-5 font-corpo text-sm transition-colors ${
     ativo
-      ? "bg-mi-marrom text-mi-branco shadow-suave"
+      ? "bg-mi-marrom-escuro text-mi-branco shadow-suave"
       : "border border-mi-cinza bg-mi-branco text-mi-texto hover:border-mi-marrom"
   } disabled:cursor-not-allowed disabled:border-mi-cinza disabled:text-mi-texto/40 ${className}`;
   if (href) {

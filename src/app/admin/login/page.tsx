@@ -82,7 +82,7 @@ function LoginForm() {
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-mi bg-mi-marrom px-4 py-3 text-white transition-opacity disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-mi bg-mi-marrom-escuro px-4 py-3 text-white transition-opacity disabled:opacity-60"
         >
           {loading && (
             <span

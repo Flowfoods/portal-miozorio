@@ -156,7 +156,7 @@ export default async function AdminClubePage({
                   </span>
                 </div>
                 <form action={adminMarkVoucherEntregue.bind(null, v.id)}>
-                  <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+                  <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
                     Marcar entregue
                   </button>
                 </form>
@@ -229,7 +229,7 @@ export default async function AdminClubePage({
               defaultValue={settings.clubPointsReagendamento}
             />
           </label>
-          <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+          <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
             Salvar
           </button>
         </form>
@@ -279,7 +279,7 @@ export default async function AdminClubePage({
                 defaultValue={0}
               />
             </label>
-            <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+            <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
               Adicionar
             </button>
           </form>

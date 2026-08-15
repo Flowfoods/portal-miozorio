@@ -56,7 +56,7 @@ export default async function AdminUsuariasPage() {
               required
             />
           </label>
-          <button className="self-end rounded-mi bg-mi-marrom px-4 py-2.5 text-sm text-white">
+          <button className="self-end rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white">
             Criar conta
           </button>
         </form>

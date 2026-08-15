@@ -105,7 +105,7 @@ export default function RegraIndicacaoForm({
         {!ativo && " (programa desligado no momento)"}
       </p>
 
-      <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+      <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
         Salvar regra de indicação
       </button>
     </form>

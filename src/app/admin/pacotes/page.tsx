@@ -57,7 +57,7 @@ export default async function AdminPacotesPage() {
                 </div>
                 <textarea name="itens" rows={4} placeholder="Um item por linha" className="input-mi w-full" />
                 <input name="rodape" placeholder="rodapé / cortesia (opcional)" className="input-mi w-full !py-2" />
-                <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">Adicionar pacote</button>
+                <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">Adicionar pacote</button>
               </form>
             </details>
             {meusPacotes.map((p) => (
@@ -95,7 +95,7 @@ export default async function AdminPacotesPage() {
                 <input name="pergunta" placeholder="Pergunta" required className="input-mi w-full !py-2" />
                 <textarea name="resposta" rows={2} placeholder="Resposta" required className="input-mi w-full" />
                 <input name="sort" type="number" defaultValue={0} className="input-mi w-20 !py-2" />
-                <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">Adicionar pergunta</button>
+                <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">Adicionar pergunta</button>
               </form>
             </details>
             {minhasFaqs.map((f) => (

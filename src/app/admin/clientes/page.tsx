@@ -50,7 +50,7 @@ export default async function AdminClientesPage({
           placeholder="Buscar por nome ou telefone…"
           className="input-mi w-full"
         />
-        <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+        <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
           Buscar
         </button>
       </form>

@@ -28,7 +28,7 @@ function BotaoEnviar({ label }: { label: string }) {
   return (
     <button
       disabled={pending}
-      className="min-h-[52px] w-full rounded-mi bg-mi-marrom font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro disabled:cursor-not-allowed disabled:opacity-40"
+      className="min-h-[52px] w-full rounded-mi bg-mi-marrom-escuro font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
     >
       {pending ? "Enviando…" : label}
     </button>

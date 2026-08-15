@@ -45,7 +45,7 @@ export default async function CampanhasPage() {
     <>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl">Campanhas</h1>
-        <Link href="/admin/campanhas/nova" className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+        <Link href="/admin/campanhas/nova" className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
           + Nova campanha
         </Link>
       </div>
@@ -99,7 +99,7 @@ export default async function CampanhasPage() {
                     </>
                   ) : (
                     <form action={ativarPresetAction.bind(null, p.recorrencia)}>
-                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro hover:bg-mi-marrom hover:text-white">
+                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro hover:bg-mi-marrom-escuro hover:text-white">
                         Ativar
                       </button>
                     </form>

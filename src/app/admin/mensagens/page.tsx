@@ -106,7 +106,7 @@ export default async function MensagensPage({
               href={`/admin/mensagens${qs(s.key)}`}
               className={`rounded-full px-3 py-1.5 text-sm ${
                 on
-                  ? "bg-mi-marrom text-white"
+                  ? "bg-mi-marrom-escuro text-white"
                   : "bg-mi-superficie-nav text-mi-marrom-escuro"
               }`}
             >
@@ -145,7 +145,7 @@ export default async function MensagensPage({
                   </span>
                   {(m.status === "FAILED" || m.status === "OPTED_OUT") && (
                     <form action={reenviarMensagemAction.bind(null, m.id)}>
-                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white">
+                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white">
                         Reenviar
                       </button>
                     </form>

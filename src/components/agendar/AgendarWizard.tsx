@@ -638,7 +638,7 @@ export default function AgendarWizard() {
                 setFormError(null);
                 void submitBooking();
               }}
-              className="min-h-[52px] w-full rounded-mi bg-mi-marrom font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-[52px] w-full rounded-mi bg-mi-marrom-escuro font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "Reservando…" : "Continuar"}
             </button>
@@ -686,7 +686,7 @@ export default function AgendarWizard() {
           <button
             disabled={submitting}
             onClick={confirmBooking}
-            className="mt-6 min-h-[52px] w-full rounded-mi bg-mi-marrom font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro disabled:opacity-40"
+            className="mt-6 min-h-[52px] w-full rounded-mi bg-mi-marrom-escuro font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom disabled:opacity-40"
           >
             {submitting ? "Confirmando…" : "Confirmar meu horário"}
           </button>

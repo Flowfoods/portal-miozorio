@@ -132,14 +132,14 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
         <div className="mt-3 flex flex-wrap gap-2">
           {b.status === "pending" && (
             <form action={adminConfirmBooking.bind(null, b.id)}>
-              <button className="rounded-mi bg-mi-marrom px-3 py-1.5 text-sm text-white">
+              <button className="rounded-mi bg-mi-marrom-escuro px-3 py-1.5 text-sm text-white">
                 Confirmar
               </button>
             </form>
           )}
           {b.status === "confirmed" && (
             <form action={adminMarkCompleted.bind(null, b.id)}>
-              <button className="rounded-mi bg-mi-marrom px-3 py-1.5 text-sm text-white">
+              <button className="rounded-mi bg-mi-marrom-escuro px-3 py-1.5 text-sm text-white">
                 Concluir
               </button>
             </form>

@@ -64,7 +64,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
           <form action={adminToggleMediaPublished.bind(null, asset.id)}>
             <button
               type="submit"
-              className="min-h-[40px] rounded-mi bg-mi-marrom px-3 text-xs text-white hover:bg-mi-marrom-escuro"
+              className="min-h-[40px] rounded-mi bg-mi-marrom-escuro px-3 text-xs text-white hover:bg-mi-marrom"
             >
               {asset.published ? "Ocultar do site" : "Publicar no site"}
             </button>
@@ -139,7 +139,7 @@ export default async function FotosPage() {
         </label>
         <SubmitButton
           pendingLabel="Enviando… 💛"
-          className="min-h-[48px] w-full rounded-mi bg-mi-marrom px-6 text-sm text-white hover:bg-mi-marrom-escuro disabled:opacity-60 sm:w-auto"
+          className="min-h-[48px] w-full rounded-mi bg-mi-marrom-escuro px-6 text-sm text-white hover:bg-mi-marrom disabled:opacity-60 sm:w-auto"
         >
           Enviar fotos
         </SubmitButton>

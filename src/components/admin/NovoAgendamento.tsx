@@ -340,7 +340,7 @@ export default function NovoAgendamento({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[44px] rounded-mi bg-mi-marrom px-4 text-sm text-white shadow-suave hover:bg-mi-marrom-escuro"
+        className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-4 text-sm text-white shadow-suave hover:bg-mi-marrom"
       >
         ＋ Novo agendamento
       </button>
@@ -727,7 +727,7 @@ export default function NovoAgendamento({
                       onClick={() => setTime(hhmm)}
                       className={`min-h-[44px] rounded-mi border text-sm transition-colors ${
                         time === hhmm
-                          ? "border-mi-marrom bg-mi-marrom text-white"
+                          ? "border-mi-marrom bg-mi-marrom-escuro text-white"
                           : "border-mi-cinza bg-mi-superficie-elevada text-mi-texto hover:border-mi-marrom"
                       }`}
                     >
@@ -771,7 +771,7 @@ export default function NovoAgendamento({
           type="button"
           disabled={!canSubmit || submitting}
           onClick={openConfirm}
-          className="min-h-[48px] w-full rounded-mi bg-mi-marrom px-6 text-sm text-white shadow-suave hover:bg-mi-marrom-escuro disabled:opacity-50 sm:w-auto"
+          className="min-h-[48px] w-full rounded-mi bg-mi-marrom-escuro px-6 text-sm text-white shadow-suave hover:bg-mi-marrom disabled:opacity-50 sm:w-auto"
         >
           Revisar e criar
         </button>
@@ -832,7 +832,7 @@ export default function NovoAgendamento({
                 type="button"
                 disabled={submitting}
                 onClick={submit}
-                className="min-h-[44px] rounded-mi bg-mi-marrom px-5 text-sm text-white shadow-suave hover:bg-mi-marrom-escuro disabled:opacity-50"
+                className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-5 text-sm text-white shadow-suave hover:bg-mi-marrom disabled:opacity-50"
               >
                 {submitting ? "Salvando…" : "Confirmar e criar"}
               </button>

@@ -474,7 +474,7 @@ export default function ReguaEditor({ initial }: Props) {
           type="button"
           onClick={salvar}
           disabled={pending}
-          className="rounded-mi bg-mi-marrom px-6 py-2.5 text-sm text-white disabled:opacity-60"
+          className="rounded-mi bg-mi-marrom-escuro px-6 py-2.5 text-sm text-white disabled:opacity-60"
         >
           Salvar régua
         </button>

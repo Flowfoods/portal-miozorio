@@ -64,7 +64,7 @@ export default async function RecorrentesPage() {
             <input name="supplier" className="input-mi" />
           </label>
           <div className="sm:col-span-2">
-            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom px-5 py-2.5 text-sm text-white">
+            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom-escuro px-5 py-2.5 text-sm text-white">
               Salvar recorrente
             </SubmitButton>
           </div>

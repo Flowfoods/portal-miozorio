@@ -141,7 +141,7 @@ export default async function AdminServicosPage() {
               <input type="checkbox" name="requiresDeposit" />
               Exige sinal
             </label>
-            <button className="ml-auto rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+            <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
               Criar serviço
             </button>
           </div>
@@ -257,7 +257,7 @@ export default async function AdminServicosPage() {
                   />
                   Exige sinal
                 </label>
-                <button className="ml-auto rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+                <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
                   Salvar
                 </button>
               </div>

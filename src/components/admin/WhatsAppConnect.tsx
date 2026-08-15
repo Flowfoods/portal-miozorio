@@ -110,7 +110,7 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
       </p>
       <button
         onClick={buscar}
-        className="mt-3 rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
+        className="mt-3 rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white"
       >
         Atualizar agora
       </button>

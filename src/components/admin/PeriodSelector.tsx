@@ -102,7 +102,7 @@ export default function PeriodSelector({
               aria-pressed={ativo}
               className={`min-h-[44px] rounded-mi px-4 font-corpo text-sm transition-colors ${
                 ativo
-                  ? "bg-mi-marrom text-mi-branco"
+                  ? "bg-mi-marrom-escuro text-mi-branco"
                   : "bg-mi-superficie-elevada text-mi-texto shadow-suave hover:bg-mi-bege/60"
               }`}
             >
@@ -139,7 +139,7 @@ export default function PeriodSelector({
             type="button"
             disabled={!customValido}
             onClick={() => apply(`de=${de}&ate=${ate}`)}
-            className="min-h-[44px] rounded-mi bg-mi-marrom px-5 font-corpo text-sm text-mi-branco transition-colors hover:bg-mi-marrom-escuro disabled:opacity-50"
+            className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-5 font-corpo text-sm text-mi-branco transition-colors hover:bg-mi-marrom disabled:opacity-50"
           >
             Aplicar
           </button>
