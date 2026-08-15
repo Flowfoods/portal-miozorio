@@ -226,7 +226,7 @@ export default async function PainelMembroPage({
           href={`https://wa.me/?text=${shareText}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-mi bg-mi-marrom px-6 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+          className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-mi bg-mi-marrom-escuro px-6 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
         >
           Compartilhar meu link no WhatsApp
         </a>

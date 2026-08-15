@@ -243,7 +243,7 @@ export default async function CrmPage({
       {msgsAguardando > 0 && (
         <Link
           href="/admin/crm/mensagens"
-          className="mt-8 flex items-center justify-between rounded-mi bg-mi-marrom px-5 py-4 text-white shadow-suave"
+          className="mt-8 flex items-center justify-between rounded-mi bg-mi-marrom-escuro px-5 py-4 text-white shadow-suave"
         >
           <span className="font-medium">
             💬 {msgsAguardando} mensagem(ns) esperando a sua aprovação

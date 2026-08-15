@@ -77,7 +77,7 @@ export default function PasskeyManager({
           type="button"
           onClick={ativar}
           disabled={busy}
-          className="rounded-mi bg-mi-marrom px-4 py-2.5 text-sm text-white transition-opacity disabled:opacity-60"
+          className="rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white transition-opacity disabled:opacity-60"
         >
           {busy ? "Aguarde…" : "Ativar Face ID / biometria"}
         </button>

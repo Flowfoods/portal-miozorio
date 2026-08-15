@@ -77,7 +77,7 @@ export default function RecuperarForm() {
         <FormError error={pedir && "error" in pedir ? pedir.error : undefined} />
         <SubmitButton
           pendingLabel="Enviando…"
-          className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+          className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
         >
           Enviar código
         </SubmitButton>
@@ -109,7 +109,7 @@ export default function RecuperarForm() {
           />
           <SubmitButton
             pendingLabel="Conferindo…"
-            className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+            className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
           >
             Confirmar código
           </SubmitButton>
@@ -152,7 +152,7 @@ export default function RecuperarForm() {
       <FormError error={senha?.error} />
       <SubmitButton
         pendingLabel="Salvando…"
-        className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+        className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
       >
         Salvar e entrar
       </SubmitButton>

@@ -47,7 +47,7 @@ function WaBtn({ phone, msg }: { phone: string; msg: string }) {
       href={waLinkMsg(phone, msg)}
       target="_blank"
       rel="noopener noreferrer"
-      className="rounded-mi bg-mi-marrom px-3 py-1.5 text-xs text-white"
+      className="rounded-mi bg-mi-marrom-escuro px-3 py-1.5 text-xs text-white"
     >
       WhatsApp
     </a>
@@ -105,7 +105,7 @@ export default async function CrmListasPage({
             href={`/admin/crm/listas?tipo=${t.id}`}
             className={`rounded-full px-4 py-2 text-sm ${
               tipo === t.id
-                ? "bg-mi-marrom text-white"
+                ? "bg-mi-marrom-escuro text-white"
                 : "border border-mi-cinza bg-mi-branco"
             }`}
           >
@@ -294,7 +294,7 @@ async function Explorar({
             className="input-mi mt-1 !w-32 !py-2"
           />
         </label>
-        <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+        <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
           Filtrar
         </button>
       </form>

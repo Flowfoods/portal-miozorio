@@ -58,7 +58,7 @@ export default async function DebutantesPage() {
               }`}
             >
               {p.destaque && (
-                <span className="absolute -top-3 left-8 rounded-full bg-mi-marrom px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-branco">
+                <span className="absolute -top-3 left-8 rounded-full bg-mi-marrom-escuro px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-branco">
                   Mais escolhido
                 </span>
               )}

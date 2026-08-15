@@ -102,7 +102,7 @@ export default function CampanhaBuilder({
               onClick={() => i < passo && setPasso(i)}
               className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-mi text-sm transition-colors ${
                 i === passo
-                  ? "bg-mi-marrom text-white"
+                  ? "bg-mi-marrom-escuro text-white"
                   : i < passo
                     ? "bg-mi-superficie-nav text-mi-marrom-escuro"
                     : "bg-mi-branco text-mi-texto/40 shadow-suave"
@@ -140,7 +140,7 @@ export default function CampanhaBuilder({
                   onClick={() => setInatividade(inatividade === d ? "" : d)}
                   className={`h-11 flex-1 rounded-mi text-sm ${
                     inatividade === d
-                      ? "bg-mi-marrom text-white"
+                      ? "bg-mi-marrom-escuro text-white"
                       : "bg-mi-superficie-nav text-mi-marrom-escuro"
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function CampanhaBuilder({
                   onClick={() => toggle(fez, s.code, setFez)}
                   className={`min-h-11 rounded-full px-3 py-2 text-xs ${
                     fez.includes(s.code)
-                      ? "bg-mi-marrom text-white"
+                      ? "bg-mi-marrom-escuro text-white"
                       : "bg-mi-superficie-nav text-mi-marrom-escuro"
                   }`}
                 >
@@ -191,7 +191,7 @@ export default function CampanhaBuilder({
                     onClick={() => toggle(rfv, s, setRfv)}
                     className={`min-h-11 rounded-full px-3 py-2 text-xs ${
                       rfv.includes(s)
-                        ? "bg-mi-marrom text-white"
+                        ? "bg-mi-marrom-escuro text-white"
                         : "bg-mi-superficie-nav text-mi-marrom-escuro"
                     }`}
                   >
@@ -227,7 +227,7 @@ export default function CampanhaBuilder({
 
           <button
             onClick={() => setPasso(1)}
-            className="h-12 w-full rounded-mi bg-mi-marrom text-white"
+            className="h-12 w-full rounded-mi bg-mi-marrom-escuro text-white"
           >
             Continuar → Mensagem
           </button>
@@ -288,7 +288,7 @@ export default function CampanhaBuilder({
             <button
               onClick={() => setPasso(2)}
               disabled={corpo.trim().length < 5 || nome.trim().length < 2}
-              className="h-12 flex-1 rounded-mi bg-mi-marrom text-white disabled:opacity-50"
+              className="h-12 flex-1 rounded-mi bg-mi-marrom-escuro text-white disabled:opacity-50"
             >
               Continuar → Quando
             </button>
@@ -347,7 +347,7 @@ export default function CampanhaBuilder({
             <button
               onClick={salvar}
               disabled={pending || (quando === "agendar" && !dataHora)}
-              className="h-12 flex-1 rounded-mi bg-mi-marrom text-white disabled:opacity-50"
+              className="h-12 flex-1 rounded-mi bg-mi-marrom-escuro text-white disabled:opacity-50"
             >
               {pending ? "Salvando…" : "Salvar campanha 💛"}
             </button>

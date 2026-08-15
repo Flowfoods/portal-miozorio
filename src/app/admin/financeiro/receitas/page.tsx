@@ -110,7 +110,7 @@ export default async function ReceitasPage({
             <input type="file" name="attachment" accept="application/pdf,image/*" className="input-mi !py-2" />
           </label>
           <div className="sm:col-span-2">
-            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom px-5 py-2.5 text-sm text-white">
+            <SubmitButton pendingLabel="Salvando…" className="rounded-mi bg-mi-marrom-escuro px-5 py-2.5 text-sm text-white">
               Salvar receita
             </SubmitButton>
           </div>

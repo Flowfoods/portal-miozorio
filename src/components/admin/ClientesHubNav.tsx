@@ -29,7 +29,7 @@ export default function ClientesHubNav() {
           href={i.href}
           className={`rounded-mi px-3 py-1.5 font-corpo text-sm transition-colors ${
             active(i.href)
-              ? "bg-mi-marrom text-mi-branco"
+              ? "bg-mi-marrom-escuro text-mi-branco"
               : "text-mi-texto hover:bg-mi-marrom/10"
           }`}
         >

@@ -147,7 +147,7 @@ export default function AdminSidebar({
       >
         {/* Cabeçalho: marca + recolher (lg) */}
         <div className="flex h-[57px] items-center gap-2 border-b border-mi-cinza/60 px-3 md:justify-center lg:justify-between group-data-[collapsed=true]:lg:justify-center">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-mi bg-mi-marrom font-titulo text-sm text-mi-branco group-data-[collapsed=true]:lg:hidden">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-mi bg-mi-marrom-escuro font-titulo text-sm text-mi-branco group-data-[collapsed=true]:lg:hidden">
             Mi
           </span>
           <span className="flex-1 truncate font-titulo text-base text-mi-marrom-escuro inline md:hidden lg:inline group-data-[collapsed=true]:lg:hidden">
@@ -202,7 +202,7 @@ export default function AdminSidebar({
                     }
                     className={`flex min-h-[44px] items-center gap-3 rounded-mi px-3 font-corpo text-sm transition-colors md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center ${
                       active
-                        ? "bg-mi-marrom text-mi-branco"
+                        ? "bg-mi-marrom-escuro text-mi-branco"
                         : "text-mi-texto hover:bg-mi-marrom/10"
                     }`}
                   >
@@ -225,7 +225,7 @@ export default function AdminSidebar({
                         className={`ml-auto inline min-w-[20px] rounded-full px-1.5 py-0.5 text-center font-corpo text-[11px] leading-none md:hidden lg:inline group-data-[collapsed=true]:lg:hidden ${
                           active
                             ? "bg-mi-branco text-mi-marrom"
-                            : "bg-mi-marrom text-mi-branco"
+                            : "bg-mi-marrom-escuro text-mi-branco"
                         }`}
                       >
                         {count}

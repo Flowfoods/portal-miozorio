@@ -37,7 +37,7 @@ export default function LoginForm() {
       <FormError error={state?.error} />
       <SubmitButton
         pendingLabel="Entrando…"
-        className="w-full rounded-mi bg-mi-marrom px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+        className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
       >
         Entrar
       </SubmitButton>

@@ -145,7 +145,7 @@ export default async function FichaClientePage({
           href={waLink(customer.phoneE164)}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-mi bg-mi-marrom px-4 py-2.5 text-sm text-white"
+          className="rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white"
         >
           Chamar no WhatsApp
         </a>
@@ -236,7 +236,7 @@ export default async function FichaClientePage({
             </div>
             <SubmitButton
               pendingLabel="Salvando…"
-              className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white"
+              className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white"
             >
               Salvar dados
             </SubmitButton>
@@ -274,7 +274,7 @@ export default async function FichaClientePage({
             </label>
             <SubmitButton
               pendingLabel="Salvando…"
-              className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white"
+              className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white"
             >
               Salvar anotações
             </SubmitButton>
@@ -316,7 +316,7 @@ export default async function FichaClientePage({
               className={`rounded-mi px-4 py-2 text-sm ${
                 customer.photoConsent
                   ? "border border-mi-cinza text-red-800"
-                  : "bg-mi-marrom text-white"
+                  : "bg-mi-marrom-escuro text-white"
               }`}
             >
               {customer.photoConsent
@@ -437,7 +437,7 @@ export default async function FichaClientePage({
             </label>
             <SubmitButton
               pendingLabel="Salvando…"
-              className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white"
+              className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white"
             >
               Salvar CRM
             </SubmitButton>
@@ -596,7 +596,7 @@ export default async function FichaClientePage({
                 Ainda não participa. Incluir gera o código e o link de indicação
                 dela.
               </p>
-              <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white">
+              <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
                 Incluir no clube
               </button>
             </form>

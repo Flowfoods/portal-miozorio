@@ -179,7 +179,7 @@ export default function FunilBoard({
                           href={c.waHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded bg-mi-marrom px-1.5 py-0.5 text-white"
+                          className="rounded bg-mi-marrom-escuro px-1.5 py-0.5 text-white"
                         >
                           WhatsApp
                         </a>

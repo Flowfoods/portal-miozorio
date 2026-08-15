@@ -23,7 +23,7 @@ export default function WeekStrip({ dias, onSelect, ariaLabel }: WeekStripProps)
       {dias.map((dia) => {
         const classes = `flex min-h-[76px] w-[64px] shrink-0 flex-col items-center justify-center rounded-mi border transition-colors ${
           dia.ativo
-            ? "border-mi-marrom bg-mi-marrom text-mi-branco shadow-suave"
+            ? "border-mi-marrom bg-mi-marrom-escuro text-mi-branco shadow-suave"
             : dia.desabilitado
               ? "border-mi-cinza bg-mi-branco/50 text-mi-texto/30"
               : "border-mi-cinza bg-mi-branco text-mi-texto hover:border-mi-marrom"

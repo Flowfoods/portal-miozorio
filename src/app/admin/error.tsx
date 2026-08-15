@@ -16,7 +16,7 @@ export default function AdminError({
       </p>
       <button
         onClick={reset}
-        className="rounded-mi bg-mi-marrom px-5 py-2.5 text-sm text-white"
+        className="rounded-mi bg-mi-marrom-escuro px-5 py-2.5 text-sm text-white"
       >
         Voltar
       </button>

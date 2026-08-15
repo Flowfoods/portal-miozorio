@@ -167,7 +167,7 @@ export default function MobileNav() {
           <Link
             href="/agendar"
             onClick={() => setOpen(false)}
-            className="flex min-h-[54px] items-center justify-center gap-2 rounded-mi bg-mi-marrom font-corpo text-[15px] tracking-[0.06em] text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro"
+            className="flex min-h-[54px] items-center justify-center gap-2 rounded-mi bg-mi-marrom-escuro font-corpo text-[15px] tracking-[0.06em] text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom"
           >
             Agendar meu horário
             <span aria-hidden className="text-lg leading-none">

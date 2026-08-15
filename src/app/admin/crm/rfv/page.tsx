@@ -69,7 +69,7 @@ export default async function CrmRfvPage({
       <div className="mb-5 flex flex-wrap gap-2 text-sm">
         <Link
           href="/admin/crm/rfv"
-          className={`rounded-mi border px-3 py-1.5 ${!seg ? "border-mi-marrom bg-mi-marrom text-mi-branco" : "border-mi-cinza hover:bg-mi-bege/40"}`}
+          className={`rounded-mi border px-3 py-1.5 ${!seg ? "border-mi-marrom bg-mi-marrom-escuro text-mi-branco" : "border-mi-cinza hover:bg-mi-bege/40"}`}
         >
           Todos
         </Link>
@@ -77,7 +77,7 @@ export default async function CrmRfvPage({
           <Link
             key={s}
             href={`/admin/crm/rfv?seg=${encodeURIComponent(s)}`}
-            className={`rounded-mi border px-3 py-1.5 ${seg === s ? "border-mi-marrom bg-mi-marrom text-mi-branco" : "border-mi-cinza hover:bg-mi-bege/40"}`}
+            className={`rounded-mi border px-3 py-1.5 ${seg === s ? "border-mi-marrom bg-mi-marrom-escuro text-mi-branco" : "border-mi-cinza hover:bg-mi-bege/40"}`}
           >
             {s}
           </Link>

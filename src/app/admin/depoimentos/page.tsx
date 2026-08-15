@@ -45,7 +45,7 @@ export default async function AdminDepoimentosPage() {
         <h2 className="flex items-center gap-2 font-titulo text-xl text-mi-marrom-escuro">
           Aguardando você
           {pendentes.length > 0 && (
-            <span className="rounded-full bg-mi-marrom px-2.5 py-0.5 font-corpo text-xs text-mi-branco">
+            <span className="rounded-full bg-mi-marrom-escuro px-2.5 py-0.5 font-corpo text-xs text-mi-branco">
               {pendentes.length}
             </span>
           )}
@@ -111,7 +111,7 @@ export default async function AdminDepoimentosPage() {
                 <div className="mt-4 flex flex-wrap items-start gap-2 border-t border-mi-cinza/60 pt-3">
                   <form action={adminAprovarMomento}>
                     <input type="hidden" name="id" value={m.id} />
-                    <button className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-mi-branco transition-colors hover:bg-mi-marrom-escuro">
+                    <button className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-mi-branco transition-colors hover:bg-mi-marrom">
                       Aprovar e publicar
                     </button>
                   </form>
@@ -173,7 +173,7 @@ export default async function AdminDepoimentosPage() {
                 className="input-mi mt-1 w-20 !py-2"
               />
             </label>
-            <button className="self-end rounded-mi bg-mi-marrom px-4 py-2.5 text-sm text-white">
+            <button className="self-end rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white">
               Adicionar
             </button>
           </div>

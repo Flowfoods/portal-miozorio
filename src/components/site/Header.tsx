@@ -35,7 +35,7 @@ export default function Header() {
         <div className="flex items-center gap-1.5">
           <Link
             href="/agendar"
-            className="inline-flex min-h-[40px] items-center rounded-mi bg-mi-marrom px-4 font-corpo text-sm text-mi-branco transition-colors hover:bg-mi-marrom-escuro"
+            className="inline-flex min-h-[40px] items-center rounded-mi bg-mi-marrom-escuro px-4 font-corpo text-sm text-mi-branco transition-colors hover:bg-mi-marrom"
           >
             Agendar
           </Link>

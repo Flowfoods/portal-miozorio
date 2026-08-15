@@ -42,7 +42,7 @@ export default async function CrmJornadasPage() {
           </p>
           <SubmitButton
             pendingLabel="Criando…"
-            className="rounded-mi bg-mi-marrom px-4 py-2 text-sm text-white"
+            className="rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white"
           >
             Criar jornadas padrão
           </SubmitButton>
@@ -80,7 +80,7 @@ export default async function CrmJornadasPage() {
                       className={`rounded-mi px-4 py-2 text-sm ${
                         j.ativo
                           ? "border border-mi-cinza text-red-800"
-                          : "bg-mi-marrom text-white"
+                          : "bg-mi-marrom-escuro text-white"
                       }`}
                     >
                       {j.ativo ? "Desativar" : "Ativar"}

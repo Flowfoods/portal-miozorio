@@ -35,7 +35,7 @@ export default function ResetForm({ token }: { token: string }) {
       {error && <p className="text-sm text-red-700">{error}</p>}
       <SubmitButton
         pendingLabel="Salvando…"
-        className="w-full rounded-mi bg-mi-marrom px-4 py-3 text-white transition-opacity disabled:opacity-60"
+        className="w-full rounded-mi bg-mi-marrom-escuro px-4 py-3 text-white transition-opacity disabled:opacity-60"
       >
         Salvar nova senha
       </SubmitButton>

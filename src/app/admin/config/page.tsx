@@ -118,7 +118,7 @@ export default async function AdminConfigPage() {
           </div>
         </section>
 
-        <button className="rounded-mi bg-mi-marrom px-6 py-3 text-white">
+        <button className="rounded-mi bg-mi-marrom-escuro px-6 py-3 text-white">
           Salvar configurações
         </button>
       </form>
@@ -131,7 +131,7 @@ export default async function AdminConfigPage() {
         </p>
         <Link
           href="/admin/config/whatsapp"
-          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white"
         >
           Conectar WhatsApp →
         </Link>
@@ -145,7 +145,7 @@ export default async function AdminConfigPage() {
         </p>
         <Link
           href="/admin/config/acessos"
-          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white"
         >
           Ver acessos →
         </Link>

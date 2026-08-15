@@ -67,7 +67,7 @@ export default async function AdminConteudoPage() {
         ))}
         <SubmitButton
           pendingLabel="Salvando…"
-          className="rounded-mi bg-mi-marrom px-6 py-3 text-white"
+          className="rounded-mi bg-mi-marrom-escuro px-6 py-3 text-white"
         >
           Salvar textos
         </SubmitButton>
