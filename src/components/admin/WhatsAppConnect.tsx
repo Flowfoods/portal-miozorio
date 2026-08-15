@@ -24,6 +24,54 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
   const [erro, setErro] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Pareamento por número (o caminho de quem está no celular).
+  const [numero, setNumero] = useState("");
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const [pedindo, setPedindo] = useState(false);
+  const [erroPair, setErroPair] = useState<string | null>(null);
+  const [resetando, setResetando] = useState(false);
+
+  async function pedirCodigo() {
+    setPedindo(true);
+    setErroPair(null);
+    try {
+      const res = await fetch("/api/admin/whatsapp/pair", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numero }),
+      });
+      const j = (await res.json()) as { code?: string; error?: string };
+      if (!res.ok || !j.code) {
+        setErroPair(j.error ?? "Não consegui gerar o código agora.");
+        return;
+      }
+      setCodigo(j.code);
+    } catch {
+      setErroPair("Não consegui gerar o código agora.");
+    } finally {
+      setPedindo(false);
+    }
+  }
+
+  async function recomecar() {
+    setResetando(true);
+    setErroPair(null);
+    setCodigo(null);
+    try {
+      const res = await fetch("/api/admin/whatsapp/reset", { method: "POST" });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setErroPair(j.error ?? "Não consegui encerrar a sessão agora.");
+        return;
+      }
+      await buscar();
+    } catch {
+      setErroPair("Não consegui encerrar a sessão agora.");
+    } finally {
+      setResetando(false);
+    }
+  }
+
   const buscar = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/whatsapp/status", {
@@ -98,22 +146,86 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
         </div>
       )}
 
-      {st.pairingCode && (
-        <p className="mt-3 text-sm text-mi-texto/80">
-          Ou use o código de pareamento:{" "}
-          <strong className="tracking-widest">{st.pairingCode}</strong>
-        </p>
-      )}
-
       <p className="mt-3 text-xs text-mi-texto/80">
         O código atualiza sozinho a cada poucos segundos.
       </p>
       <button
         onClick={buscar}
-        className="mt-3 rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white"
+        className="mt-3 min-h-[44px] rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom-escuro hover:text-white"
       >
         Atualizar agora
       </button>
+
+      {/* Caminho do celular: ler o QR exige um SEGUNDO aparelho, e a Mi opera
+          pelo telefone. Com o código de 8 dígitos ela conecta sozinha. */}
+      <div className="mt-6 border-t border-mi-cinza pt-5 text-left">
+        <p className="font-titulo text-lg text-mi-marrom-escuro">
+          Está no celular e não consegue ler o código?
+        </p>
+        <p className="mt-1 text-sm text-mi-texto/80">
+          Dá para conectar digitando um código no lugar de apontar a câmera.
+        </p>
+
+        {codigo ? (
+          <div className="mt-3 rounded-mi bg-mi-bege p-4">
+            <p className="text-sm text-mi-texto/80">No WhatsApp, toque em</p>
+            <p className="text-sm text-mi-marrom-escuro">
+              <strong>Aparelhos conectados → Conectar aparelho →</strong>{" "}
+              <strong>Conectar com número de telefone</strong>, e digite:
+            </p>
+            <p className="mt-3 text-center font-titulo text-3xl tracking-[0.25em] text-mi-marrom-escuro">
+              {codigo}
+            </p>
+            <p className="mt-2 text-center text-xs text-mi-texto/80">
+              O código vale por alguns minutos. Se expirar, peça outro.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="flex-1 text-sm">
+              <span className="text-mi-texto">
+                Seu WhatsApp (com DDD)
+              </span>
+              <input
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                placeholder="(21) 90000-0000"
+                className="input-mi mt-1 w-full"
+              />
+            </label>
+            <button
+              onClick={pedirCodigo}
+              disabled={pedindo}
+              className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-5 text-sm text-mi-branco transition-colors hover:bg-mi-marrom disabled:opacity-60"
+            >
+              {pedindo ? "Pedindo…" : "Quero um código"}
+            </button>
+          </div>
+        )}
+        {erroPair && (
+          <p role="alert" className="mt-2 text-sm text-red-700">
+            {erroPair}
+          </p>
+        )}
+      </div>
+
+      {/* Saída para instância presa: sem isto, QR inválido para sempre. */}
+      <div className="mt-6 border-t border-mi-cinza pt-5 text-left">
+        <p className="text-sm text-mi-texto/80">
+          Tentou e não conectou de jeito nenhum? Comece do zero — isso desliga a
+          sessão antiga e gera um código novo em folha.
+        </p>
+        <button
+          onClick={recomecar}
+          disabled={resetando}
+          className="mt-3 min-h-[44px] rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-cinza disabled:opacity-60"
+        >
+          {resetando ? "Encerrando…" : "Começar de novo"}
+        </button>
+      </div>
     </div>
   );
 }
