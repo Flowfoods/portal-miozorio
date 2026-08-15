@@ -766,23 +766,23 @@ export async function adminUploadMedia(formData: FormData): Promise<void> {
 
   const alt = String(formData.get("alt") ?? "").trim();
   let saved = 0;
+  // Importação em lote (o acervo do Instagram são dezenas de arquivos de uma
+  // vez): um arquivo ruim PULA, não derruba o envio inteiro. Antes chamava
+  // fail() no primeiro problema — e o Next apaga a mensagem de server action em
+  // produção, então a Mi via a página de erro genérica sem saber quantas fotos
+  // tinham entrado nem qual arquivo era o culpado.
+  const pulados: string[] = [];
   for (const file of files) {
     if (file.size > MAX_UPLOAD_BYTES) {
-      fail(
-        saved
-          ? `${saved} foto(s) já foram salvas, mas "${file.name}" é muito grande (máximo 12MB por foto).`
-          : `"${file.name}" é muito grande (máximo 12MB por foto).`,
-      );
+      pulados.push(`${file.name} (maior que 12MB)`);
+      continue;
     }
     let name: string;
     try {
       name = await processUpload(Buffer.from(await file.arrayBuffer()));
     } catch {
-      fail(
-        saved
-          ? `${saved} foto(s) já foram salvas, mas não consegui ler "${file.name}" — tente enviá-la em JPG ou PNG.`
-          : `Não consegui ler "${file.name}" — tente enviá-la em JPG ou PNG.`,
-      );
+      pulados.push(`${file.name} (não consegui ler — tente em JPG ou PNG)`);
+      continue;
     }
     await prisma.mediaAsset.create({
       data: {
@@ -795,6 +795,14 @@ export async function adminUploadMedia(formData: FormData): Promise<void> {
     saved++;
   }
   refreshMedia();
+
+  const params = new URLSearchParams({ enviadas: String(saved) });
+  if (pulados.length) {
+    // Só os 3 primeiros nomes: a URL não é lugar para despejar 40 arquivos.
+    params.set("pulados", String(pulados.length));
+    params.set("quais", pulados.slice(0, 3).join(" · ").slice(0, 300));
+  }
+  redirect(`/admin/fotos?${params.toString()}`);
 }
 
 export async function adminToggleMediaPublished(id: string): Promise<void> {

@@ -86,10 +86,18 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
   );
 }
 
-export default async function FotosPage() {
+export default async function FotosPage({
+  searchParams,
+}: {
+  searchParams?: { enviadas?: string; pulados?: string; quais?: string };
+}) {
   const assets = await prisma.mediaAsset.findMany({
     orderBy: [{ sort: "asc" }, { createdAt: "desc" }],
   });
+
+  const enviadas = Number(searchParams?.enviadas ?? 0) || 0;
+  const pulados = Number(searchParams?.pulados ?? 0) || 0;
+  const quais = searchParams?.quais?.slice(0, 300) ?? "";
 
   return (
     <>
@@ -98,6 +106,35 @@ export default async function FotosPage() {
         Suba fotos direto do celular — elas entram no site na hora. Só publique
         fotos de clientes que autorizaram 💛
       </p>
+
+      {(enviadas > 0 || pulados > 0) && (
+        <p
+          role="status"
+          className={`mt-4 rounded-mi px-4 py-3 text-sm ${
+            pulados > 0
+              ? "bg-amber-50 text-amber-900"
+              : "bg-mi-bege text-mi-marrom-escuro"
+          }`}
+        >
+          {enviadas > 0 && (
+            <>
+              <strong>
+                {enviadas} foto{enviadas > 1 ? "s" : ""}
+              </strong>{" "}
+              {enviadas > 1 ? "entraram" : "entrou"} no site.
+            </>
+          )}
+          {pulados > 0 && (
+            <>
+              {" "}
+              {pulados} não {pulados > 1 ? "deram" : "deu"} certo
+              {quais ? `: ${quais}` : ""}
+              {pulados > 3 ? " (e outras)" : ""}. Pode reenviar só{" "}
+              {pulados > 1 ? "essas" : "essa"}.
+            </>
+          )}
+        </p>
+      )}
 
       {/* Upload */}
       <form
