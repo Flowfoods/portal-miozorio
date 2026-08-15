@@ -45,13 +45,13 @@ export default async function AdminConteudoPage() {
                         name={f.key}
                         defaultValue={value}
                         rows={3}
-                        className="input-mi mt-1 w-full text-sm"
+                        className="input-mi mt-1 w-full"
                       />
                     ) : (
                       <input
                         name={f.key}
                         defaultValue={value}
-                        className="input-mi mt-1 w-full !py-2 text-sm"
+                        className="input-mi mt-1 w-full !py-2"
                       />
                     )}
                     {f.ajuda && (

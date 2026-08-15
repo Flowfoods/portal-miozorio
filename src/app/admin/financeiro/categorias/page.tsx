@@ -95,14 +95,14 @@ function Grupo({
           >
             <input type="hidden" name="id" value={c.id} />
             <input type="color" name="color" defaultValue={c.color} className="h-8 w-8 rounded" aria-label="Cor" />
-            <input name="name" defaultValue={c.name} className="input-mi !w-auto flex-1 !py-2 text-sm" />
+            <input name="name" defaultValue={c.name} className="input-mi !w-auto flex-1 !py-2" />
             {c.kind === "expense" && (
               <>
-                <select name="nature" defaultValue={c.nature ?? "variable"} className="input-mi !w-auto !py-2 text-sm">
+                <select name="nature" defaultValue={c.nature ?? "variable"} className="input-mi !w-auto !py-2">
                   <option value="variable">Variável</option>
                   <option value="fixed">Fixo</option>
                 </select>
-                <select name="dreGroup" defaultValue={c.dreGroup ?? "custo_variavel"} className="input-mi !w-auto !py-2 text-sm">
+                <select name="dreGroup" defaultValue={c.dreGroup ?? "custo_variavel"} className="input-mi !w-auto !py-2">
                   {DRE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
                 </select>
                 <label className="flex items-center gap-1 text-xs">

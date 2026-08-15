@@ -492,7 +492,7 @@ export default async function FichaClientePage({
                     <input type="hidden" name="customerId" value={customer.id} />
                     <select
                       name="rewardId"
-                      className="input-mi !w-auto flex-1 !py-2 text-sm"
+                      className="input-mi !w-auto flex-1 !py-2"
                     >
                       {recompensas.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -517,12 +517,12 @@ export default async function FichaClientePage({
                     name="pontos"
                     type="number"
                     placeholder="±pts"
-                    className="input-mi w-20 !py-2 text-sm"
+                    className="input-mi w-20 !py-2"
                   />
                   <input
                     name="descricao"
                     placeholder="motivo do ajuste"
-                    className="input-mi !w-auto flex-1 !py-2 text-sm"
+                    className="input-mi !w-auto flex-1 !py-2"
                   />
                   <SubmitButton
                     pendingLabel="Salvando…"
@@ -580,7 +580,7 @@ export default async function FichaClientePage({
                 <input
                   name="beneficio"
                   placeholder="Registrar brinde entregue (ex.: mimo de aniversário)"
-                  className="input-mi !w-auto flex-1 !py-2 text-sm"
+                  className="input-mi !w-auto flex-1 !py-2"
                 />
                 <SubmitButton
                   pendingLabel="Salvando…"
