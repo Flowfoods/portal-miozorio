@@ -50,7 +50,20 @@ export async function resgatarAction(formData: FormData): Promise<void> {
   const s = getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
   const rewardId = String(formData.get("rewardId") ?? "");
-  if (rewardId) await resgatarRecompensa(s.customerId, rewardId);
+  if (rewardId) {
+    const r = await resgatarRecompensa(s.customerId, rewardId);
+    // O motor devolve mensagem pronta ("Saldo insuficiente para esse
+    // resgate."), e ela era DESCARTADA: a cliente apertava Resgatar, a tela
+    // piscava e voltava igual, sem saber se deu certo. Volta pela URL porque
+    // o formulário vive num server component — sem virar client component só
+    // para carregar um aviso.
+    if (!r.ok) {
+      revalidatePath("/clube/conta/clube");
+      const msg = r.message ?? "Não consegui concluir agora. Tente de novo.";
+      redirect(`/clube/conta/clube?erro=${encodeURIComponent(msg)}`);
+    }
+  }
   revalidatePath("/clube/conta"); // Início (resumo de pontos)
   revalidatePath("/clube/conta/clube"); // aba Clube (catálogo/vouchers/extrato)
+  redirect("/clube/conta/clube?resgate=ok");
 }

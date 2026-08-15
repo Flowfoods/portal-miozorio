@@ -28,7 +28,7 @@ export default function FinanceControls({
           key={r}
           type="button"
           onClick={() => go(r)}
-          className={`min-h-[36px] rounded-[10px] px-4 leading-9 ${
+          className={`min-h-[44px] rounded-[10px] px-4 leading-9 ${
             regime === r
               ? "bg-mi-superficie-elevada text-mi-marrom-escuro shadow-suave"
               : "text-mi-marrom"

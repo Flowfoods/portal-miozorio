@@ -83,7 +83,7 @@ export default function RescheduleForm({
           type="button"
           disabled={busy || time.length < 4}
           onClick={save}
-          className="min-h-[40px] rounded-mi bg-mi-marrom-escuro px-3 text-sm text-white disabled:opacity-50"
+          className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-3 text-sm text-white disabled:opacity-50"
         >
           {busy ? "Salvando…" : "Confirmar"}
         </button>
@@ -93,7 +93,7 @@ export default function RescheduleForm({
             setOpen(false);
             setError(null);
           }}
-          className="min-h-[40px] px-2 text-sm text-mi-marrom-escuro"
+          className="min-h-[44px] px-2 text-sm text-mi-marrom-escuro"
         >
           cancelar
         </button>

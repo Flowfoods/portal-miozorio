@@ -78,8 +78,17 @@ function Lista({ titulo, itens }: { titulo: string; itens: Servico[] }) {
               {s.bookableOnline ? (
                 <Botao href={`/agendar?servico=${s.code}`}>Agendar</Botao>
               ) : (
-                <Botao href="/agendar" variante="secundario">
-                  Agendar
+                // Armadilha armada: os dois ramos diziam "Agendar", e o de
+                // baixo mandava para /agendar — onde o serviço não aparece,
+                // porque /api/services filtra por bookableOnline. Fica
+                // dormente enquanto todo serviço de cabelo nasce agendável, e
+                // vira beco sem saída no instante em que a Mi desmarcar
+                // "Agendável online" no painel.
+                <Botao
+                  href={`https://wa.me/5521970225231?text=${encodeURIComponent(`Oi Mi! Queria saber sobre ${s.name} 💛`)}`}
+                  variante="whatsapp"
+                >
+                  Combinar com a Mi
                 </Botao>
               )}
             </div>

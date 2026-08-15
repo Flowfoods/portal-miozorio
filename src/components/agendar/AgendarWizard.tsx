@@ -370,7 +370,7 @@ export default function AgendarWizard() {
               <button
                 key={loc}
                 onClick={() => setLocation(loc)}
-                className={`min-h-[40px] rounded-[10px] px-5 font-corpo text-sm transition-colors ${
+                className={`min-h-[44px] rounded-[10px] px-5 font-corpo text-sm transition-colors ${
                   location === loc
                     ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
                     : "text-mi-marrom"
@@ -430,10 +430,21 @@ export default function AgendarWizard() {
                       {unavailableHome ? " · só no estúdio" : ""}
                     </span>
                   </span>
-                  <span className="shrink-0 font-corpo text-base font-medium text-mi-marrom-escuro">
-                    {s.pendingPrice || price === null
+                  <span className="shrink-0 text-right font-corpo text-base font-medium text-mi-marrom-escuro">
+                    {s.pendingPrice
                       ? "sob consulta"
-                      : formatBRL(price)}
+                      : price !== null
+                        ? formatBRL(price)
+                        : // Domicílio sem preço próprio: o valor do estúdio
+                          // SUMIA e virava "sob consulta" — a cliente perdia a
+                          // única referência que tinha. Melhor mostrar o que
+                          // se sabe e dizer onde vale.
+                          formatBRL(s.priceCents)}
+                    {unavailableHome && !s.pendingPrice && (
+                      <span className="block font-corpo text-xs font-normal text-mi-texto/80">
+                        no estúdio
+                      </span>
+                    )}
                   </span>
                 </button>
               );
@@ -775,7 +786,9 @@ function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom-escuro"
+      // Era 40×20px sem padding — e é justamente o substituto do Voltar do
+      // Android neste wizard, que não reflete o passo na URL.
+      className="-ml-2 inline-flex min-h-[44px] items-center px-2 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom"
     >
       ‹ voltar
     </button>
