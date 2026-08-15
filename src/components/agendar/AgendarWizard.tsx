@@ -64,6 +64,7 @@ export default function AgendarWizard() {
   const [date, setDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsErro, setSlotsErro] = useState(false);
   const [time, setTime] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -229,8 +230,16 @@ export default function AgendarWizard() {
       `/api/availability?serviceId=${service.id}&date=${date}&location=${location}`,
     )
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-      .then((d: { slots: string[] }) => setSlots(d.slots))
-      .catch(() => setSlots([]))
+      .then((d: { slots: string[] }) => {
+        setSlots(d.slots);
+        setSlotsErro(false);
+      })
+      // Falha de rede virava lista vazia, indistinguível de dia lotado — e a
+      // cliente lia "esse dia já está cheio" num dia inteiramente livre.
+      .catch(() => {
+        setSlots([]);
+        setSlotsErro(true);
+      })
       .finally(() => setSlotsLoading(false));
   }, [service, date, location]);
 
@@ -239,6 +248,16 @@ export default function AgendarWizard() {
     form.phone.replace(/\D/g, "").length >= 10 &&
     form.occasion.length > 0 &&
     form.lgpd;
+
+  /** O que ainda falta, na voz da Mi — dito no clique, não escondido. */
+  const faltaPreencher =
+    form.name.trim().length < 2
+      ? "Me conta seu nome? 💛"
+      : form.phone.replace(/\D/g, "").length < 10
+        ? "Confere o WhatsApp? Use DDD + número."
+        : form.occasion.length === 0
+          ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
+          : "Falta aceitar a política de privacidade.";
 
   async function submitBooking() {
     if (!service || !date || !time) return;
@@ -280,9 +299,16 @@ export default function AgendarWizard() {
         return;
       }
       if (!res.ok) {
+        // Nunca ecoar a mensagem crua do servidor: "Dados inválidos" e "JSON
+        // inválido" são texto de sistema e chegavam à cliente no último passo,
+        // sem dizer qual campo. 422 já vem com mensagem escrita para ela.
         const e = (await res.json().catch(() => ({}))) as { error?: string };
         setFormError(
-          e.error ?? "Não consegui criar seu agendamento. Tenta de novo?",
+          res.status === 422 && e.error
+            ? e.error
+            : res.status === 400
+              ? "Confere os campos? Algum dado ficou fora do formato — o e-mail é o mais comum."
+              : "Não consegui criar seu agendamento. Tenta de novo?",
         );
         return;
       }
@@ -461,7 +487,13 @@ export default function AgendarWizard() {
           </p>
 
           {slotsLoading && <ChipsSkeleton />}
-          {!slotsLoading && slots && slots.length === 0 && (
+          {!slotsLoading && slotsErro && (
+            <p className="mt-6 font-corpo text-mi-texto">
+              Não consegui carregar os horários agora. Toca de novo na data, por
+              favor?
+            </p>
+          )}
+          {!slotsLoading && !slotsErro && slots && slots.length === 0 && (
             <p className="mt-6 font-corpo text-mi-texto">
               Poxa, esse dia já está cheio… que tal escolher outra data?
             </p>
@@ -496,13 +528,16 @@ export default function AgendarWizard() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="input-mi"
+                autoComplete="name"
                 placeholder="Como você gosta de ser chamada"
               />
             </Field>
             <Field label="WhatsApp">
               <input
                 value={form.phone}
+                type="tel"
                 inputMode="numeric"
+                autoComplete="tel"
                 onChange={(e) =>
                   setForm({ ...form, phone: maskPhoneBR(e.target.value) })
                 }
@@ -511,8 +546,14 @@ export default function AgendarWizard() {
               />
             </Field>
             <Field label="E-mail (opcional)">
+              {/* type="email" + inputMode: o campo é opcional, mas o servidor
+                  valida o formato — sem isto, um "ana@" derrubava o
+                  agendamento no último passo, sem dizer qual campo. */}
               <input
                 value={form.email}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="input-mi"
                 placeholder="seu@email.com"
@@ -584,9 +625,19 @@ export default function AgendarWizard() {
               <p className="font-corpo text-sm text-red-700">{formError}</p>
             )}
 
+            {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
+                descobria o que faltava — o único rótulo marcado na tela é
+                "E-mail (opcional)", então ela concluía que o resto também era. */}
             <button
-              disabled={!canSubmit || submitting}
-              onClick={submitBooking}
+              disabled={submitting}
+              onClick={() => {
+                if (!canSubmit) {
+                  setFormError(faltaPreencher);
+                  return;
+                }
+                setFormError(null);
+                void submitBooking();
+              }}
               className="min-h-[52px] w-full rounded-mi bg-mi-marrom font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "Reservando…" : "Continuar"}
