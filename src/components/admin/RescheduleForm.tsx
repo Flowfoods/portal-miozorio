@@ -93,7 +93,7 @@ export default function RescheduleForm({
             setOpen(false);
             setError(null);
           }}
-          className="min-h-[40px] px-2 text-sm text-mi-marrom"
+          className="min-h-[40px] px-2 text-sm text-mi-marrom-escuro"
         >
           cancelar
         </button>

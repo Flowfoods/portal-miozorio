@@ -58,10 +58,10 @@ export default function AdminContaForm() {
       </form>
 
       <form action={sairDeTodosAction} className="border-t border-mi-cinza/60 pt-4">
-        <p className="mb-2 text-xs text-mi-texto/60">
+        <p className="mb-2 text-xs text-mi-texto/80">
           Encerra a sessão em todos os aparelhos (inclusive aqui).
         </p>
-        <button className="rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white">
+        <button className="rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white">
           Sair de todos os dispositivos
         </button>
       </form>

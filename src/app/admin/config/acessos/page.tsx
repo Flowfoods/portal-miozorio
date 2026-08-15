@@ -9,14 +9,14 @@ export const dynamic = "force-dynamic";
 /** Rótulos gentis dos eventos de auth (Auth F1.2) — nada de jargão de sistema. */
 const EVENTO: Record<string, { label: string; tom: string }> = {
   login_ok: { label: "Entrou", tom: "text-emerald-700" },
-  login_fail: { label: "Tentativa que não deu certo", tom: "text-mi-texto/60" },
+  login_fail: { label: "Tentativa que não deu certo", tom: "text-mi-texto/80" },
   locked: { label: "Conta pausada (tentativas demais)", tom: "text-amber-700" },
   throttled: { label: "Bloqueio por excesso de acessos (IP)", tom: "text-amber-700" },
-  reset_request: { label: "Pediu redefinição por e-mail", tom: "text-mi-texto/70" },
+  reset_request: { label: "Pediu redefinição por e-mail", tom: "text-mi-texto/80" },
   reset_done: { label: "Redefiniu a senha", tom: "text-emerald-700" },
-  recover_request: { label: "Pediu recuperação por WhatsApp", tom: "text-mi-texto/70" },
+  recover_request: { label: "Pediu recuperação por WhatsApp", tom: "text-mi-texto/80" },
   recover_ok: { label: "Recuperou a senha", tom: "text-emerald-700" },
-  recover_fail: { label: "Código de recuperação incorreto", tom: "text-mi-texto/60" },
+  recover_fail: { label: "Código de recuperação incorreto", tom: "text-mi-texto/80" },
   password_changed: { label: "Trocou a senha", tom: "text-emerald-700" },
 };
 
@@ -44,35 +44,35 @@ export default async function AcessosPage() {
   return (
     <>
       <div className="mb-2 flex items-center gap-3">
-        <Link href="/admin/config" className="text-sm text-mi-marrom underline">
+        <Link href="/admin/config" className="text-sm text-mi-marrom-escuro underline">
           ← Configurações
         </Link>
       </div>
       <h1 className="mb-2 text-3xl">Acessos & segurança</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Registro dos acessos ao painel e à área da cliente. Sem dados sensíveis:
         o telefone aparece mascarado e o IP nunca é guardado em claro.
       </p>
 
       <section className="mb-6 grid grid-cols-2 gap-3">
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Entradas (24h)</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Entradas (24h)</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{entradas24h}</p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Tentativas sem sucesso (24h)</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Tentativas sem sucesso (24h)</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{falhas24h}</p>
         </div>
       </section>
 
       {eventos.length === 0 ? (
-        <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/60 shadow-suave">
+        <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/80 shadow-suave">
           Nenhum acesso registrado ainda 🤎
         </p>
       ) : (
         <ul className="divide-y divide-mi-cinza/60 rounded-mi bg-mi-branco shadow-suave">
           {eventos.map((e) => {
-            const info = EVENTO[e.event] ?? { label: e.event, tom: "text-mi-texto/70" };
+            const info = EVENTO[e.event] ?? { label: e.event, tom: "text-mi-texto/80" };
             const quando = DateTime.fromJSDate(e.createdAt)
               .setZone(tz)
               .setLocale("pt-BR")
@@ -84,7 +84,7 @@ export default async function AcessosPage() {
               >
                 <div className="min-w-0">
                   <p className={`font-corpo ${info.tom}`}>{info.label}</p>
-                  <p className="truncate text-xs text-mi-texto/55">
+                  <p className="truncate text-xs text-mi-texto/80">
                     {e.identifier ?? "—"}
                   </p>
                 </div>
@@ -92,7 +92,7 @@ export default async function AcessosPage() {
                   <span className="rounded-full bg-mi-superficie-nav px-2 py-0.5 text-[11px] uppercase tracking-wide text-mi-marrom-escuro">
                     {e.area === "admin" ? "Painel" : "Cliente"}
                   </span>
-                  <p className="mt-1 text-xs text-mi-texto/55">{quando}</p>
+                  <p className="mt-1 text-xs text-mi-texto/80">{quando}</p>
                 </div>
               </li>
             );

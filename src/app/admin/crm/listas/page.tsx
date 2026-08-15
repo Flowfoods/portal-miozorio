@@ -93,7 +93,7 @@ export default async function CrmListasPage({
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Listas de ação</h1>
-        <Link href="/admin/crm" className="text-sm text-mi-marrom hover:underline">
+        <Link href="/admin/crm" className="text-sm text-mi-marrom-escuro hover:underline">
           ← CRM
         </Link>
       </div>
@@ -137,7 +137,7 @@ async function ListaSumidas({ dias }: { dias: number }) {
   const rows = await clientesSumidas(dias);
   return (
     <section>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Mais de <strong>{dias} dias</strong> sem atendimento (ajuste em{" "}
         <Link href="/admin/crm/config" className="underline">
           Configurações do CRM
@@ -163,12 +163,12 @@ async function ListaLeads({ dias }: { dias: number }) {
   const rows = await leadsNuncaEntraram(dias);
   return (
     <section>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Cadastradas há mais de <strong>{dias} dias</strong> que nunca acessaram
         o portal nem tiveram atendimento.
       </p>
       <Tabela
-        vazio="Nenhuma lead esquecida por aqui."
+        vazio="Nenhum primeiro contato esquecido por aqui."
         cab={["Cliente", "Cadastrada há", "Origem", ""]}
         linhas={rows.map((r) => [
           <NomeLink key="n" id={r.id} nome={r.name} />,
@@ -185,7 +185,7 @@ async function ListaVisitou({ destaque }: { destaque: number }) {
   const rows = await visitouNaoMarcou(30);
   return (
     <section>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Entraram no agendamento nos últimos 30 dias e não marcaram. Em
         vermelho: {destaque}+ tentativas.
       </p>
@@ -213,7 +213,7 @@ async function ListaIndicacao() {
   const rows = await engajadasIndicacao();
   return (
     <section>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Quem mais compartilha o link de indicação — e quantas amigas
         indicadas já foram atendidas.
       </p>
@@ -336,7 +336,7 @@ function Tabela({
     <div className="overflow-x-auto rounded-mi bg-mi-branco shadow-suave">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/60">
+          <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/80">
             {cab.map((c, i) => (
               <th key={i} className="px-4 py-3">
                 {c}
@@ -349,7 +349,7 @@ function Tabela({
             <tr>
               <td
                 colSpan={cab.length}
-                className="px-4 py-8 text-center text-mi-texto/60"
+                className="px-4 py-8 text-center text-mi-texto/80"
               >
                 {vazio}
               </td>

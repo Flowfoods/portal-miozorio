@@ -11,7 +11,7 @@ export default function Header() {
           <span className="block font-titulo text-xl text-mi-marrom-escuro">
             Mi Ozorio
           </span>
-          <span className="block font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom">
+          <span className="block font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom-escuro">
             Beauty Artist
           </span>
         </Link>

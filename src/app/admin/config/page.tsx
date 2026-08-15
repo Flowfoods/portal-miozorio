@@ -72,14 +72,14 @@ export default async function AdminConfigPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Configurações</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Valem na hora para novos agendamentos — sem precisar de deploy.
       </p>
 
       <form action={adminSaveSettings} className="space-y-8">
         <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
           <h2 className="mb-3 text-lg">Horário de atendimento</h2>
-          <p className="mb-3 text-xs text-mi-texto/60">
+          <p className="mb-3 text-xs text-mi-texto/80">
             Formato 09:00-19:00 (vários períodos separados por vírgula). Vazio =
             fechado.
           </p>
@@ -125,13 +125,13 @@ export default async function AdminConfigPage() {
 
       <section className="mt-8 rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="mb-1 text-lg">WhatsApp</h2>
-        <p className="mb-3 text-xs text-mi-texto/60">
+        <p className="mb-3 text-xs text-mi-texto/80">
           Conecte o WhatsApp que envia lembretes, confirmações e o código de
           recuperação das clientes (pareamento por QR, como o WhatsApp Web).
         </p>
         <Link
           href="/admin/config/whatsapp"
-          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
         >
           Conectar WhatsApp →
         </Link>
@@ -139,13 +139,13 @@ export default async function AdminConfigPage() {
 
       <section className="mt-6 rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="mb-1 text-lg">Acessos & segurança</h2>
-        <p className="mb-3 text-xs text-mi-texto/60">
+        <p className="mb-3 text-xs text-mi-texto/80">
           Quem entrou no painel e na área da cliente, tentativas sem sucesso e
           trocas de senha.
         </p>
         <Link
           href="/admin/config/acessos"
-          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white"
+          className="inline-block rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
         >
           Ver acessos →
         </Link>
@@ -153,7 +153,7 @@ export default async function AdminConfigPage() {
 
       <section className="mt-6 rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="mb-1 text-lg">Entrar com Face ID / biometria</h2>
-        <p className="mb-3 text-xs text-mi-texto/60">
+        <p className="mb-3 text-xs text-mi-texto/80">
           Ative para entrar no painel com o reconhecimento do seu aparelho — sem
           digitar senha. A senha continua funcionando normalmente.
         </p>

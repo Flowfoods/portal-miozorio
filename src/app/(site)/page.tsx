@@ -46,7 +46,7 @@ export default async function Home() {
       {/* HERO */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>
-          <p className="flex items-center gap-3 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+          <p className="flex items-center gap-3 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
             <span aria-hidden className="h-px w-8 bg-mi-marrom" />
             {content["home.hero.eyebrow"]}
           </p>
@@ -193,7 +193,7 @@ export default async function Home() {
                 <blockquote className="mt-1 font-titulo text-lg italic text-mi-texto">
                   {d.quote}
                 </blockquote>
-                <figcaption className="mt-4 font-corpo text-sm text-mi-marrom">
+                <figcaption className="mt-4 font-corpo text-sm text-mi-marrom-escuro">
                   {d.author}
                 </figcaption>
               </figure>
@@ -235,14 +235,14 @@ export default async function Home() {
               <span className="inline-block rounded-full bg-mi-bege px-3 py-1 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
                 Atendimento exclusivo
               </span>
-              <p className="mt-4 font-corpo text-xs uppercase tracking-[0.25em] text-mi-marrom">
+              <p className="mt-4 font-corpo text-xs uppercase tracking-[0.25em] text-mi-marrom-escuro">
                 {c.sub}
               </p>
               <h3 className="mt-2 font-titulo text-3xl text-mi-marrom-escuro">
                 {c.titulo}
               </h3>
               <p className="mt-3 font-corpo text-sm text-mi-texto">{c.desc}</p>
-              <span className="mt-5 inline-block font-corpo text-sm text-mi-marrom group-hover:text-mi-marrom-escuro">
+              <span className="mt-5 inline-block font-corpo text-sm text-mi-marrom-escuro group-hover:text-mi-marrom-escuro">
                 Ver mais ›
               </span>
             </Link>

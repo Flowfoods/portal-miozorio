@@ -124,7 +124,7 @@ export default async function FichaClientePage({
     <>
       <Link
         href="/admin/clientes"
-        className="text-sm text-mi-marrom underline underline-offset-4"
+        className="text-sm text-mi-marrom-escuro underline underline-offset-4"
       >
         ← Clientes
       </Link>
@@ -132,7 +132,7 @@ export default async function FichaClientePage({
       <div className="mb-6 mt-2 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl">{customer.name}</h1>
-          <p className="text-sm text-mi-texto/70">
+          <p className="text-sm text-mi-texto/80">
             {formatPhoneBR(customer.phoneE164)}
             {idade != null && <> · {idade} anos{menor ? " (menor — responsável obrigatório)" : ""}</>}
             {" · "}cliente desde{" "}
@@ -165,7 +165,7 @@ export default async function FichaClientePage({
           <form action={adminUpdateCustomer} className="space-y-3 text-sm">
             <input type="hidden" name="id" value={customer.id} />
             <label className="block">
-              <span className="mb-1 block text-xs text-mi-texto/60">Nome</span>
+              <span className="mb-1 block text-xs text-mi-texto/80">Nome</span>
               <input
                 name="name"
                 defaultValue={customer.name}
@@ -175,7 +175,7 @@ export default async function FichaClientePage({
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   WhatsApp
                 </span>
                 <input
@@ -186,7 +186,7 @@ export default async function FichaClientePage({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   Nascimento (opcional)
                 </span>
                 <input
@@ -198,7 +198,7 @@ export default async function FichaClientePage({
               </label>
             </div>
             <label className="block">
-              <span className="mb-1 block text-xs text-mi-texto/60">
+              <span className="mb-1 block text-xs text-mi-texto/80">
                 E-mail (opcional)
               </span>
               <input
@@ -210,7 +210,7 @@ export default async function FichaClientePage({
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   Responsável (se menor)
                 </span>
                 <input
@@ -220,7 +220,7 @@ export default async function FichaClientePage({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   Telefone do responsável
                 </span>
                 <input
@@ -249,7 +249,7 @@ export default async function FichaClientePage({
           <form action={adminUpdateCustomerCare} className="space-y-3 text-sm">
             <input type="hidden" name="id" value={customer.id} />
             <label className="block">
-              <span className="mb-1 block text-xs text-mi-texto/60">
+              <span className="mb-1 block text-xs text-mi-texto/80">
                 Alergias da cliente (aparece destacado em todo atendimento)
               </span>
               <textarea
@@ -261,7 +261,7 @@ export default async function FichaClientePage({
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs text-mi-texto/60">
+              <span className="mb-1 block text-xs text-mi-texto/80">
                 Anotações da Mi (só você vê)
               </span>
               <textarea
@@ -284,7 +284,7 @@ export default async function FichaClientePage({
         {/* Autorização de foto (R18) */}
         <section className="rounded-mi bg-mi-branco p-5 shadow-suave">
           <h2 className="mb-2 text-xl">Foto do resultado</h2>
-          <p className="mb-3 text-sm text-mi-texto/70">
+          <p className="mb-3 text-sm text-mi-texto/80">
             Só publique foto da cliente (site ou Instagram) com a autorização
             registrada aqui.
           </p>
@@ -301,7 +301,7 @@ export default async function FichaClientePage({
               )}
             </p>
           ) : (
-            <p className="mb-3 text-sm text-mi-texto/70">
+            <p className="mb-3 text-sm text-mi-texto/80">
               Sem autorização registrada.
             </p>
           )}
@@ -329,7 +329,7 @@ export default async function FichaClientePage({
         {/* Cancelamentos / sinal */}
         <section className="rounded-mi bg-mi-branco p-5 shadow-suave">
           <h2 className="mb-2 text-xl">Cancelamentos</h2>
-          <p className="text-sm text-mi-texto/70">
+          <p className="text-sm text-mi-texto/80">
             {customer.strikes} cancelamento(s) em cima da hora · {faltas}{" "}
             falta(s) · {concluidos} atendimento(s) concluído(s)
           </p>
@@ -352,7 +352,7 @@ export default async function FichaClientePage({
 
         {/* CRM — segmentação RFV + funil + opt-in */}
         <section className="rounded-mi bg-mi-branco p-5 shadow-suave lg:col-span-2">
-          <h2 className="mb-3 text-xl">CRM</h2>
+          <h2 className="mb-3 text-xl">Relacionamento</h2>
           <div className="mb-4 flex flex-wrap gap-2 text-sm">
             {customer.rfvSegmento ? (
               <>
@@ -367,7 +367,7 @@ export default async function FichaClientePage({
                 </span>
               </>
             ) : (
-              <span className="text-mi-texto/60">
+              <span className="text-mi-texto/80">
                 Segmentação ainda não calculada (roda todo dia automaticamente).
               </span>
             )}
@@ -376,7 +376,7 @@ export default async function FichaClientePage({
             <input type="hidden" name="id" value={customer.id} />
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   Etiquetas (separadas por vírgula)
                 </span>
                 <input
@@ -387,7 +387,7 @@ export default async function FichaClientePage({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-mi-texto/60">
+                <span className="mb-1 block text-xs text-mi-texto/80">
                   Origem (como chegou)
                 </span>
                 <input
@@ -399,7 +399,7 @@ export default async function FichaClientePage({
               </label>
             </div>
             <label className="block">
-              <span className="mb-1 block text-xs text-mi-texto/60">
+              <span className="mb-1 block text-xs text-mi-texto/80">
                 Etapa do funil de noiva/debutante
               </span>
               <select
@@ -408,7 +408,7 @@ export default async function FichaClientePage({
                 className="input-mi w-full"
               >
                 <option value="">— não está no funil</option>
-                <option value="lead">Lead</option>
+                <option value="lead">Primeiro contato</option>
                 <option value="previa_agendada">Prévia agendada</option>
                 <option value="previa_feita">Prévia feita</option>
                 <option value="contrato_fechado">Contrato fechado</option>
@@ -426,7 +426,7 @@ export default async function FichaClientePage({
               <span>
                 Autoriza mensagens de relacionamento no WhatsApp (jornadas)
                 {customer.whatsappOptInAt && (
-                  <span className="text-mi-texto/50">
+                  <span className="text-mi-texto/80">
                     {" "}· desde{" "}
                     {DateTime.fromJSDate(customer.whatsappOptInAt)
                       .setZone(tz)
@@ -448,7 +448,7 @@ export default async function FichaClientePage({
         <section className="rounded-mi bg-mi-branco p-5 shadow-suave lg:col-span-2">
           <h2 className="mb-2 text-xl">Clube</h2>
           {customer.referredBy && (
-            <p className="mb-2 text-sm text-mi-texto/70">
+            <p className="mb-2 text-sm text-mi-texto/80">
               Indicada por{" "}
               <Link
                 href={`/admin/clientes/${customer.referredBy.id}`}
@@ -461,7 +461,7 @@ export default async function FichaClientePage({
           )}
           {customer.clubJoinedAt ? (
             <div className="space-y-3 text-sm">
-              <p className="text-mi-texto/70">
+              <p className="text-mi-texto/80">
                 Membro desde{" "}
                 {DateTime.fromJSDate(customer.clubJoinedAt)
                   .setZone(tz)
@@ -532,7 +532,7 @@ export default async function FichaClientePage({
                   </SubmitButton>
                 </form>
                 {clube.extrato.length > 0 && (
-                  <ul className="mt-2 space-y-0.5 text-xs text-mi-texto/70">
+                  <ul className="mt-2 space-y-0.5 text-xs text-mi-texto/80">
                     {clube.extrato.slice(0, 8).map((t) => (
                       <li key={t.id}>
                         {t.pontos > 0 ? "+" : ""}
@@ -560,7 +560,7 @@ export default async function FichaClientePage({
                 </ul>
               )}
               {customer.redemptions.length > 0 && (
-                <div className="text-xs text-mi-texto/60">
+                <div className="text-xs text-mi-texto/80">
                   Brindes avulsos:{" "}
                   {customer.redemptions
                     .map(
@@ -592,7 +592,7 @@ export default async function FichaClientePage({
             </div>
           ) : (
             <form action={adminEnrollCustomer.bind(null, customer.id)}>
-              <p className="mb-3 text-sm text-mi-texto/70">
+              <p className="mb-3 text-sm text-mi-texto/80">
                 Ainda não participa. Incluir gera o código e o link de indicação
                 dela.
               </p>
@@ -607,7 +607,7 @@ export default async function FichaClientePage({
       {/* Atividade no site (F3 — comportamento first-party) */}
       <section className="mb-8 rounded-mi bg-mi-branco p-5 shadow-suave">
         <h2 className="mb-2 text-xl">Atividade no site</h2>
-        <p className="mb-4 text-sm text-mi-texto/70">
+        <p className="mb-4 text-sm text-mi-texto/80">
           O que ela fez no portal — visitas, tentativas de agendamento e
           compartilhamentos.
         </p>
@@ -616,13 +616,13 @@ export default async function FichaClientePage({
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
               {atividade.visitas30}
             </p>
-            <p className="text-xs text-mi-texto/60">visitas (30 dias)</p>
+            <p className="text-xs text-mi-texto/80">visitas (30 dias)</p>
           </div>
           <div className="rounded-mi bg-mi-bege/60 p-3">
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
               {atividade.tentativas30}
             </p>
-            <p className="text-xs text-mi-texto/60">tentativas de agendar</p>
+            <p className="text-xs text-mi-texto/80">tentativas de agendar</p>
           </div>
           <div className="rounded-mi bg-mi-bege/60 p-3">
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
@@ -632,12 +632,12 @@ export default async function FichaClientePage({
                     .toFormat("dd/LL")
                 : "—"}
             </p>
-            <p className="text-xs text-mi-texto/60">último acesso</p>
+            <p className="text-xs text-mi-texto/80">último acesso</p>
           </div>
         </div>
         {enviosRecentes.length > 0 && (
           <div className="mb-4">
-            <p className="mb-1 text-xs font-medium text-mi-texto/60">
+            <p className="mb-1 text-xs font-medium text-mi-texto/80">
               Mensagens (F4)
             </p>
             <ul className="space-y-1 text-sm">
@@ -645,11 +645,11 @@ export default async function FichaClientePage({
                 <li key={e.id} className="flex justify-between gap-3">
                   <span>
                     {REGUA_LABEL[e.kind] ?? e.kind}
-                    <span className="ml-1.5 text-xs text-mi-texto/50">
+                    <span className="ml-1.5 text-xs text-mi-texto/80">
                       ({e.status === "aguardando" ? "na fila" : e.status})
                     </span>
                   </span>
-                  <span className="shrink-0 text-mi-texto/50">
+                  <span className="shrink-0 text-mi-texto/80">
                     {DateTime.fromJSDate(e.createdAt).setZone(tz).toFormat("dd/LL")}
                   </span>
                 </li>
@@ -658,7 +658,7 @@ export default async function FichaClientePage({
           </div>
         )}
         {eventos.length === 0 ? (
-          <p className="text-sm text-mi-texto/60">
+          <p className="text-sm text-mi-texto/80">
             Nenhuma atividade registrada ainda (o rastreio começou em jul/2026).
           </p>
         ) : (
@@ -666,7 +666,7 @@ export default async function FichaClientePage({
             {eventos.map((e) => (
               <li key={String(e.id)} className="flex justify-between gap-3">
                 <span>{EVENTO_LABEL[e.tipo] ?? e.tipo}</span>
-                <span className="shrink-0 text-mi-texto/50">
+                <span className="shrink-0 text-mi-texto/80">
                   {DateTime.fromJSDate(e.createdAt)
                     .setZone(tz)
                     .toFormat("dd/LL HH:mm")}
@@ -681,7 +681,7 @@ export default async function FichaClientePage({
       <section>
         <h2 className="mb-3 text-xl">Histórico de atendimentos</h2>
         {customer.bookings.length === 0 && (
-          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/80 shadow-suave">
             Nenhum atendimento ainda.
           </p>
         )}

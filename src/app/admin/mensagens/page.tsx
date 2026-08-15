@@ -16,11 +16,11 @@ const STATUS: { key: string; label: string; tom: string }[] = [
   { key: "SENT", label: "Enviadas", tom: "text-emerald-700" },
   { key: "DELIVERED", label: "Entregues", tom: "text-emerald-800" },
   { key: "FAILED", label: "Falhas", tom: "text-red-700" },
-  { key: "OPTED_OUT", label: "Opt-out", tom: "text-mi-texto/60" },
+  { key: "OPTED_OUT", label: "Pediu pra não receber", tom: "text-mi-texto/80" },
 ];
 
 function statusInfo(s: string) {
-  return STATUS.find((x) => x.key === s) ?? { label: s, tom: "text-mi-texto/70" };
+  return STATUS.find((x) => x.key === s) ?? { label: s, tom: "text-mi-texto/80" };
 }
 
 export default async function MensagensPage({
@@ -80,7 +80,7 @@ export default async function MensagensPage({
   return (
     <>
       <h1 className="mb-2 text-3xl">Mensagens</h1>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Tudo que o portal enviou pelo WhatsApp — com status e reenvio das que falharam.
       </p>
 
@@ -117,7 +117,7 @@ export default async function MensagensPage({
       </div>
 
       {msgs.length === 0 ? (
-        <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/60 shadow-suave">
+        <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/80 shadow-suave">
           Nenhuma mensagem nesse período 🤎 Tente ampliar as datas.
         </p>
       ) : (
@@ -132,20 +132,20 @@ export default async function MensagensPage({
               <li key={m.id} className="px-4 py-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className={`font-corpo ${info.tom}`}>{info.label}</span>
-                  <span className="text-xs text-mi-texto/50">
+                  <span className="text-xs text-mi-texto/80">
                     {m.tipo === "CAMPANHA" ? "Campanha" : "Transacional"} · {quando}
                   </span>
                 </div>
                 <p className="mt-1 truncate text-mi-texto/80">{m.texto}</p>
                 <div className="mt-1 flex items-center justify-between gap-3">
-                  <span className="text-xs text-mi-texto/50">
+                  <span className="text-xs text-mi-texto/80">
                     ***{m.telefone.slice(-4)}
                     {m.templateKey ? ` · ${m.templateKey}` : ""}
                     {m.tentativas > 0 ? ` · ${m.tentativas} tentativa(s)` : ""}
                   </span>
                   {(m.status === "FAILED" || m.status === "OPTED_OUT") && (
                     <form action={reenviarMensagemAction.bind(null, m.id)}>
-                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white">
+                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white">
                         Reenviar
                       </button>
                     </form>

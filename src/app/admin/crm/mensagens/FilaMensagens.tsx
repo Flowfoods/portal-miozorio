@@ -99,7 +99,7 @@ export default function FilaMensagens({
 
       {fila.length === 0 && (
         <div className="rounded-mi bg-mi-branco p-6 text-center shadow-suave">
-          <p className="text-sm text-mi-texto/60">
+          <p className="text-sm text-mi-texto/80">
             Nenhuma mensagem esperando você 💛
           </p>
           <button
@@ -122,7 +122,7 @@ export default function FilaMensagens({
               >
                 {i.clienteNome}
               </Link>{" "}
-              <span className="text-sm font-normal text-mi-texto/60">
+              <span className="text-sm font-normal text-mi-texto/80">
                 · {i.telefone}
               </span>
             </p>
@@ -154,7 +154,7 @@ export default function FilaMensagens({
             >
               Descartar
             </button>
-            <span className="ml-auto text-xs text-mi-texto/50">
+            <span className="ml-auto text-xs text-mi-texto/80">
               sugerida em {i.criadoEm}
             </span>
           </div>

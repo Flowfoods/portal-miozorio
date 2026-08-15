@@ -50,15 +50,15 @@ export default function HistoriasClientes({
                 <blockquote className="flex-1 font-titulo text-lg italic leading-snug text-mi-texto">
                   “{h.quote}”
                 </blockquote>
-                <figcaption className="mt-3 font-corpo text-sm text-mi-marrom">
+                <figcaption className="mt-3 font-corpo text-sm text-mi-marrom-escuro">
                   {h.author}
                   {h.servico && (
-                    <span className="text-mi-texto/50"> · {h.servico}</span>
+                    <span className="text-mi-texto/80"> · {h.servico}</span>
                   )}
                 </figcaption>
                 <Link
                   href="/agendar"
-                  className="mt-4 inline-flex font-corpo text-sm text-mi-marrom underline-offset-4 transition-colors hover:text-mi-marrom-escuro hover:underline"
+                  className="mt-4 inline-flex font-corpo text-sm text-mi-marrom-escuro underline-offset-4 transition-colors hover:text-mi-marrom-escuro hover:underline"
                 >
                   Quero viver isso ›
                 </Link>

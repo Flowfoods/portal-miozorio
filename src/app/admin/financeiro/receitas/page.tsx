@@ -53,17 +53,17 @@ export default async function ReceitasPage({
     <>
       <FinanceSubnav />
       <h1 className="mb-1 text-3xl">Receitas</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Receita de agendamento entra sozinha quando você conclui o atendimento.
         Use o formulário para noiva, debutante, curso e vendas avulsas.
       </p>
 
       {/* Lançar receita manual */}
       <details className="mb-6 rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-        <summary className="cursor-pointer font-corpo text-sm text-mi-marrom">＋ Lançar receita manual</summary>
+        <summary className="cursor-pointer font-corpo text-sm text-mi-marrom-escuro">＋ Lançar receita manual</summary>
         <form action={adminCreateRevenue} className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block sm:col-span-2">
-            <span className="mb-1 block text-xs text-mi-texto/60">Categoria</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Categoria</span>
             <select name="categoryId" className="input-mi" defaultValue="">
               <option value="">— (sem categoria)</option>
               {categorias.map((c) => (
@@ -72,27 +72,27 @@ export default async function ReceitasPage({
             </select>
           </label>
           <label className="block sm:col-span-2">
-            <span className="mb-1 block text-xs text-mi-texto/60">Descrição (ex.: Noiva — sinal)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Descrição (ex.: Noiva — sinal)</span>
             <input name="description" required className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Valor (R$)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Valor (R$)</span>
             <input name="amount" required inputMode="decimal" placeholder="0,00" className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Data do evento (competência)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Data do evento (competência)</span>
             <input type="date" name="competenceDate" required className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Recebimento (caixa, opcional)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Recebimento (caixa, opcional)</span>
             <input type="date" name="receivedAt" className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Cliente (opcional)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Cliente (opcional)</span>
             <input name="customerName" className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Método</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Método</span>
             <select name="paymentMethod" className="input-mi" defaultValue="">
               <option value="">—</option>
               <option value="pix">PIX</option>
@@ -102,11 +102,11 @@ export default async function ReceitasPage({
             </select>
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Taxa de cartão (R$, opcional)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Taxa de cartão (R$, opcional)</span>
             <input name="cardFee" inputMode="decimal" placeholder="0,00" className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Comprovante (PDF/imagem, opcional)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Comprovante (PDF/imagem, opcional)</span>
             <input type="file" name="attachment" accept="application/pdf,image/*" className="input-mi !py-2" />
           </label>
           <div className="sm:col-span-2">
@@ -120,7 +120,7 @@ export default async function ReceitasPage({
       {/* Filtro mês */}
       <form className="mb-4 flex flex-wrap items-end gap-3" action="/admin/financeiro/receitas">
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">Mês</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">Mês</span>
           <input type="month" name="mes" defaultValue={iso} className="input-mi !w-auto !py-2" />
         </label>
         <button className="rounded-mi border border-mi-cinza px-4 py-2 text-sm">Filtrar</button>
@@ -129,12 +129,12 @@ export default async function ReceitasPage({
       {/* Manuais */}
       <h2 className="mb-2 mt-2 text-xl">
         Lançamentos manuais
-        <span className="ml-2 text-sm font-normal text-mi-texto/60">{formatBRL(totalManual)}</span>
+        <span className="ml-2 text-sm font-normal text-mi-texto/80">{formatBRL(totalManual)}</span>
       </h2>
       <div className="mb-8 overflow-x-auto rounded-mi bg-mi-superficie-elevada shadow-suave">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/60">
+            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/80">
               <th className="px-4 py-3">Competência</th>
               <th className="px-4 py-3">Categoria</th>
               <th className="px-4 py-3">Descrição</th>
@@ -144,7 +144,7 @@ export default async function ReceitasPage({
           </thead>
           <tbody>
             {manuais.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-mi-texto/55">Nenhuma receita manual neste mês.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-mi-texto/80">Nenhuma receita manual neste mês.</td></tr>
             )}
             {manuais.map((r) => (
               <tr key={r.id} className="border-b border-mi-cinza/60">
@@ -169,12 +169,12 @@ export default async function ReceitasPage({
       {/* Vindas do agendamento (só leitura) */}
       <h2 className="mb-2 text-xl">
         Vindas do agendamento
-        <span className="ml-2 text-sm font-normal text-mi-texto/60">{formatBRL(totalBooking)}</span>
+        <span className="ml-2 text-sm font-normal text-mi-texto/80">{formatBRL(totalBooking)}</span>
       </h2>
       <div className="overflow-x-auto rounded-mi bg-mi-superficie-elevada shadow-suave">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/60">
+            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/80">
               <th className="px-4 py-3">Competência</th>
               <th className="px-4 py-3">Categoria</th>
               <th className="px-4 py-3">Cliente</th>
@@ -184,7 +184,7 @@ export default async function ReceitasPage({
           </thead>
           <tbody>
             {doAgendamento.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-mi-texto/55">Nenhum atendimento concluído reconhecido neste mês.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-mi-texto/80">Nenhum atendimento concluído reconhecido neste mês.</td></tr>
             )}
             {doAgendamento.map((r) => {
               const iso2 = r.booking
@@ -198,7 +198,7 @@ export default async function ReceitasPage({
                   <td className="px-4 py-3 text-right tabular-nums">{formatBRL(r.amountCents)}</td>
                   <td className="px-4 py-3 text-right">
                     {r.booking && iso2 && (
-                      <Link href={`/admin?data=${iso2}#b-${r.booking.id}`} className="text-xs text-mi-marrom underline-offset-2 hover:underline">
+                      <Link href={`/admin?data=${iso2}#b-${r.booking.id}`} className="text-xs text-mi-marrom-escuro underline-offset-2 hover:underline">
                         ver agenda
                       </Link>
                     )}

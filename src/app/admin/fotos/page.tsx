@@ -55,7 +55,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
           />
           <button
             type="submit"
-            className="rounded-mi border border-mi-cinza px-2 text-xs text-mi-marrom hover:bg-mi-cinza"
+            className="rounded-mi border border-mi-cinza px-2 text-xs text-mi-marrom-escuro hover:bg-mi-cinza"
           >
             Salvar
           </button>
@@ -153,11 +153,11 @@ export default async function FotosPage() {
             <h2 className="font-titulo text-2xl text-mi-marrom-escuro">
               {CATEGORY_LABEL[c]}
             </h2>
-            <p className="mt-0.5 text-xs text-mi-texto/70">
+            <p className="mt-0.5 text-xs text-mi-texto/80">
               {CATEGORY_HINT[c]}
             </p>
             {list.length === 0 ? (
-              <p className="mt-3 rounded-mi border border-dashed border-mi-cinza p-4 text-sm text-mi-texto/60">
+              <p className="mt-3 rounded-mi border border-dashed border-mi-cinza p-4 text-sm text-mi-texto/80">
                 Nenhuma foto aqui ainda.
               </p>
             ) : (

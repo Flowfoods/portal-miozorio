@@ -76,7 +76,7 @@ export default async function PainelHoje() {
       <div className="mt-3 flex flex-wrap gap-2">
         <Atalho href="/admin/financeiro/custos" label="Lançar custo" />
         <Atalho href="/admin/clientes" label="Clientes" />
-        <Atalho href="/admin/crm" label="CRM" />
+        <Atalho href="/admin/crm" label="Relacionamento" />
         <Atalho href="/admin/resumo" label="Resumo" />
       </div>
     </section>
@@ -104,11 +104,11 @@ function Card({
         : "text-mi-marrom-escuro";
   const inner = (
     <>
-      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
         {titulo}
       </p>
       <p className={`mt-1 font-titulo text-2xl ${valorCor}`}>{valor}</p>
-      <p className="font-corpo text-xs capitalize text-mi-texto/55">{sub}</p>
+      <p className="font-corpo text-xs capitalize text-mi-texto/80">{sub}</p>
     </>
   );
   const cls =

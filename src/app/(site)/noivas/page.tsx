@@ -38,7 +38,7 @@ export default async function NoivasPage() {
         <span className="inline-block rounded-full border border-mi-cinza bg-mi-branco px-4 py-1.5 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
           Atendimento exclusivo — uma noiva por dia
         </span>
-        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
           {content["noivas.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
@@ -99,7 +99,7 @@ export default async function NoivasPage() {
                 {p.preco}
               </p>
               {p.parcela && (
-                <p className="mt-1 font-corpo text-xs text-mi-marrom">
+                <p className="mt-1 font-corpo text-xs text-mi-marrom-escuro">
                   {p.parcela}
                 </p>
               )}

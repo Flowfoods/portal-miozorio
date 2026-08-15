@@ -131,7 +131,7 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(function PasswordField
               />
             ))}
           </div>
-          <p className="mt-1 font-corpo text-xs text-mi-texto/60">
+          <p className="mt-1 font-corpo text-xs text-mi-texto/80">
             Força da senha: {forca.label}
           </p>
         </div>

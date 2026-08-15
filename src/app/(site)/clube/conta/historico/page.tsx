@@ -111,7 +111,7 @@ export default async function HistoricoPage() {
               <p className="font-titulo text-3xl text-mi-marrom-escuro">
                 {bookings.length}
               </p>
-              <p className="font-corpo text-xs text-mi-texto/60">
+              <p className="font-corpo text-xs text-mi-texto/80">
                 momento(s) de cuidado
               </p>
             </div>
@@ -120,7 +120,7 @@ export default async function HistoricoPage() {
                 <p className="font-titulo text-lg capitalize leading-snug text-mi-marrom-escuro">
                   {desde}
                 </p>
-                <p className="font-corpo text-xs text-mi-texto/60">
+                <p className="font-corpo text-xs text-mi-texto/80">
                   cliente desde
                 </p>
               </div>
@@ -145,7 +145,7 @@ export default async function HistoricoPage() {
                     aria-hidden
                     className="absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full bg-mi-marrom ring-4 ring-mi-bege"
                   />
-                  <p className="font-corpo text-xs capitalize text-mi-marrom">
+                  <p className="font-corpo text-xs capitalize text-mi-marrom-escuro">
                     {dt.toFormat("cccc, dd 'de' LLLL 'de' yyyy")}
                   </p>
                   <div className="mt-2 rounded-mi border border-mi-cinza bg-mi-branco p-4 shadow-suave">
@@ -154,7 +154,7 @@ export default async function HistoricoPage() {
                         <p className="font-titulo text-xl leading-snug text-mi-marrom-escuro">
                           {nomes}
                         </p>
-                        <p className="mt-0.5 font-corpo text-xs text-mi-texto/60">
+                        <p className="mt-0.5 font-corpo text-xs text-mi-texto/80">
                           com a Mi ·{" "}
                           {b.location === "home" ? "em domicílio" : "no estúdio"}
                         </p>

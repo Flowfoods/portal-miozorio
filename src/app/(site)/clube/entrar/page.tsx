@@ -23,7 +23,7 @@ export default function EntrarPage() {
       >
         Mi
       </p>
-      <p className="mt-4 text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="mt-4 text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Clube Mi Ozorio
       </p>
       <h1 className="mt-3 text-center font-titulo text-3xl text-mi-marrom-escuro">
@@ -35,7 +35,7 @@ export default function EntrarPage() {
       <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
         <LoginForm />
       </div>
-      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/70">
+      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
         Ainda não é cliente?{" "}
         <Link href="/agendar" className="text-mi-marrom underline underline-offset-4">
           Agende seu horário

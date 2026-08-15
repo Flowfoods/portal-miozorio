@@ -28,9 +28,9 @@ function Card({
 }) {
   return (
     <div className="rounded-mi bg-mi-branco p-5 shadow-suave">
-      <p className="text-xs uppercase tracking-wide text-mi-texto/60">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-mi-texto/80">{label}</p>
       <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{value}</p>
-      {hint && <p className="mt-1 text-xs text-mi-texto/60">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-mi-texto/80">{hint}</p>}
     </div>
   );
 }
@@ -110,7 +110,7 @@ export default async function ResumoPage({
         />
       )}
       {!pr && (
-        <p className="mb-4 text-sm text-mi-texto/60">
+        <p className="mb-4 text-sm text-mi-texto/80">
           <Link
             href="/admin/resumo?periodo=ultimos30"
             className="text-mi-marrom underline underline-offset-4"
@@ -147,7 +147,7 @@ export default async function ResumoPage({
         Serviços mais fortes do mês
       </h2>
       {resumo.topServicos.length === 0 ? (
-        <p className="text-sm text-mi-texto/60">
+        <p className="text-sm text-mi-texto/80">
           Nenhum atendimento realizado neste mês ainda.
         </p>
       ) : (
@@ -159,7 +159,7 @@ export default async function ResumoPage({
             >
               <span>
                 {s.nome}{" "}
-                <span className="text-sm text-mi-texto/60">
+                <span className="text-sm text-mi-texto/80">
                   · {s.atendimentos}×
                 </span>
               </span>

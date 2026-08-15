@@ -10,10 +10,10 @@ import { ativarPresetAction, alternarStatusAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 const STATUS_TOM: Record<string, string> = {
-  RASCUNHO: "text-mi-texto/60",
+  RASCUNHO: "text-mi-texto/80",
   ATIVA: "text-emerald-700",
   PAUSADA: "text-amber-700",
-  CONCLUIDA: "text-mi-texto/50",
+  CONCLUIDA: "text-mi-texto/80",
 };
 
 export default async function CampanhasPage() {
@@ -52,17 +52,17 @@ export default async function CampanhasPage() {
 
       <section className="mb-6 grid grid-cols-3 gap-3">
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Mensagens no mês</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Mensagens no mês</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{msgsMes}</p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Conversão média</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Conversão média</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
             {enviosTotal ? `${taxa}%` : "—"}
           </p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Receita atribuída</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Receita atribuída</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
             {receita ? formatBRL(receita) : "—"}
           </p>
@@ -71,7 +71,7 @@ export default async function CampanhasPage() {
 
       <section className="mb-8">
         <h2 className="mb-2 text-lg">Automáticas</h2>
-        <p className="mb-3 text-sm text-mi-texto/60">
+        <p className="mb-3 text-sm text-mi-texto/80">
           Ligam sozinhas nos gatilhos. Com aprovação: a lista fica pendente pra você conferir antes de enviar.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -81,25 +81,25 @@ export default async function CampanhasPage() {
             return (
               <div key={p.recorrencia} className="rounded-mi bg-mi-branco p-4 shadow-suave">
                 <p className="font-corpo text-mi-marrom-escuro">{p.nome}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-mi-texto/60">{p.corpo}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-mi-texto/80">{p.corpo}</p>
                 <div className="mt-3 flex items-center gap-2">
                   {on ? (
                     <>
                       <span className="text-xs text-emerald-700">● Ativa</span>
                       {camp && (
                         <form action={alternarStatusAction.bind(null, camp.id, false)}>
-                          <button className="text-xs text-mi-marrom underline">pausar</button>
+                          <button className="text-xs text-mi-marrom-escuro underline">pausar</button>
                         </form>
                       )}
                       {camp && (
-                        <Link href={`/admin/campanhas/${camp.id}`} className="text-xs text-mi-marrom underline">
+                        <Link href={`/admin/campanhas/${camp.id}`} className="text-xs text-mi-marrom-escuro underline">
                           ver
                         </Link>
                       )}
                     </>
                   ) : (
                     <form action={ativarPresetAction.bind(null, p.recorrencia)}>
-                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom hover:bg-mi-marrom hover:text-white">
+                      <button className="rounded-mi border border-mi-marrom px-3 py-1 text-xs text-mi-marrom-escuro hover:bg-mi-marrom hover:text-white">
                         Ativar
                       </button>
                     </form>
@@ -114,7 +114,7 @@ export default async function CampanhasPage() {
       <section>
         <h2 className="mb-2 text-lg">Pontuais</h2>
         {pontuais.length === 0 ? (
-          <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-6 text-center text-sm text-mi-texto/80 shadow-suave">
             Nenhuma campanha pontual ainda. Crie a primeira 💛
           </p>
         ) : (
@@ -125,7 +125,7 @@ export default async function CampanhasPage() {
                   <Link href={`/admin/campanhas/${c.id}`} className="text-mi-marrom-escuro hover:underline">
                     {c.nome}
                   </Link>
-                  <p className="text-xs text-mi-texto/55">{c._count.envios} envio(s)</p>
+                  <p className="text-xs text-mi-texto/80">{c._count.envios} envio(s)</p>
                 </div>
                 <span className={`text-xs ${STATUS_TOM[c.status] ?? ""}`}>{c.status}</span>
               </li>

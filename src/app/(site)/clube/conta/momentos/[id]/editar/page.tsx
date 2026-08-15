@@ -42,7 +42,7 @@ export default async function EditarMomentoPage({
       <h1 className="font-titulo text-3xl text-mi-marrom-escuro">
         Editar momento
       </h1>
-      <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+      <p className="mt-1 font-corpo text-sm text-mi-texto/80">
         Depois de editar, a Mi lê de novo antes de publicar.
       </p>
       <div className="mt-6 rounded-mi bg-mi-branco p-5 shadow-suave">

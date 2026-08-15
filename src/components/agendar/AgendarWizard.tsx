@@ -381,7 +381,7 @@ export default function AgendarWizard() {
             ))}
           </div>
           {location === "home" && (
-            <p className="mt-2 font-corpo text-xs text-mi-marrom">
+            <p className="mt-2 font-corpo text-xs text-mi-marrom-escuro">
               O atendimento em domicílio inclui a taxa de deslocamento
             </p>
           )}
@@ -425,7 +425,7 @@ export default function AgendarWizard() {
                     <span className="block font-titulo text-lg text-mi-marrom-escuro">
                       {s.name}
                     </span>
-                    <span className="font-corpo text-sm text-mi-marrom">
+                    <span className="font-corpo text-sm text-mi-marrom-escuro">
                       {formatDuration(s.durationMin)}
                       {unavailableHome ? " · só no estúdio" : ""}
                     </span>
@@ -449,7 +449,7 @@ export default function AgendarWizard() {
           <h2 className="mt-3 font-titulo text-3xl text-mi-marrom-escuro">
             Escolha o dia
           </h2>
-          <p className="mt-1 font-corpo text-sm text-mi-marrom">
+          <p className="mt-1 font-corpo text-sm text-mi-marrom-escuro">
             {service.isCourse
               ? "O curso pode ser em qualquer dia"
               : "Atendimentos aos sábados e domingos"}
@@ -458,7 +458,7 @@ export default function AgendarWizard() {
           <div className="mt-6 space-y-6">
             {gruposMes.map((grupo) => (
               <div key={grupo.mes}>
-                <p className="mb-3 font-corpo text-sm capitalize text-mi-marrom">
+                <p className="mb-3 font-corpo text-sm capitalize text-mi-marrom-escuro">
                   {grupo.mes}
                 </p>
                 <WeekStrip
@@ -482,7 +482,7 @@ export default function AgendarWizard() {
           <h2 className="mt-3 font-titulo text-3xl text-mi-marrom-escuro">
             Que horas fica bom?
           </h2>
-          <p className="mt-1 font-corpo text-sm capitalize text-mi-marrom">
+          <p className="mt-1 font-corpo text-sm capitalize text-mi-marrom-escuro">
             {formatDateLong(date)}
           </p>
 
@@ -652,7 +652,7 @@ export default function AgendarWizard() {
           <h2 className="font-titulo text-3xl text-mi-marrom-escuro">
             Quase lá!
           </h2>
-          <p className="mt-1 font-corpo text-sm text-mi-marrom">
+          <p className="mt-1 font-corpo text-sm text-mi-marrom-escuro">
             Confirme os detalhes do seu horário
           </p>
 
@@ -726,8 +726,8 @@ function Stepper({ step }: { step: number }) {
               }`}
             />
             <span
-              className={`font-corpo text-[10px] ${
-                done ? "text-mi-marrom-escuro" : "text-mi-marrom/60"
+              className={`font-corpo text-xs ${
+                done ? "text-mi-marrom-escuro" : "text-mi-marrom-escuro/70"
               }`}
             >
               {label}
@@ -742,7 +742,7 @@ function Stepper({ step }: { step: number }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <dt className="font-corpo text-sm text-mi-marrom">{label}</dt>
+      <dt className="font-corpo text-sm text-mi-marrom-escuro">{label}</dt>
       <dd className="text-right font-corpo text-mi-texto">{value}</dd>
     </div>
   );
@@ -775,7 +775,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="font-corpo text-sm text-mi-marrom transition-colors hover:text-mi-marrom-escuro"
+      className="font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom-escuro"
     >
       ‹ voltar
     </button>
@@ -839,7 +839,7 @@ function HoldCountdown({
   const mm = Math.floor(left / 60);
   const ss = (left % 60).toString().padStart(2, "0");
   return (
-    <p className="mt-4 text-center font-corpo text-sm text-mi-marrom">
+    <p className="mt-4 text-center font-corpo text-sm text-mi-marrom-escuro">
       Reservamos esse horário pra você por mais{" "}
       <span className="font-medium text-mi-marrom-escuro">
         {mm}:{ss}
@@ -876,7 +876,7 @@ function SuccessScreen({
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </span>
-      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Agendamento confirmado
       </p>
       <h1 className="mt-5 font-titulo text-4xl text-mi-marrom-escuro">
@@ -887,7 +887,7 @@ function SuccessScreen({
         <span className="capitalize">{formatDateLong(date)}</span> às{" "}
         <strong>{time}</strong>.
       </p>
-      <p className="mt-3 font-corpo text-sm text-mi-marrom">
+      <p className="mt-3 font-corpo text-sm text-mi-marrom-escuro">
         Você vai receber a confirmação no WhatsApp Lembre de levar referências
         do que deseja!
       </p>

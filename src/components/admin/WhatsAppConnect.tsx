@@ -93,24 +93,24 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
           className="mx-auto rounded-mi border border-mi-cinza bg-white p-2"
         />
       ) : (
-        <div className="mx-auto flex h-[264px] w-[264px] items-center justify-center rounded-mi border border-dashed border-mi-cinza text-sm text-mi-texto/60">
-          {erro ? "Não consegui falar com a Evolution agora." : "Gerando o QR…"}
+        <div className="mx-auto flex h-[264px] w-[264px] items-center justify-center rounded-mi border border-dashed border-mi-cinza text-sm text-mi-texto/80">
+          {erro ? "O WhatsApp não respondeu agora." : "Gerando o QR…"}
         </div>
       )}
 
       {st.pairingCode && (
-        <p className="mt-3 text-sm text-mi-texto/70">
+        <p className="mt-3 text-sm text-mi-texto/80">
           Ou use o código de pareamento:{" "}
           <strong className="tracking-widest">{st.pairingCode}</strong>
         </p>
       )}
 
-      <p className="mt-3 text-xs text-mi-texto/50">
+      <p className="mt-3 text-xs text-mi-texto/80">
         O código atualiza sozinho a cada poucos segundos.
       </p>
       <button
         onClick={buscar}
-        className="mt-3 rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom transition-colors hover:bg-mi-marrom hover:text-white"
+        className="mt-3 rounded-mi border border-mi-marrom px-4 py-2 text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom hover:text-white"
       >
         Atualizar agora
       </button>

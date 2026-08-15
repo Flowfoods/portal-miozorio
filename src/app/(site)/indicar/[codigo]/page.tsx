@@ -32,7 +32,7 @@ export default async function IndicarPage({
 
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-14">
-      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Clube Mi Ozorio
       </p>
       <h1 className="mt-3 text-center text-3xl leading-tight sm:text-4xl">

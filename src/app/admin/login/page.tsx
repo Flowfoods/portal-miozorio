@@ -46,7 +46,7 @@ function LoginForm() {
   return (
     <div key={shakeKey} className={`mx-auto max-w-sm ${error ? "mi-shake" : ""}`}>
       <h1 className="mb-2 text-3xl">Painel da Mi</h1>
-      <p className="mb-8 text-sm text-mi-texto/70">
+      <p className="mb-8 text-sm text-mi-texto/80">
         Acesso restrito. Entre com sua conta do estúdio.
       </p>
       {search.get("reset") === "ok" && (

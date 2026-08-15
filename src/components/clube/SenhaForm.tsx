@@ -22,7 +22,7 @@ export default function SenhaForm({ provisoria }: { provisoria: boolean }) {
   return (
     <form action={action} className="space-y-4">
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Nova senha
         </span>
         <PasswordField
@@ -32,7 +32,7 @@ export default function SenhaForm({ provisoria }: { provisoria: boolean }) {
           autoComplete="new-password"
           showStrength
         />
-        <span className="mt-1 block font-corpo text-xs text-mi-texto/55">
+        <span className="mt-1 block font-corpo text-xs text-mi-texto/80">
           Pelo menos 6 caracteres, diferente do seu telefone.
         </span>
       </label>

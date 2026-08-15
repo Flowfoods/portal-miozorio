@@ -23,34 +23,34 @@ export default async function CategoriasPage() {
     <>
       <FinanceSubnav />
       <h1 className="mb-1 text-3xl">Categorias</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         As categorias organizam o DRE e os gráficos. As padrão já vêm prontas —
         crie mais se precisar.
       </p>
 
       <details className="mb-8 rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-        <summary className="cursor-pointer font-corpo text-sm text-mi-marrom">＋ Nova categoria</summary>
+        <summary className="cursor-pointer font-corpo text-sm text-mi-marrom-escuro">＋ Nova categoria</summary>
         <form action={adminCreateCategory} className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Nome</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Nome</span>
             <input name="name" required className="input-mi" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Tipo</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Tipo</span>
             <select name="kind" className="input-mi" defaultValue="expense">
               <option value="expense">Despesa</option>
               <option value="revenue">Receita</option>
             </select>
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Natureza (despesa)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Natureza (despesa)</span>
             <select name="nature" className="input-mi" defaultValue="variable">
               <option value="variable">Variável</option>
               <option value="fixed">Fixo</option>
             </select>
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Linha do DRE (despesa)</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Linha do DRE (despesa)</span>
             <select name="dreGroup" className="input-mi" defaultValue="custo_variavel">
               {DRE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
             </select>
@@ -59,7 +59,7 @@ export default async function CategoriasPage() {
             <input type="checkbox" name="isCmv" /> Conta como CMV (insumo)
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-mi-texto/60">Cor</span>
+            <span className="mb-1 block text-xs text-mi-texto/80">Cor</span>
             <input type="color" name="color" defaultValue="#8A7361" className="input-mi !h-10 !py-1" />
           </label>
           <div className="sm:col-span-2">

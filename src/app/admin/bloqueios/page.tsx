@@ -16,7 +16,7 @@ export default async function AdminBloqueiosPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Bloqueios de agenda</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Férias, eventos fechados ou compromissos: o período bloqueado some dos
         horários oferecidos no site.
       </p>
@@ -58,7 +58,7 @@ export default async function AdminBloqueiosPage() {
 
       <div className="space-y-3">
         {blocks.length === 0 && (
-          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/80 shadow-suave">
             Nenhum bloqueio futuro.
           </p>
         )}
@@ -76,7 +76,7 @@ export default async function AdminBloqueiosPage() {
                   {ends.setLocale("pt-BR").toFormat("dd/LL/yyyy HH:mm")}
                 </p>
                 {b.reason && (
-                  <p className="text-xs text-mi-texto/60">{b.reason}</p>
+                  <p className="text-xs text-mi-texto/80">{b.reason}</p>
                 )}
               </div>
               <form action={adminDeleteBlock.bind(null, b.id)}>

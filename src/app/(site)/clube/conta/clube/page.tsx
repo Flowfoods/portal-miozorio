@@ -87,7 +87,7 @@ export default async function ClubeTabPage() {
 
       {/* Saldo + progresso */}
       <section className="mt-4 rounded-2xl border border-mi-cinza bg-gradient-to-br from-mi-branco to-mi-bege p-6 shadow-suave">
-        <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+        <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
           Seus pontos
         </p>
         <p className="font-titulo text-5xl text-mi-marrom-escuro">{saldo}</p>
@@ -99,12 +99,12 @@ export default async function ClubeTabPage() {
                 style={{ width: `${progresso}%` }}
               />
             </div>
-            <p className="mt-1.5 font-corpo text-sm text-mi-texto/70">
+            <p className="mt-1.5 font-corpo text-sm text-mi-texto/80">
               Faltam <strong>{faltam}</strong> ponto(s) para “{proximo.nome}”.
             </p>
           </div>
         ) : (
-          <p className="mt-3 font-corpo text-sm text-mi-texto/70">
+          <p className="mt-3 font-corpo text-sm text-mi-texto/80">
             Você já pode resgatar tudo do catálogo 💛
           </p>
         )}
@@ -116,13 +116,13 @@ export default async function ClubeTabPage() {
           Indique e ganhe
         </h2>
         {settings.clubReferralActive ? (
-          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+          <p className="mt-1 font-corpo text-sm text-mi-texto/80">
             Indique uma amiga: quando ela se cuidar com a Mi, você ganha{" "}
             <strong>{formatarPct(settings.clubReferralPercent)}%</strong> dos
             pontos dela 🤎
           </p>
         ) : (
-          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+          <p className="mt-1 font-corpo text-sm text-mi-texto/80">
             {fechadas} amiga(s) já se cuidaram pela sua indicação 🤎
           </p>
         )}
@@ -134,7 +134,7 @@ export default async function ClubeTabPage() {
         >
           Compartilhar no WhatsApp
         </a>
-        <p className="mt-3 break-all text-center font-corpo text-xs text-mi-texto/60">
+        <p className="mt-3 break-all text-center font-corpo text-xs text-mi-texto/80">
           {link}
         </p>
       </section>
@@ -145,7 +145,7 @@ export default async function ClubeTabPage() {
           Recompensas
         </h2>
         {recompensas.length === 0 ? (
-          <p className="mt-2 font-corpo text-sm text-mi-texto/60">
+          <p className="mt-2 font-corpo text-sm text-mi-texto/80">
             Em breve, recompensas pra você trocar seus pontos 💛
           </p>
         ) : (
@@ -161,7 +161,7 @@ export default async function ClubeTabPage() {
                     <span className="block truncate font-corpo text-sm text-mi-texto">
                       {r.nome}
                     </span>
-                    <span className="font-corpo text-xs text-mi-texto/55">
+                    <span className="font-corpo text-xs text-mi-texto/80">
                       {r.custoPontos} pontos
                     </span>
                   </span>
@@ -173,7 +173,7 @@ export default async function ClubeTabPage() {
                       </button>
                     </form>
                   ) : (
-                    <span className="shrink-0 font-corpo text-xs text-mi-texto/50">
+                    <span className="shrink-0 font-corpo text-xs text-mi-texto/80">
                       faltam {r.custoPontos - saldo}
                     </span>
                   )}
@@ -185,7 +185,7 @@ export default async function ClubeTabPage() {
 
         {vouchers.length > 0 && (
           <div className="mt-4 border-t border-mi-cinza/60 pt-3">
-            <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+            <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
               Meus resgates
             </p>
             <ul className="mt-2 space-y-1.5">
@@ -222,7 +222,7 @@ export default async function ClubeTabPage() {
           Extrato
         </h2>
         {extrato.length === 0 ? (
-          <p className="rounded-mi bg-mi-branco p-6 text-center font-corpo text-sm text-mi-texto/55 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-6 text-center font-corpo text-sm text-mi-texto/80 shadow-suave">
             Seus pontos vão aparecer aqui depois do seu próximo atendimento 💛
           </p>
         ) : (
@@ -236,7 +236,7 @@ export default async function ClubeTabPage() {
                   <span className="block truncate font-corpo text-sm text-mi-texto">
                     {t.descricao || TIPO_LABEL[t.tipo] || "Movimento"}
                   </span>
-                  <span className="font-corpo text-xs text-mi-texto/55">
+                  <span className="font-corpo text-xs text-mi-texto/80">
                     {DateTime.fromJSDate(t.createdAt)
                       .setZone("America/Sao_Paulo")
                       .toFormat("dd/LL/yyyy")}

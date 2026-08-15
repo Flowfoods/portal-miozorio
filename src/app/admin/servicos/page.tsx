@@ -43,7 +43,7 @@ export default async function AdminServicosPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Serviços</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Preços em reais (ex.: 250,00). Duração e intervalo em minutos. Noiva e
         debutante nunca ficam agendáveis online — só vitrine com WhatsApp.
       </p>
@@ -161,7 +161,7 @@ export default async function AdminServicosPage() {
               <input type="hidden" name="id" value={s.id} />
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-lg">{s.name}</h2>
-                <span className="text-xs text-mi-texto/60">
+                <span className="text-xs text-mi-texto/80">
                   {CATEGORY_LABEL[s.category] ?? s.category} · {s.code}
                 </span>
               </div>
@@ -265,13 +265,13 @@ export default async function AdminServicosPage() {
 
             {/* M9.5 — horários próprios do serviço (dia a dia) */}
             <details className="mt-3 border-t border-mi-cinza/60 pt-3">
-              <summary className="cursor-pointer text-sm text-mi-marrom">
+              <summary className="cursor-pointer text-sm text-mi-marrom-escuro">
                 Horários próprios ({s.availability.length}) ·{" "}
                 {s.availability.length === 0
                   ? "usa o horário padrão"
                   : "agenda separada"}
               </summary>
-              <p className="mt-2 text-xs text-mi-texto/60">
+              <p className="mt-2 text-xs text-mi-texto/80">
                 Sem janelas, esse serviço segue o horário padrão do estúdio.
                 Adicione janelas para dar dias/horas próprios (ex.: cabelo nos
                 dias de semana).

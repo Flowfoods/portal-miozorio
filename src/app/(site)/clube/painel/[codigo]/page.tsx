@@ -142,7 +142,7 @@ export default async function PainelMembroPage({
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
               Mi Ozorio
             </p>
-            <p className="font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom">
+            <p className="font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom-escuro">
               Clube · Beauty Artist
             </p>
           </div>
@@ -154,15 +154,15 @@ export default async function PainelMembroPage({
         </div>
         <p className="mt-8 font-titulo text-xl text-mi-texto">{membro.name}</p>
         <div className="mt-1 flex items-end justify-between">
-          <p className="font-corpo text-xs capitalize text-mi-texto/60">
+          <p className="font-corpo text-xs capitalize text-mi-texto/80">
             membro desde {desde}
           </p>
-          <p className="font-corpo text-xs tracking-widest text-mi-marrom">
+          <p className="font-corpo text-xs tracking-widest text-mi-marrom-escuro">
             {membro.referralCode}
           </p>
         </div>
       </section>
-      <p className="mt-3 text-center font-corpo text-xs text-mi-texto/60">
+      <p className="mt-3 text-center font-corpo text-xs text-mi-texto/80">
         Sua carteirinha fica sempre aqui, na sua conta
       </p>
 
@@ -181,7 +181,7 @@ export default async function PainelMembroPage({
               <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
                 {proximo.service.name}
               </p>
-              <p className="font-corpo text-xs capitalize text-mi-texto/70">
+              <p className="font-corpo text-xs capitalize text-mi-texto/80">
                 {proximoDt.toFormat("cccc, dd 'de' LLLL")} ·{" "}
                 {proximoDt.toFormat("HH:mm")}
               </p>
@@ -230,7 +230,7 @@ export default async function PainelMembroPage({
         >
           Compartilhar meu link no WhatsApp
         </a>
-        <p className="mt-3 break-all text-center font-corpo text-xs text-mi-texto/60">
+        <p className="mt-3 break-all text-center font-corpo text-xs text-mi-texto/80">
           {linkIndicacao}
         </p>
       </section>
@@ -243,9 +243,9 @@ export default async function PainelMembroPage({
         <h2 className="text-2xl">Seus pontos</h2>
         <p className="mt-2 font-corpo text-4xl text-mi-marrom-escuro">
           {saldo}{" "}
-          <span className="font-corpo text-base text-mi-texto/60">pontos</span>
+          <span className="font-corpo text-base text-mi-texto/80">pontos</span>
         </p>
-        <p className="mt-2 font-corpo text-sm text-mi-texto/70">
+        <p className="mt-2 font-corpo text-sm text-mi-texto/80">
           Você ganha pontos a cada atendimento e quando uma indicação sua faz o
           primeiro atendimento. Acumule e troque pelas recompensas abaixo.
         </p>
@@ -271,12 +271,12 @@ export default async function PainelMembroPage({
                     <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
                       {r.nome}
                     </p>
-                    <p className="font-corpo text-xs text-mi-texto/60">
+                    <p className="font-corpo text-xs text-mi-texto/80">
                       {r.tipo === "servico" ? "Serviço" : "Prêmio"} ·{" "}
                       {r.custoPontos} pontos
                     </p>
                   </div>
-                  <span className="font-corpo text-xs text-mi-texto/60">
+                  <span className="font-corpo text-xs text-mi-texto/80">
                     {podeResgatar
                       ? "disponível"
                       : `faltam ${r.custoPontos - saldo}`}
@@ -285,7 +285,7 @@ export default async function PainelMembroPage({
               );
             })}
           </ul>
-          <p className="mt-4 font-corpo text-xs text-mi-texto/60">
+          <p className="mt-4 font-corpo text-xs text-mi-texto/80">
             Para resgatar, é só combinar com a Mi na sua próxima visita.
           </p>
         </section>

@@ -35,7 +35,7 @@ export default async function AdminDepoimentosPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Depoimentos</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         O que suas clientes falam — aparece na página inicial. Publique só com a
         autorização delas.
       </p>
@@ -51,7 +51,7 @@ export default async function AdminDepoimentosPage() {
           )}
         </h2>
         {pendentes.length === 0 ? (
-          <p className="mt-2 text-sm text-mi-texto/60">
+          <p className="mt-2 text-sm text-mi-texto/80">
             Nenhum depoimento esperando — quando uma cliente contar um momento,
             ele aparece aqui.
           </p>
@@ -66,14 +66,14 @@ export default async function AdminDepoimentosPage() {
                   <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
                     {m.customer?.name ?? m.author}
                     {m.booking?.service.name && (
-                      <span className="font-normal text-mi-texto/60">
+                      <span className="font-normal text-mi-texto/80">
                         {" "}
                         · {m.booking.service.name}
                       </span>
                     )}
                   </p>
                   {m.rating && (
-                    <span className="font-corpo text-xs text-mi-marrom">
+                    <span className="font-corpo text-xs text-mi-marrom-escuro">
                       {"★".repeat(m.rating)}
                       {"☆".repeat(5 - m.rating)}
                     </span>
@@ -99,7 +99,7 @@ export default async function AdminDepoimentosPage() {
                         />
                         <form action={adminToggleFotoMomento}>
                           <input type="hidden" name="fotoId" value={f.id} />
-                          <button className="mt-1 font-corpo text-xs text-mi-marrom underline underline-offset-2">
+                          <button className="mt-1 font-corpo text-xs text-mi-marrom-escuro underline underline-offset-2">
                             {f.aprovada ? "ocultar foto" : "mostrar foto"}
                           </button>
                         </form>
@@ -181,7 +181,7 @@ export default async function AdminDepoimentosPage() {
       </details>
 
       {items.length === 0 ? (
-        <p className="text-sm text-mi-texto/60">
+        <p className="text-sm text-mi-texto/80">
           Nenhum depoimento cadastrado. O site está mostrando exemplos
           ilustrativos.
         </p>
@@ -227,7 +227,7 @@ export default async function AdminDepoimentosPage() {
                     className={`rounded-full px-3 py-1 text-xs ${
                       t.published
                         ? "bg-emerald-100 text-emerald-900"
-                        : "bg-mi-cinza text-mi-texto/70"
+                        : "bg-mi-cinza text-mi-texto/80"
                     }`}
                   >
                     {t.published ? "publicado" : "oculto"}
@@ -261,7 +261,7 @@ export default async function AdminDepoimentosPage() {
                       />
                       <form action={adminToggleFotoMomento}>
                         <input type="hidden" name="fotoId" value={f.id} />
-                        <button className="mt-0.5 font-corpo text-[11px] text-mi-marrom underline underline-offset-2">
+                        <button className="mt-0.5 font-corpo text-[11px] text-mi-marrom-escuro underline underline-offset-2">
                           {f.aprovada ? "ocultar" : "mostrar"}
                         </button>
                       </form>

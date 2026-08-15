@@ -35,7 +35,7 @@ export default async function AdminClientesPage({
     <>
       <ClientesHubNav />
       <h1 className="mb-2 text-3xl">Clientes</h1>
-      <p className="mb-4 text-sm text-mi-texto/70">
+      <p className="mb-4 text-sm text-mi-texto/80">
         Toque no nome para abrir a ficha (contato, alergias, anotações e
         histórico). Quem atinge o limite de cancelamentos só reagenda com
         sinal — “Perdoar” zera e libera de novo.
@@ -58,7 +58,7 @@ export default async function AdminClientesPage({
       <div className="overflow-x-auto rounded-mi bg-mi-branco shadow-suave">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/60">
+            <tr className="border-b border-mi-cinza text-left text-xs text-mi-texto/80">
               <th className="px-4 py-3">Nome</th>
               <th className="px-4 py-3">WhatsApp</th>
               <th className="px-4 py-3">Atendimentos</th>
@@ -72,7 +72,7 @@ export default async function AdminClientesPage({
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-8 text-center text-mi-texto/60"
+                  className="px-4 py-8 text-center text-mi-texto/80"
                 >
                   {q
                     ? `Nenhuma cliente encontrada para “${q}”.`
@@ -107,7 +107,7 @@ export default async function AdminClientesPage({
                       sim
                     </span>
                   ) : (
-                    <span className="text-xs text-mi-texto/50">não</span>
+                    <span className="text-xs text-mi-texto/80">não</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">

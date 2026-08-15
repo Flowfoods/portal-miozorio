@@ -26,9 +26,9 @@ const STATUS_CHIP: Record<string, { label: string; classes: string }> = {
   aprovado: { label: "No ar 💛", classes: "bg-emerald-100 text-emerald-900" },
   rejeitado: {
     label: "Não publicado",
-    classes: "bg-mi-cinza text-mi-texto/70",
+    classes: "bg-mi-cinza text-mi-texto/80",
   },
-  arquivado: { label: "Arquivado", classes: "bg-mi-cinza text-mi-texto/70" },
+  arquivado: { label: "Arquivado", classes: "bg-mi-cinza text-mi-texto/80" },
 };
 
 /** Momentos da Área da Cliente (F3): os envios dela, com status e ações. */
@@ -90,7 +90,7 @@ export default async function MomentosPage({
                   >
                     {chip.label}
                   </span>
-                  <span className="font-corpo text-xs text-mi-texto/50">
+                  <span className="font-corpo text-xs text-mi-texto/80">
                     {DateTime.fromJSDate(m.enviadoEm ?? m.createdAt)
                       .setZone("America/Sao_Paulo")
                       .toFormat("dd/LL/yyyy")}
@@ -98,7 +98,7 @@ export default async function MomentosPage({
                 </div>
 
                 {m.booking?.service.name && (
-                  <p className="mt-2 font-corpo text-xs text-mi-marrom">
+                  <p className="mt-2 font-corpo text-xs text-mi-marrom-escuro">
                     {m.booking.service.name}
                   </p>
                 )}
@@ -135,13 +135,13 @@ export default async function MomentosPage({
                   <div className="mt-4 flex items-center gap-4 border-t border-mi-cinza/60 pt-3">
                     <Link
                       href={`/clube/conta/momentos/${m.id}/editar`}
-                      className="font-corpo text-sm text-mi-marrom underline underline-offset-4 transition-colors hover:text-mi-marrom-escuro"
+                      className="font-corpo text-sm text-mi-marrom-escuro underline underline-offset-4 transition-colors hover:text-mi-marrom-escuro"
                     >
                       Editar
                     </Link>
                     <form action={excluirMomentoAction}>
                       <input type="hidden" name="id" value={m.id} />
-                      <button className="font-corpo text-sm text-mi-texto/60 underline underline-offset-4 transition-colors hover:text-red-700">
+                      <button className="font-corpo text-sm text-mi-texto/80 underline underline-offset-4 transition-colors hover:text-red-700">
                         Excluir
                       </button>
                     </form>

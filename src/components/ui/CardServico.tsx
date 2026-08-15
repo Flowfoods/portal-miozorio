@@ -67,7 +67,7 @@ export default function CardServico({
           ) : (
             <span />
           )}
-          <span className="font-corpo text-sm text-mi-marrom group-hover:text-mi-marrom-escuro">
+          <span className="font-corpo text-sm text-mi-marrom-escuro group-hover:text-mi-marrom-escuro">
             {vitrine ? "Solicitar proposta ›" : "Agendar ›"}
           </span>
         </div>

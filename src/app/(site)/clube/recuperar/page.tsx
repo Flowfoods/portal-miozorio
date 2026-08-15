@@ -11,7 +11,7 @@ export default function RecuperarPage() {
 
   return (
     <main className="mx-auto max-w-md px-5 pb-24 pt-14">
-      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Clube Mi Ozorio
       </p>
       <h1 className="mt-3 text-center font-titulo text-3xl text-mi-marrom-escuro">
@@ -24,7 +24,7 @@ export default function RecuperarPage() {
       <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
         <RecuperarForm />
       </div>
-      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/70">
+      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
         Lembrou a senha?{" "}
         <Link
           href="/clube/entrar"

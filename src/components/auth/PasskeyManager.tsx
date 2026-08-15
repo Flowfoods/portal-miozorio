@@ -82,11 +82,11 @@ export default function PasskeyManager({
           {busy ? "Aguarde…" : "Ativar Face ID / biometria"}
         </button>
       ) : (
-        <p className="text-xs text-mi-texto/50">
+        <p className="text-xs text-mi-texto/80">
           Este navegador não oferece Face ID/biometria aqui.
         </p>
       )}
-      {msg && <p className="mt-2 text-sm text-mi-texto/70">{msg}</p>}
+      {msg && <p className="mt-2 text-sm text-mi-texto/80">{msg}</p>}
 
       {passkeys.length > 0 && (
         <ul className="mt-4 divide-y divide-mi-cinza/60">
@@ -131,7 +131,7 @@ export default function PasskeyManager({
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-mi-texto/50">
+      <p className="mt-3 text-xs text-mi-texto/80">
         Trocar a senha não remove os acessos por biometria.
       </p>
     </div>

@@ -29,7 +29,7 @@ export default function Tabs({ items, ativo, onSelect, ariaLabel }: TabsProps) {
         const classes = `relative -mb-px shrink-0 border-b-2 px-1 pb-3 pt-2 font-corpo text-sm transition-colors ${
           isAtivo
             ? "border-mi-marrom font-normal text-mi-marrom-escuro"
-            : "border-transparent text-mi-texto/60 hover:text-mi-marrom-escuro"
+            : "border-transparent text-mi-texto/80 hover:text-mi-marrom-escuro"
         }`;
         if (item.href) {
           return (

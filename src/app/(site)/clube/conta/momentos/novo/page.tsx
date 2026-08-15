@@ -54,7 +54,7 @@ export default async function NovoMomentoPage({
       <h1 className="font-titulo text-3xl text-mi-marrom-escuro">
         Contar como foi
       </h1>
-      <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+      <p className="mt-1 font-corpo text-sm text-mi-texto/80">
         Sua história pode inspirar outra cliente a se cuidar também.
       </p>
       <div className="mt-6 rounded-mi bg-mi-branco p-5 shadow-suave">

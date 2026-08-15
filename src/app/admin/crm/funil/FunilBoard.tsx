@@ -108,7 +108,7 @@ export default function FunilBoard({
             >
               <p className="mb-2 flex items-center justify-between text-sm font-medium text-mi-marrom-escuro">
                 {col.label}
-                <span className="text-xs text-mi-texto/60">{doGrupo.length}</span>
+                <span className="text-xs text-mi-texto/80">{doGrupo.length}</span>
               </p>
               <div className="space-y-2">
                 {doGrupo.map((c) => {
@@ -145,7 +145,7 @@ export default function FunilBoard({
                         )}
                       </div>
                       {c.interesse && (
-                        <p className="mt-0.5 text-xs text-mi-texto/60">{c.interesse}</p>
+                        <p className="mt-0.5 text-xs text-mi-texto/80">{c.interesse}</p>
                       )}
                       <div className="mt-1.5 flex items-center gap-1.5 text-xs">
                         {editandoValor === c.id ? (
@@ -167,7 +167,7 @@ export default function FunilBoard({
                                 c.valorReais != null ? String(c.valorReais) : "",
                               );
                             }}
-                            className="rounded border border-mi-cinza px-1.5 py-0.5 text-mi-texto/70"
+                            className="rounded border border-mi-cinza px-1.5 py-0.5 text-mi-texto/80"
                             title="Valor estimado do contrato"
                           >
                             {c.valorReais != null

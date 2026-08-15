@@ -15,7 +15,7 @@ export default function PrivacidadePage() {
       <h1 className="font-titulo text-4xl text-mi-marrom-escuro">
         Política de Privacidade
       </h1>
-      <p className="mt-3 font-corpo text-sm text-mi-marrom">
+      <p className="mt-3 font-corpo text-sm text-mi-marrom-escuro">
         Seus dados são tratados com o mesmo cuidado que eu tenho com a sua
         beleza.
       </p>
@@ -85,7 +85,7 @@ export default function PrivacidadePage() {
           </p>
         </section>
 
-        <p className="text-xs text-mi-marrom">
+        <p className="text-xs text-mi-marrom-escuro">
           Esta é a versão inicial da nossa política e será detalhada em breve.
         </p>
       </div>

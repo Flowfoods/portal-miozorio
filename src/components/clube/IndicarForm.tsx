@@ -26,19 +26,19 @@ export default function IndicarForm({
       <Honeypot />
       <input type="hidden" name="codigo" value={codigo} />
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu nome
         </span>
         <input name="name" required minLength={2} className="input-mi" />
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu WhatsApp
         </span>
         <PhoneField />
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Qual é a ocasião?
         </span>
         <select name="ocasiao" required className="input-mi" defaultValue="">
@@ -53,7 +53,7 @@ export default function IndicarForm({
         </select>
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Tem alguma alergia? (opcional)
         </span>
         <input
@@ -63,7 +63,7 @@ export default function IndicarForm({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Já tem uma referência do que quer? (opcional)
         </span>
         <input

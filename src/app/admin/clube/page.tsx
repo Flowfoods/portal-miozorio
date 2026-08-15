@@ -85,7 +85,7 @@ export default async function AdminClubePage({
     <>
       <ClientesHubNav />
       <h1 className="mb-2 text-3xl">Clube de fidelidade</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Suas clientes ganham pontos por atendimento (configure em Serviços) e
         por indicação que se concretiza. Aqui você define os pontos por
         indicação e o catálogo de recompensas. O saldo e o resgate de cada
@@ -103,23 +103,23 @@ export default async function AdminClubePage({
       />
       <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Pontos emitidos</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Pontos emitidos</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
             {emitidos._sum.pontos ?? 0}
           </p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Pontos resgatados</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Pontos resgatados</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
             {Math.abs(resgatados._sum.pontos ?? 0)}
           </p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Indicações convertidas</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Indicações convertidas</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{indicacoes}</p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/55">Resgates (vouchers)</p>
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Resgates (vouchers)</p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{vouchersPeriodo}</p>
         </div>
       </section>
@@ -135,7 +135,7 @@ export default async function AdminClubePage({
           )}
         </h2>
         {vouchers.length === 0 ? (
-          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/80 shadow-suave">
             Nenhum resgate pendente.
           </p>
         ) : (
@@ -151,7 +151,7 @@ export default async function AdminClubePage({
                   <span className="font-mono text-mi-marrom-escuro">
                     {v.codigo}
                   </span>
-                  <span className="block text-xs text-mi-texto/55">
+                  <span className="block text-xs text-mi-texto/80">
                     {v.custoPontos} pontos
                   </span>
                 </div>
@@ -171,7 +171,7 @@ export default async function AdminClubePage({
         <h2 className="mb-1 font-titulo text-xl text-mi-marrom-escuro">
           Indique e ganhe
         </h2>
-        <p className="mb-3 text-xs text-mi-texto/60">
+        <p className="mb-3 text-xs text-mi-texto/80">
           Quando a amiga indicada se cuida com a Mi e pontua, a indicadora ganha
           um percentual dos pontos dela. Vale só para atendimentos futuros —
           nunca recalcula pontos já dados.
@@ -189,7 +189,7 @@ export default async function AdminClubePage({
         <h2 className="mb-1 font-titulo text-xl text-mi-marrom-escuro">
           Pontos por engajamento
         </h2>
-        <p className="mb-3 text-xs text-mi-texto/60">
+        <p className="mb-3 text-xs text-mi-texto/80">
           Recompense quem conta como foi e quem volta. Deixe em 0 para desligar.
         </p>
         <form
@@ -242,7 +242,7 @@ export default async function AdminClubePage({
         </h2>
 
         <details className="mb-4 rounded-mi bg-mi-branco p-4 shadow-suave">
-          <summary className="cursor-pointer text-sm text-mi-marrom">
+          <summary className="cursor-pointer text-sm text-mi-marrom-escuro">
             ＋ Nova recompensa
           </summary>
           <form
@@ -286,7 +286,7 @@ export default async function AdminClubePage({
         </details>
 
         {rewards.length === 0 ? (
-          <p className="text-sm text-mi-texto/60">
+          <p className="text-sm text-mi-texto/80">
             Nenhuma recompensa ainda. Crie a primeira acima.
           </p>
         ) : (
@@ -373,7 +373,7 @@ export default async function AdminClubePage({
           Membros ({membrosComSaldo.length})
         </h2>
         {membrosComSaldo.length === 0 ? (
-          <p className="text-sm text-mi-texto/60">Nenhum membro ainda.</p>
+          <p className="text-sm text-mi-texto/80">Nenhum membro ainda.</p>
         ) : (
           <div className="space-y-2">
             {membrosComSaldo.map((m) => (

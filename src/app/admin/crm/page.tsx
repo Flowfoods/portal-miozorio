@@ -41,9 +41,9 @@ const FUNIL: { etapa: string; label: string }[] = [
 function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-mi bg-mi-branco p-5 shadow-suave">
-      <p className="text-xs uppercase tracking-wide text-mi-texto/60">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-mi-texto/80">{label}</p>
       <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{value}</p>
-      {hint && <p className="mt-1 text-xs text-mi-texto/60">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-mi-texto/80">{hint}</p>}
     </div>
   );
 }
@@ -171,8 +171,8 @@ export default async function CrmPage({
       </section>
 
       <div className="mb-6">
-        <h1 className="text-3xl">CRM</h1>
-        <p className="mt-1 text-sm text-mi-texto/60">
+        <h1 className="text-3xl">Relacionamento</h1>
+        <p className="mt-1 text-sm text-mi-texto/80">
           {calcLabel
             ? `Segmentação atualizada em ${calcLabel}.`
             : "A segmentação ainda não foi calculada — roda automaticamente todo dia."}
@@ -184,7 +184,7 @@ export default async function CrmPage({
         <Card label="LTV previsto · total" value={brl(ltvTotal)} />
         <Card label="LTV previsto · médio" value={brl(ltvMedio)} />
         <Card
-          label="Funil de noiva"
+          label="Jornada da noiva"
           value={String(Array.from(funilCount.values()).reduce((s, n) => s + n, 0))}
           hint="contatos em andamento"
         />
@@ -209,7 +209,7 @@ export default async function CrmPage({
         Segmentos (Matriz RFV)
       </h2>
       {baseTotal === 0 ? (
-        <p className="text-sm text-mi-texto/60">
+        <p className="text-sm text-mi-texto/80">
           Nenhum cliente segmentado ainda. Assim que houver atendimentos, a matriz
           é calculada no próximo ciclo diário.
         </p>
@@ -231,7 +231,7 @@ export default async function CrmPage({
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-mi-cinza/40">
                   <span className={`block h-full ${cor}`} style={{ width: `${w}%` }} />
                 </span>
-                <span className="w-10 shrink-0 text-right text-sm text-mi-texto/70">
+                <span className="w-10 shrink-0 text-right text-sm text-mi-texto/80">
                   {n}
                 </span>
               </Link>
@@ -268,12 +268,12 @@ export default async function CrmPage({
             className="rounded-mi bg-mi-branco p-4 text-center shadow-suave transition hover:bg-mi-bege/40"
           >
             <p className="font-titulo text-2xl text-mi-marrom-escuro">{c.n}</p>
-            <p className="mt-1 text-xs text-mi-texto/60">{c.label}</p>
+            <p className="mt-1 text-xs text-mi-texto/80">{c.label}</p>
           </Link>
         ))}
       </div>
 
-      <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">Funil de noiva</h2>
+      <h2 className="mb-3 mt-8 font-titulo text-xl text-mi-marrom-escuro">Jornada da noiva</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {FUNIL.map((f) => (
           <Link
@@ -284,7 +284,7 @@ export default async function CrmPage({
             <p className="font-titulo text-2xl text-mi-marrom-escuro">
               {funilCount.get(f.etapa) ?? 0}
             </p>
-            <p className="mt-1 text-xs text-mi-texto/60">{f.label}</p>
+            <p className="mt-1 text-xs text-mi-texto/80">{f.label}</p>
           </Link>
         ))}
       </div>
@@ -294,7 +294,7 @@ export default async function CrmPage({
           Ver segmentos →
         </Link>
         <Link href="/admin/crm/funil" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
-          Funil de noiva →
+          Jornada da noiva →
         </Link>
         <Link href="/admin/crm/jornadas" className="rounded-mi border border-mi-cinza px-4 py-2 hover:bg-mi-bege/40">
           Jornadas →

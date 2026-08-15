@@ -66,7 +66,7 @@ export default function MomentoForm({
       {/* Atendimento vinculado (só na criação) */}
       {!editar && bookings && bookings.length > 0 && (
         <label className="block">
-          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom">
+          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom-escuro">
             Sobre qual atendimento? (opcional)
           </span>
           <select
@@ -86,7 +86,7 @@ export default function MomentoForm({
 
       {/* Texto */}
       <label className="block">
-        <span className="mb-1.5 block font-corpo text-sm text-mi-marrom">
+        <span className="mb-1.5 block font-corpo text-sm text-mi-marrom-escuro">
           Conte como foi 💛
         </span>
         <textarea
@@ -98,14 +98,14 @@ export default function MomentoForm({
           className="input-mi"
           placeholder="O que você sentiu, como foi o cuidado, o resultado…"
         />
-        <span className="mt-1 block text-right font-corpo text-xs text-mi-texto/50">
+        <span className="mt-1 block text-right font-corpo text-xs text-mi-texto/80">
           {texto.length}/{MAX_CHARS}
         </span>
       </label>
 
       {/* Nota opcional */}
       <div>
-        <span className="mb-1.5 block font-corpo text-sm text-mi-marrom">
+        <span className="mb-1.5 block font-corpo text-sm text-mi-marrom-escuro">
           Sua nota (opcional)
         </span>
         <input type="hidden" name="rating" value={rating || ""} />
@@ -137,7 +137,7 @@ export default function MomentoForm({
       {/* Fotos existentes (edição) */}
       {editar && editar.fotos.length > 0 && (
         <div>
-          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom">
+          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom-escuro">
             Suas fotos (marque para remover)
           </span>
           <div className="flex flex-wrap gap-3">
@@ -167,7 +167,7 @@ export default function MomentoForm({
       {/* Fotos novas */}
       {maxNovas > 0 && (
         <label className="block">
-          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom">
+          <span className="mb-1.5 block font-corpo text-sm text-mi-marrom-escuro">
             {editar ? "Adicionar fotos" : "Suas fotos (opcional)"} — até{" "}
             {maxNovas}, JPG/PNG/WebP, 8MB cada
           </span>
@@ -208,7 +208,7 @@ export default function MomentoForm({
       )}
 
       <BotaoEnviar label={editar ? "Reenviar para a Mi" : "Enviar para a Mi"} />
-      <p className="text-center font-corpo text-xs text-mi-texto/60">
+      <p className="text-center font-corpo text-xs text-mi-texto/80">
         A Mi lê tudo com carinho antes de publicar 💛
       </p>
     </form>

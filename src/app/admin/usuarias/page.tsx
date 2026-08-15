@@ -20,7 +20,7 @@ export default async function AdminUsuariasPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Usuárias do painel</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Quem pode entrar no painel do estúdio. Não existe cadastro pelo site —
         contas só são criadas aqui.
       </p>
@@ -75,10 +75,10 @@ export default async function AdminUsuariasPage() {
                   <p className="font-medium">
                     {u.name}{" "}
                     {isMe && (
-                      <span className="text-xs text-mi-marrom">(você)</span>
+                      <span className="text-xs text-mi-marrom-escuro">(você)</span>
                     )}
                   </p>
-                  <p className="text-sm text-mi-texto/70">{u.email}</p>
+                  <p className="text-sm text-mi-texto/80">{u.email}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span
@@ -100,7 +100,7 @@ export default async function AdminUsuariasPage() {
                 </div>
               </div>
               <details className="mt-3">
-                <summary className="cursor-pointer text-sm text-mi-marrom">
+                <summary className="cursor-pointer text-sm text-mi-marrom-escuro">
                   Editar nome e e-mail
                 </summary>
                 <form
@@ -132,7 +132,7 @@ export default async function AdminUsuariasPage() {
                   </button>
                 </form>
                 {isMe && (
-                  <p className="mt-1 text-xs text-mi-texto/60">
+                  <p className="mt-1 text-xs text-mi-texto/80">
                     Se trocar o próprio e-mail, entre de novo com o novo
                     endereço.
                   </p>
