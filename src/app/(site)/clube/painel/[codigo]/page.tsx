@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
+import { getClienteSession } from "@/lib/cliente-auth";
 import { getSettings } from "@/lib/settings";
 import {
   contarIndicacoesFechadas,
@@ -24,9 +25,14 @@ export const dynamic = "force-dynamic";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
 /**
- * Área da membro, acessada pelo link com o código dela (não adivinhável; sem
- * dado pessoal na URL). Mostra só o necessário: primeiro nome, escada e link
- * de indicação — nada de telefone/endereço (R18).
+ * Área da membro. Exige SESSÃO da própria dona do código.
+ *
+ * O código da URL é o MESMO que a membro divulga para convidar amigas
+ * (`/indicar/<codigo>`, com texto pronto de WhatsApp) — ele identifica, não
+ * autentica. Enquanto esta página abria só com o código, toda pessoa que
+ * recebeu uma indicação tinha a chave da carteirinha de quem indicou: nome,
+ * saldo, segmento e o PRÓXIMO ATENDIMENTO com dia e hora — a localização
+ * física de uma mulher, em horário exato, sem login (R6/R18).
  */
 export default async function PainelMembroPage({
   params,
@@ -40,6 +46,12 @@ export default async function PainelMembroPage({
     },
   });
   if (!membro?.clubJoinedAt) notFound();
+
+  const sessao = getClienteSession();
+  if (!sessao) redirect("/clube/entrar");
+  // Código de outra pessoa: 404 em vez de 403 — não confirma que o código
+  // existe (mesma disciplina de /momentos/foto/[id]).
+  if (sessao.customerId !== membro.id) notFound();
 
   const [settings, fechadas, ocasioes, ultima, saldo, recompensas, proximo] =
     await Promise.all([
@@ -151,7 +163,7 @@ export default async function PainelMembroPage({
         </div>
       </section>
       <p className="mt-3 text-center font-corpo text-xs text-mi-texto/60">
-        Guarde o link desta página — ela é a sua carteirinha
+        Sua carteirinha fica sempre aqui, na sua conta
       </p>
 
       {/* Minha agenda */}
@@ -202,7 +214,11 @@ export default async function PainelMembroPage({
           <strong>{fechadas}</strong> amiga(s) já se cuidaram com a Mi pela sua
           indicação
           {membro._count.referrals > fechadas && (
-            <> · {membro._count.referrals - fechadas} aguardando o primeiro atendimento</>
+            <>
+              {" "}
+              · {membro._count.referrals - fechadas} aguardando o primeiro
+              atendimento
+            </>
           )}
           .
         </p>
@@ -220,7 +236,10 @@ export default async function PainelMembroPage({
       </section>
 
       {/* Pontos */}
-      <section id="pontos" className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave">
+      <section
+        id="pontos"
+        className="mt-6 rounded-mi bg-mi-branco p-6 shadow-suave"
+      >
         <h2 className="text-2xl">Seus pontos</h2>
         <p className="mt-2 font-corpo text-4xl text-mi-marrom-escuro">
           {saldo}{" "}
@@ -243,7 +262,9 @@ export default async function PainelMembroPage({
                 <li
                   key={r.id}
                   className={`flex items-center justify-between gap-2 rounded-mi border p-4 ${
-                    podeResgatar ? "border-mi-marrom bg-mi-bege/50" : "border-mi-cinza"
+                    podeResgatar
+                      ? "border-mi-marrom bg-mi-bege/50"
+                      : "border-mi-cinza"
                   }`}
                 >
                   <div>
@@ -256,7 +277,9 @@ export default async function PainelMembroPage({
                     </p>
                   </div>
                   <span className="font-corpo text-xs text-mi-texto/60">
-                    {podeResgatar ? "disponível" : `faltam ${r.custoPontos - saldo}`}
+                    {podeResgatar
+                      ? "disponível"
+                      : `faltam ${r.custoPontos - saldo}`}
                   </span>
                 </li>
               );
