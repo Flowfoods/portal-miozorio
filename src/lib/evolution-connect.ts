@@ -39,14 +39,79 @@ const OFFLINE: EvolutionStatus = {
   instance: null,
 };
 
-async function evoFetch(path: string): Promise<unknown> {
+async function evoFetch(path: string, method = "GET"): Promise<unknown> {
   const { base, key } = cfg();
   const res = await fetch(`${base}${path}`, {
+    method,
     headers: { apikey: key },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Evolution ${res.status}`);
   return res.json();
+}
+
+/**
+ * Código de pareamento por NÚMERO (8 dígitos), alternativa ao QR.
+ *
+ * É o caminho que serve à Mi de verdade: ela opera pelo celular, e ler um QR
+ * exige um SEGUNDO aparelho — não dá para fotografar a tela do próprio
+ * telefone que está com o WhatsApp aberto. Com o código ela digita em
+ * Aparelhos conectados → Conectar com número de telefone.
+ *
+ * A Evolution só devolve `pairingCode` quando o número vai na query; sem ele,
+ * a resposta traz apenas o QR — por isso o campo vinha sempre nulo.
+ */
+export async function evolutionPairingCode(
+  numero: string,
+): Promise<{ ok: true; code: string } | { ok: false; message: string }> {
+  if (!evolutionConfigured()) {
+    return { ok: false, message: "WhatsApp não configurado no servidor." };
+  }
+  const digits = (numero ?? "").replace(/\D/g, "");
+  // E.164 sem o "+": 55 + DDD + número.
+  const full = digits.length <= 11 ? `55${digits}` : digits;
+  if (full.length < 12 || full.length > 13) {
+    return { ok: false, message: "Confere o número? Use DDD + WhatsApp." };
+  }
+  try {
+    const { instance } = cfg();
+    const j = (await evoFetch(
+      `/instance/connect/${instance}?number=${full}`,
+    )) as { pairingCode?: string | null; code?: string | null };
+    const code = j?.pairingCode ?? null;
+    if (!code) {
+      return {
+        ok: false,
+        message:
+          "O WhatsApp não devolveu o código agora. Tente 'Começar de novo' e peça outra vez.",
+      };
+    }
+    return { ok: true, code };
+  } catch {
+    return { ok: false, message: "O WhatsApp não respondeu agora." };
+  }
+}
+
+/**
+ * Encerra a sessão na Evolution para começar o pareamento do zero.
+ *
+ * Instância presa em "connecting" devolve QR que já nasce inválido: a pessoa
+ * aponta a câmera e nada acontece, indefinidamente. Sem um logout não havia
+ * como sair desse estado pelo painel — só mexendo no container.
+ */
+export async function evolutionLogout(): Promise<boolean> {
+  if (!evolutionConfigured()) return false;
+  const { instance } = cfg();
+  for (const method of ["DELETE", "POST"]) {
+    try {
+      await evoFetch(`/instance/logout/${instance}`, method);
+      return true;
+    } catch {
+      // Versões diferentes da Evolution expõem o logout em verbos diferentes;
+      // tenta o outro antes de desistir.
+    }
+  }
+  return false;
 }
 
 /** Só o estado da instância (barato — usado no card de status). */
