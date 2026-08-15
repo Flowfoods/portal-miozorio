@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { DateTime } from "luxon";
-import { evaluateCancellation, evaluateNoShow } from "@/lib/policies";
+import {
+  evaluateCancellation,
+  evaluateNoShow,
+  duracaoOcupadaMin,
+} from "@/lib/policies";
 
 const TZ = "America/Sao_Paulo";
 const mk = (iso: string) => DateTime.fromISO(iso, { zone: TZ });
@@ -78,5 +82,38 @@ describe("policies — cancelamento e régua de strikes", () => {
     expect(r.finalStatus).toBe("cancelled_by_business");
     expect(r.depositRetained).toBe(false);
     expect(r.newStrikes).toBe(2); // sem incremento
+  });
+});
+
+describe("duracaoOcupadaMin — criação e remarcação usam a MESMA conta", () => {
+  const maquiagem = { durationMin: 60, service: { bufferMin: 15 } };
+  const penteado = { durationMin: 60, service: { bufferMin: 10 } };
+  const servicoPrimario = { durationMin: 60, bufferMin: 15 };
+
+  it("soma as durações dos itens e aplica UM buffer (o maior)", () => {
+    expect(duracaoOcupadaMin([maquiagem, penteado], servicoPrimario)).toBe(135);
+  });
+
+  it("sem itens, cai no serviço primário", () => {
+    expect(duracaoOcupadaMin([], servicoPrimario)).toBe(75);
+  });
+
+  it("remarcar não encolhe o atendimento multi-serviço", () => {
+    // O defeito: a remarcação olhava só o serviço primário (60+15=75) e o
+    // atendimento de 135 min passava a ocupar 75 — os 60 minutos perdidos
+    // voltavam a ser oferecidos no site.
+    const naCriacao = duracaoOcupadaMin([maquiagem, penteado], servicoPrimario);
+    const naRemarcacao = duracaoOcupadaMin(
+      [maquiagem, penteado],
+      servicoPrimario,
+    );
+    expect(naRemarcacao).toBe(naCriacao);
+    expect(naRemarcacao).not.toBe(
+      servicoPrimario.durationMin + servicoPrimario.bufferMin,
+    );
+  });
+
+  it("um item só continua contando o buffer dele", () => {
+    expect(duracaoOcupadaMin([penteado], servicoPrimario)).toBe(70);
   });
 });

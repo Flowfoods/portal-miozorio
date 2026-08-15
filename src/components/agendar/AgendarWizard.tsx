@@ -64,6 +64,7 @@ export default function AgendarWizard() {
   const [date, setDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsErro, setSlotsErro] = useState(false);
   const [time, setTime] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -74,6 +75,8 @@ export default function AgendarWizard() {
     reference: "",
     occasion: "",
     lgpd: false,
+    // Honeypot: invisível para a cliente, irresistível para robô.
+    site: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -156,8 +159,7 @@ export default function AgendarWizard() {
       { id: "todos", label: "Todos" },
       ...presentes.map((c) => ({
         id: c,
-        label:
-          CATEGORIA_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1),
+        label: CATEGORIA_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1),
       })),
     ];
   }, [services]);
@@ -228,8 +230,16 @@ export default function AgendarWizard() {
       `/api/availability?serviceId=${service.id}&date=${date}&location=${location}`,
     )
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-      .then((d: { slots: string[] }) => setSlots(d.slots))
-      .catch(() => setSlots([]))
+      .then((d: { slots: string[] }) => {
+        setSlots(d.slots);
+        setSlotsErro(false);
+      })
+      // Falha de rede virava lista vazia, indistinguível de dia lotado — e a
+      // cliente lia "esse dia já está cheio" num dia inteiramente livre.
+      .catch(() => {
+        setSlots([]);
+        setSlotsErro(true);
+      })
       .finally(() => setSlotsLoading(false));
   }, [service, date, location]);
 
@@ -238,6 +248,16 @@ export default function AgendarWizard() {
     form.phone.replace(/\D/g, "").length >= 10 &&
     form.occasion.length > 0 &&
     form.lgpd;
+
+  /** O que ainda falta, na voz da Mi — dito no clique, não escondido. */
+  const faltaPreencher =
+    form.name.trim().length < 2
+      ? "Me conta seu nome? 💛"
+      : form.phone.replace(/\D/g, "").length < 10
+        ? "Confere o WhatsApp? Use DDD + número."
+        : form.occasion.length === 0
+          ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
+          : "Falta aceitar a política de privacidade.";
 
   async function submitBooking() {
     if (!service || !date || !time) return;
@@ -263,6 +283,7 @@ export default function AgendarWizard() {
             ocasiao: form.occasion,
           },
           lgpdConsent: form.lgpd,
+          site: form.site,
           ...(daAreaCliente ? { source: "area_cliente" } : {}),
         }),
       });
@@ -278,8 +299,17 @@ export default function AgendarWizard() {
         return;
       }
       if (!res.ok) {
+        // Nunca ecoar a mensagem crua do servidor: "Dados inválidos" e "JSON
+        // inválido" são texto de sistema e chegavam à cliente no último passo,
+        // sem dizer qual campo. 422 já vem com mensagem escrita para ela.
         const e = (await res.json().catch(() => ({}))) as { error?: string };
-        setFormError(e.error ?? "Não consegui criar seu agendamento. Tenta de novo?");
+        setFormError(
+          res.status === 422 && e.error
+            ? e.error
+            : res.status === 400
+              ? "Confere os campos? Algum dado ficou fora do formato — o e-mail é o mais comum."
+              : "Não consegui criar seu agendamento. Tenta de novo?",
+        );
         return;
       }
       const data = (await res.json()) as { id: string; holdExpiresAt: string };
@@ -377,7 +407,8 @@ export default function AgendarWizard() {
           <div className="mt-6 space-y-3">
             {servicosFiltrados?.map((s) => {
               const price = priceForLocation(s);
-              const unavailableHome = location === "home" && s.priceHomeCents === null;
+              const unavailableHome =
+                location === "home" && s.priceHomeCents === null;
               return (
                 <button
                   key={s.id}
@@ -456,7 +487,13 @@ export default function AgendarWizard() {
           </p>
 
           {slotsLoading && <ChipsSkeleton />}
-          {!slotsLoading && slots && slots.length === 0 && (
+          {!slotsLoading && slotsErro && (
+            <p className="mt-6 font-corpo text-mi-texto">
+              Não consegui carregar os horários agora. Toca de novo na data, por
+              favor?
+            </p>
+          )}
+          {!slotsLoading && !slotsErro && slots && slots.length === 0 && (
             <p className="mt-6 font-corpo text-mi-texto">
               Poxa, esse dia já está cheio… que tal escolher outra data?
             </p>
@@ -491,13 +528,16 @@ export default function AgendarWizard() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="input-mi"
+                autoComplete="name"
                 placeholder="Como você gosta de ser chamada"
               />
             </Field>
             <Field label="WhatsApp">
               <input
                 value={form.phone}
+                type="tel"
                 inputMode="numeric"
+                autoComplete="tel"
                 onChange={(e) =>
                   setForm({ ...form, phone: maskPhoneBR(e.target.value) })
                 }
@@ -506,8 +546,14 @@ export default function AgendarWizard() {
               />
             </Field>
             <Field label="E-mail (opcional)">
+              {/* type="email" + inputMode: o campo é opcional, mas o servidor
+                  valida o formato — sem isto, um "ana@" derrubava o
+                  agendamento no último passo, sem dizer qual campo. */}
               <input
                 value={form.email}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="input-mi"
                 placeholder="seu@email.com"
@@ -535,9 +581,7 @@ export default function AgendarWizard() {
             <Field label="Qual a ocasião?">
               <select
                 value={form.occasion}
-                onChange={(e) =>
-                  setForm({ ...form, occasion: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, occasion: e.target.value })}
                 className="input-mi"
               >
                 <option value="">Selecione…</option>
@@ -549,12 +593,24 @@ export default function AgendarWizard() {
               </select>
             </Field>
 
+            {/* Honeypot — fora da tela e do leitor de tela; só robô preenche. */}
+            <input
+              type="text"
+              name="site"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={form.site}
+              onChange={(e) => setForm({ ...form, site: e.target.value })}
+              className="absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
+
             <label className="flex items-start gap-3 font-corpo text-sm text-mi-texto">
               <input
                 type="checkbox"
                 checked={form.lgpd}
                 onChange={(e) => setForm({ ...form, lgpd: e.target.checked })}
-                className="mt-1 h-5 w-5 accent-mi-marrom"
+                className="mt-1 h-5 w-5 shrink-0 accent-mi-marrom"
               />
               <span>
                 Li e aceito a{" "}
@@ -569,9 +625,19 @@ export default function AgendarWizard() {
               <p className="font-corpo text-sm text-red-700">{formError}</p>
             )}
 
+            {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
+                descobria o que faltava — o único rótulo marcado na tela é
+                "E-mail (opcional)", então ela concluía que o resto também era. */}
             <button
-              disabled={!canSubmit || submitting}
-              onClick={submitBooking}
+              disabled={submitting}
+              onClick={() => {
+                if (!canSubmit) {
+                  setFormError(faltaPreencher);
+                  return;
+                }
+                setFormError(null);
+                void submitBooking();
+              }}
               className="min-h-[52px] w-full rounded-mi bg-mi-marrom font-corpo text-base text-mi-branco shadow-suave transition-colors hover:bg-mi-marrom-escuro disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "Reservando…" : "Continuar"}
@@ -604,7 +670,9 @@ export default function AgendarWizard() {
           <HoldCountdown
             holdExpiresAt={booking.holdExpiresAt}
             onExpire={() => {
-              setFormError("O tempo da reserva expirou. Vamos escolher de novo?");
+              setFormError(
+                "O tempo da reserva expirou. Vamos escolher de novo?",
+              );
               setBooking(null);
               setConfirmed(false);
               setStep(3);
@@ -748,7 +816,10 @@ function HoldCountdown({
   onExpire: () => void;
 }) {
   const [left, setLeft] = useState(() =>
-    Math.max(0, Math.floor((new Date(holdExpiresAt).getTime() - Date.now()) / 1000)),
+    Math.max(
+      0,
+      Math.floor((new Date(holdExpiresAt).getTime() - Date.now()) / 1000),
+    ),
   );
   useEffect(() => {
     const t = setInterval(() => {

@@ -70,9 +70,9 @@ describe("generateSlots (motor de agendamento)", () => {
       base.now,
     );
     expect(alive).toHaveLength(1);
-    expect(
-      slotsToHHmm(generateSlots({ ...base, busy: alive })),
-    ).not.toContain("10:00");
+    expect(slotsToHHmm(generateSlots({ ...base, busy: alive }))).not.toContain(
+      "10:00",
+    );
   });
 
   it("M1.5#4 — lead time mínimo respeitado na virada do dia (23h p/ amanhã, lead 24h → vazio)", () => {
@@ -115,5 +115,15 @@ describe("generateSlots (motor de agendamento)", () => {
       date: "2026-12-31", // muito além de 90 dias de 2026-06-11
     });
     expect(slots).toHaveLength(0);
+  });
+
+  it("stepMin 0 não trava o laço (piso de 1 minuto)", () => {
+    // Com passo 0 o cursor nunca avançava: laço infinito derrubando o processo
+    // inteiro na primeira cliente que abrisse a escolha de dia.
+    const slots = generateSlots({ ...base, busy: [], stepMin: 0 });
+    expect(slots.length).toBeGreaterThan(0);
+    expect(Number.isFinite(slots.length)).toBe(true);
+    // passo de 1 min entre horários consecutivos elegíveis
+    expect(slots[1]!.diff(slots[0]!, "minutes").minutes).toBe(1);
   });
 });

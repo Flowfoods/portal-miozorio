@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Honeypot: campo invisível preenchido = bot. Responde como se tivesse dado
+  // certo (sem criar nada) para não ensinar o robô a contornar.
+  if (parsed.data.site?.trim()) {
+    return NextResponse.json({ id: "", holdExpiresAt: "" }, { status: 201 });
+  }
+
   const result = await createBooking(parsed.data);
   if (!result.ok) {
     const status = STATUS_BY_CODE[result.code] ?? 400;

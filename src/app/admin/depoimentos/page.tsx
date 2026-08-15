@@ -125,7 +125,7 @@ export default async function AdminDepoimentosPage() {
                         name="motivo"
                         rows={2}
                         placeholder="Recado carinhoso pra ela (opcional)"
-                        className="input-mi w-full text-sm"
+                        className="input-mi w-full"
                       />
                       <button className="rounded-mi border border-mi-cinza px-3 py-1.5 text-sm">
                         Confirmar
@@ -199,7 +199,7 @@ export default async function AdminDepoimentosPage() {
                   defaultValue={t.quote}
                   rows={2}
                   required
-                  className="input-mi w-full text-sm"
+                  className="input-mi w-full"
                 />
                 <div className="flex flex-wrap items-end gap-2">
                   <label className="text-xs">

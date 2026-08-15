@@ -414,7 +414,7 @@ export default function ReguaEditor({ initial }: Props) {
                   }))
                 }
                 rows={2}
-                className="input-mi mt-1 w-full !py-2 text-sm"
+                className="input-mi mt-1 w-full !py-2"
               />
             </label>
           ))}

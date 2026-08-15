@@ -29,7 +29,9 @@ export async function joinClub(
   const phone = normalizeE164BR(String(formData.get("phone") ?? ""));
   if (!phone) return { error: "Confere o WhatsApp? Use DDD + número." };
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   if (email && !EMAIL_RE.test(email)) return { error: "E-mail inválido." };
 
   if (formData.get("lgpd") !== "on") {
@@ -39,24 +41,32 @@ export async function joinClub(
   const birthRaw = String(formData.get("birthDate") ?? "").trim();
   const birthDate = birthRaw ? new Date(`${birthRaw}T12:00:00Z`) : null;
 
-  const customer = await prisma.customer.upsert({
+  // Telefone já cadastrado: este formulário é público e não prova posse do
+  // número. Antes ele fazia upsert (sobrescrevendo nome/e-mail/nascimento de
+  // quem já existia), carimbava consentimento no lugar da titular e ainda
+  // devolvia a carteirinha DELA no redirect. Quem já tem cadastro entra pelo
+  // login — lá o telefone é verificado.
+  const existente = await prisma.customer.findUnique({
     where: { phoneE164: phone },
-    update: {
-      name,
-      ...(email ? { email } : {}),
-      ...(birthDate ? { birthDate } : {}),
-    },
-    create: { name, phoneE164: phone, email: email || null, birthDate },
+    select: { id: true },
   });
-  if (!customer.lgpdConsentAt) {
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: { lgpdConsentAt: new Date() },
-    });
-  }
+  if (existente) redirect("/clube/entrar");
 
-  const member = await ensureClubMember(customer.id);
-  redirect(`/clube/painel/${member?.referralCode}`);
+  const customer = await prisma.customer.create({
+    data: {
+      name,
+      phoneE164: phone,
+      email: email || null,
+      birthDate,
+      lgpdConsentAt: new Date(),
+    },
+  });
+
+  await ensureClubMember(customer.id);
+  // A carteirinha agora exige sessão (o código dela é público — é o link de
+  // indicação). Manda para o login em vez de devolver a página que ela ainda
+  // não pode ver.
+  redirect("/clube/entrar");
 }
 
 export async function submitReferral(
@@ -102,7 +112,9 @@ export async function submitReferral(
 
   const existente = await prisma.customer.findUnique({
     where: { phoneE164: phone },
-    include: { _count: { select: { bookings: { where: { status: "completed" } } } } },
+    include: {
+      _count: { select: { bookings: { where: { status: "completed" } } } },
+    },
   });
 
   if (!existente) {
@@ -128,7 +140,10 @@ export async function submitReferral(
         clubInterest: interesse,
         // Alergia da indicada nunca sobrescreve o que a Mi já anotou (M11).
         ...(alergia && !existente.allergies ? { allergies: alergia } : {}),
-        ...(existente.lgpdConsentAt ? {} : { lgpdConsentAt: new Date() }),
+        // Consentimento NÃO é carimbado aqui: este formulário é público e não
+        // prova posse do telefone. Registrar aceite em nome de uma titular que
+        // não o deu é pior do que não registrar — o aceite dela vem quando ela
+        // mesma agendar ou entrar no clube.
       },
     });
   }

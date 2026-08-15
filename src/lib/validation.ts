@@ -33,8 +33,7 @@ export const createBookingBody = z.object({
   // Origem do agendamento público. "area_cliente" = veio da retenção da Área
   // da Cliente (habilita o bônus de reagendamento na conclusão — F5).
   source: z.enum(["web", "area_cliente"]).default("web"),
-});
-
-export const cancelBody = z.object({
-  actor: z.enum(["client", "business"]).default("client"),
+  // Honeypot: campo invisível no formulário. Humano nunca preenche — mesmo
+  // padrão já usado em joinClub. Preenchido = bot.
+  site: z.string().optional(),
 });

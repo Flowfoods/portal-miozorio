@@ -156,7 +156,7 @@ export default function FunilBoard({
                             onBlur={() => salvarValor(c.id)}
                             onKeyDown={(e) => e.key === "Enter" && salvarValor(c.id)}
                             inputMode="decimal"
-                            className="input-mi !w-24 !px-2 !py-1 text-xs"
+                            className="input-mi !w-24 !px-2 !py-1"
                             aria-label="Valor estimado (R$)"
                           />
                         ) : (

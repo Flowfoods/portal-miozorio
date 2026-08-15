@@ -5,6 +5,12 @@ import { getSiteContent, parseTabela } from "@/lib/content";
 import { getPacotes, getFaqs } from "@/lib/pacotes";
 import Botao from "@/components/ui/Botao";
 
+// Sem isto a página é prerenderizada UMA vez, no build — onde não existe
+// DATABASE_URL — e serve para sempre o PACOTES_FALLBACK do código. A noiva lia
+// um preço no site e outro na proposta, e só saía de lá quando a Mi salvasse
+// um pacote por acaso (refreshVitrines). Mesmo teto de 1h da home.
+export const revalidate = 3600;
+
 export const metadata: Metadata = pageMeta({
   path: "/noivas",
   title: "Noivas · La Mariée · Mi Ozorio",

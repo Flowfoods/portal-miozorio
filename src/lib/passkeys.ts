@@ -22,6 +22,11 @@ export async function sujeitoAtual(
   }
   const s = getClienteSession();
   if (!s) return null;
+  // Sessão PROVISÓRIA (senha ainda é o telefone) não cadastra passkey: senão
+  // quem entrasse com o telefone de outra pessoa gravava uma credencial
+  // própria e voltava como sessão plena, sem passar pela troca de senha nem
+  // pelo consentimento — enquanto o resto do portal checa `prov` religiosamente.
+  if (s.prov) return null;
   const c = await prisma.customer.findUnique({
     where: { id: s.customerId },
     select: { id: true, name: true, phoneE164: true },

@@ -9,6 +9,7 @@ import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import PainelHoje from "@/components/admin/PainelHoje";
 import WeekAgenda from "@/components/admin/WeekAgenda";
 import RescheduleForm from "@/components/admin/RescheduleForm";
+import ConfirmForm from "@/components/admin/ConfirmForm";
 import PeriodSelector from "@/components/admin/PeriodSelector";
 import AgendaPeriodo from "@/components/admin/AgendaPeriodo";
 import { periodoDaRequest } from "@/lib/periods-server";
@@ -58,6 +59,9 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
   const starts = DateTime.fromJSDate(b.startsAt).setZone(tz);
   const ends = DateTime.fromJSDate(b.endsAt).setZone(tz);
   const actionable = b.status === "pending" || b.status === "confirmed";
+  // Primeiro nome na confirmação: "Cancelar o horário da Ana?" evita o clique
+  // no cartão errado muito melhor que "Tem certeza?".
+  const primeiroNome = b.customer.name.trim().split(/\s+/)[0] || "essa cliente";
   // Alergia: vale tanto a da anamnese do atendimento quanto a da ficha (M11).
   const alergiaFicha = (b.customer.allergies ?? "").trim();
   const alergia = temAlergia(b.anamnesis) || alergiaFicha.length > 0;
@@ -140,16 +144,27 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
               </button>
             </form>
           )}
-          <form action={adminMarkNoShow.bind(null, b.id)}>
-            <button className="rounded-mi border border-mi-cinza px-3 py-1.5 text-sm">
+          {/* "Não veio" e "Cancelar" são irreversíveis — não existe ação que
+              desfaça no_show/cancelled — e ficavam a 32px, sem confirmação,
+              colados nos botões do dia a dia. O ConfirmForm já existia com a
+              docstring "dedo escorrega fácil no celular", mas guardava só a
+              exclusão de uma foto. */}
+          <ConfirmForm
+            action={adminMarkNoShow.bind(null, b.id)}
+            message={`Marcar que ${primeiroNome} não veio? Isso conta um strike para ela e não dá para desfazer.`}
+          >
+            <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm">
               Não veio
             </button>
-          </form>
-          <form action={adminCancelBooking.bind(null, b.id)}>
-            <button className="rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-red-800">
+          </ConfirmForm>
+          <ConfirmForm
+            action={adminCancelBooking.bind(null, b.id)}
+            message={`Cancelar o horário de ${primeiroNome}? Não dá para desfazer.`}
+          >
+            <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-red-800">
               Cancelar
             </button>
-          </form>
+          </ConfirmForm>
           <RescheduleForm
             bookingId={b.id}
             defaultDate={starts.toISODate() ?? ""}

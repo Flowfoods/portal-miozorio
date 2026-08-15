@@ -51,7 +51,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
             name="alt"
             defaultValue={asset.alt}
             aria-label="Descrição da foto"
-            className="input-mi min-w-0 flex-1 text-xs"
+            className="input-mi min-w-0 flex-1"
           />
           <button
             type="submit"

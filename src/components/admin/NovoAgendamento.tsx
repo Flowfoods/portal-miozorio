@@ -406,7 +406,7 @@ export default function NovoAgendamento({
                     <select
                       value={it.serviceId}
                       onChange={(e) => setItem(idx, { serviceId: e.target.value })}
-                      className="input-mi w-full text-sm"
+                      className="input-mi w-full"
                     >
                       {services.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -433,7 +433,7 @@ export default function NovoAgendamento({
                         value={it.precoReais}
                         inputMode="decimal"
                         onChange={(e) => setItem(idx, { precoReais: e.target.value })}
-                        className="input-mi mt-1 w-full !py-2 text-sm"
+                        className="input-mi mt-1 w-full !py-2"
                       />
                     </label>
                     <label className="block text-xs text-mi-texto">
@@ -442,7 +442,7 @@ export default function NovoAgendamento({
                         value={it.motivo}
                         onChange={(e) => setItem(idx, { motivo: e.target.value })}
                         placeholder="ex.: cabelo longo, desconto"
-                        className="input-mi mt-1 w-full !py-2 text-sm"
+                        className="input-mi mt-1 w-full !py-2"
                       />
                     </label>
                   </div>
@@ -578,13 +578,13 @@ export default function NovoAgendamento({
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                   placeholder="Referência / inspiração"
-                  className="input-mi w-full text-sm"
+                  className="input-mi w-full"
                 />
                 <input
                   value={ocasiao}
                   onChange={(e) => setOcasiao(e.target.value)}
                   placeholder="Ocasião"
-                  className="input-mi w-full text-sm"
+                  className="input-mi w-full"
                 />
               </div>
             )}

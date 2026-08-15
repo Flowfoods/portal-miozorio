@@ -136,7 +136,7 @@ export default function FilaMensagens({
               setTextos((t) => ({ ...t, [i.id]: e.target.value }))
             }
             rows={3}
-            className="input-mi w-full !py-2 text-sm"
+            className="input-mi w-full !py-2"
             aria-label={`Mensagem para ${i.clienteNome}`}
           />
           <div className="mt-2 flex items-center gap-2">

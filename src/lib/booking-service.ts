@@ -3,13 +3,18 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getSettings } from "./settings";
 import { normalizeE164BR } from "./phone";
-import { evaluateCancellation, evaluateNoShow } from "./policies";
+import {
+  evaluateCancellation,
+  evaluateNoShow,
+  duracaoOcupadaMin,
+} from "./policies";
 import {
   creditarPontosServico,
   creditarPontosIndicacao,
   creditarBonusReagendamento,
 } from "./clube-pontos";
 import { ensureClubMember } from "./clube";
+import { getAvailability } from "./availability";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 
 export interface CreateBookingInput {
@@ -41,14 +46,39 @@ export type CreateBookingResult =
         | "invalid_phone"
         | "invalid_datetime"
         | "slot_taken"
+        | "slot_unavailable"
         | "no_consent";
       message: string;
     };
+
+/** Reservas simultâneas em aberto (hold vivo) permitidas por telefone. */
+const MAX_PENDING_POR_TELEFONE = 2;
 
 function isExclusionViolation(e: unknown): boolean {
   // 23P01 = exclusion_violation da constraint no_overlap (R2).
   const msg = String((e as { message?: string })?.message ?? e);
   return msg.includes("23P01") || msg.includes("no_overlap");
+}
+
+/**
+ * Devolve a profissional ativa, criando-a se o banco não tiver nenhuma.
+ *
+ * A trava anti-double-booking é `EXCLUDE ... professional_id WITH =`, e em
+ * PostgreSQL um `=` com NULL nunca conflita: gravar `professional_id: null`
+ * desarma a R2 em silêncio, sem erro nenhum. Como o seed podia pular a criação
+ * da profissional num banco que já tinha serviços vindos de migration, o NULL
+ * era alcançável em produção — por isso aqui é garantia, não leitura.
+ */
+async function ensureProfessional(): Promise<{ id: string }> {
+  const existente = await prisma.professional.findFirst({
+    where: { active: true },
+    select: { id: true },
+  });
+  if (existente) return existente;
+  return prisma.professional.create({
+    data: { name: "Milene Ozorio" },
+    select: { id: true },
+  });
 }
 
 export async function createBooking(
@@ -88,6 +118,26 @@ export async function createBooking(
     return { ok: false, code: "invalid_phone", message: "WhatsApp inválido." };
   }
 
+  // Teto de reservas em aberto por telefone. Cada POST anônimo segurava um
+  // horário durante todo o hold; com a agenda de sáb/dom e passo de 30 min,
+  // algumas centenas de requisições deixavam a agenda inteira intransitável
+  // sem um único agendamento aparecer para a Mi.
+  const emAberto = await prisma.booking.count({
+    where: {
+      customer: { phoneE164: phone },
+      status: "pending",
+      holdExpiresAt: { gt: new Date() },
+    },
+  });
+  if (emAberto >= MAX_PENDING_POR_TELEFONE) {
+    return {
+      ok: false,
+      code: "slot_unavailable",
+      message:
+        "Você já tem um horário aguardando confirmação. Conclua ele antes de marcar outro 💛",
+    };
+  }
+
   const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, {
     zone: tz,
   });
@@ -102,14 +152,28 @@ export async function createBooking(
     minutes: service.durationMin + service.bufferMin,
   });
 
+  // O horário precisa estar na disponibilidade REAL, não só ser uma data
+  // válida. Esta é a porta pública: o wizard só oferece o que veio de
+  // /api/availability, mas um POST forjado (madrugada, dia sem expediente,
+  // além do horizonte, antes do lead time) passava direto — a trava do banco
+  // cruza booking com booking e não conhece expediente nem schedule_blocks.
+  // Fecha também a corrida: a cliente carrega os horários, a Mi cadastra as
+  // férias, a cliente envia — e a Mi descobre com ela na porta.
+  const disponiveis = await getAvailability(service.id, input.date);
+  if (!disponiveis.includes(input.time)) {
+    return {
+      ok: false,
+      code: "slot_unavailable",
+      message: "Esse horário não está mais disponível.",
+    };
+  }
+
   const priceCents =
     input.location === "home" && service.priceHomeCents != null
       ? service.priceHomeCents
       : service.priceCents;
 
-  const professional = await prisma.professional.findFirst({
-    where: { active: true },
-  });
+  const professional = await ensureProfessional();
 
   const now = DateTime.now().setZone(tz);
   const holdExpiresAt = now.plus({ minutes: settings.holdMinutes });
@@ -152,7 +216,7 @@ export async function createBooking(
         data: {
           customerId: customer.id,
           serviceId: service.id,
-          professionalId: professional?.id ?? null,
+          professionalId: professional.id,
           startsAt: startsAt.toJSDate(),
           endsAt: endsAt.toJSDate(),
           status: "pending",
@@ -293,9 +357,9 @@ export async function createManualBooking(
     };
   }
   // Duração TOTAL (soma dos itens) + buffer ÚNICO entre clientes (R2/buffer).
-  const totalDuration = rows.reduce((sum, r) => sum + r.durationMin, 0);
-  const bufferMin = Math.max(...rows.map((r) => r.service.bufferMin));
-  const endsAt = startsAt.plus({ minutes: totalDuration + bufferMin });
+  const endsAt = startsAt.plus({
+    minutes: duracaoOcupadaMin(rows, rows[0]!.service),
+  });
 
   // Cliente: existente por id, ou cadastro rápido (upsert por telefone).
   let customerId = input.customerId ?? null;
@@ -341,9 +405,7 @@ export async function createManualBooking(
   // Valor total = soma dos preços cobrados (snapshot no booking p/ retrocompat).
   const priceCents = rows.reduce((sum, r) => sum + r.precoCobradoCents, 0);
 
-  const professional = await prisma.professional.findFirst({
-    where: { active: true },
-  });
+  const professional = await ensureProfessional();
 
   try {
     const booking = await prisma.$transaction(async (tx) => {
@@ -351,7 +413,7 @@ export async function createManualBooking(
         data: {
           customerId,
           serviceId: primary.id, // serviço primário (retrocompat)
-          professionalId: professional?.id ?? null,
+          professionalId: professional.id,
           startsAt: startsAt.toJSDate(),
           endsAt: endsAt.toJSDate(),
           status: "confirmed",
@@ -440,7 +502,7 @@ export async function rescheduleBooking(
 ): Promise<RescheduleResult> {
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { service: true },
+    include: { service: true, items: { include: { service: true } } },
   });
   if (!booking) {
     return { ok: false, code: "not_found", message: "Reserva não encontrada." };
@@ -463,8 +525,10 @@ export async function rescheduleBooking(
       message: "Data ou horário inválido.",
     };
   }
+  // Duração TOTAL (itens) + buffer ÚNICO — mesma conta da criação (R17: a
+  // remarcação não pode inventar regra própria de ocupação).
   const endsAt = startsAt.plus({
-    minutes: booking.service.durationMin + booking.service.bufferMin,
+    minutes: duracaoOcupadaMin(booking.items, booking.service),
   });
 
   const fmt = (d: Date) =>
@@ -757,6 +821,64 @@ export async function cancelBooking(
     strikes: result.newStrikes,
     requiresDeposit: result.requiresDeposit,
   };
+}
+
+/**
+ * Devolve à agenda os horários de reservas que a cliente abandonou.
+ *
+ * A tela e o banco discordavam sobre hold vencido: `availability`/`slots`
+ * deixam de contar a reserva assim que o hold expira, mas a trava do banco
+ * (EXCLUDE, `status IN ('pending','confirmed')`) não olha `hold_expires_at` —
+ * a linha continuava barrando o INSERT. O site voltava a OFERECER o horário e
+ * recusava quem tentasse pegá-lo, em laço, sem que a Mi ou a cliente
+ * entendessem por quê.
+ *
+ * Encerrar a linha resolve dos dois lados. Sem enum novo (R11: migration só
+ * aditiva, e schema em produção é gate do Rodolfo): usa
+ * `cancelled_by_business`, que é o status que NÃO pune a cliente
+ * (`policies.ts` — sem strike, sem retenção de sinal). O motivo fica no
+ * `booking_events` para a auditoria distinguir de um cancelamento da Mi.
+ */
+export async function expireStaleHolds(): Promise<{ expiradas: number }> {
+  const vencidas = await prisma.booking.findMany({
+    where: { status: "pending", holdExpiresAt: { lt: new Date() } },
+    select: { id: true },
+  });
+
+  let expiradas = 0;
+  for (const { id } of vencidas) {
+    try {
+      const encerrou = await prisma.$transaction(async (tx) => {
+        // Recheca dentro da transação: entre a leitura e agora a cliente pode
+        // ter concluído. O updateMany com as mesmas condições é a trava.
+        const r = await tx.booking.updateMany({
+          where: {
+            id,
+            status: "pending",
+            holdExpiresAt: { lt: new Date() },
+          },
+          data: { status: "cancelled_by_business", holdExpiresAt: null },
+        });
+        if (r.count === 0) return false;
+        await tx.bookingEvent.create({
+          data: {
+            bookingId: id,
+            fromStatus: "pending",
+            toStatus: "cancelled_by_business",
+            actor: "system",
+            reason: "reserva_nao_concluida",
+          },
+        });
+        return true;
+      });
+      if (encerrou) expiradas++;
+    } catch (e) {
+      // Uma linha problemática não pode impedir a limpeza das outras.
+      console.error("expireStaleHolds: falha em", id, e);
+    }
+  }
+
+  return { expiradas };
 }
 
 export async function getBookingStatus(id: string) {

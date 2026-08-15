@@ -52,6 +52,11 @@ export function generateSlots(opts: GenerateSlotsOptions): DateTime[] {
   const earliestStart = now.plus({ hours: opts.minLeadHours });
   const total = opts.durationMin + opts.bufferMin;
   const slots: DateTime[] = [];
+  // Passo mínimo de 1 minuto: com 0 o laço abaixo nunca avança e trava o
+  // processo inteiro (Next é single-threaded). A validação do painel também
+  // barra o 0, mas o motor não pode depender disso — dado antigo já pode
+  // estar gravado com zero.
+  const step = Math.max(1, opts.stepMin);
 
   for (const [openStr, closeStr] of opts.workingHours) {
     const open = day.set(toHM(openStr));
@@ -61,7 +66,7 @@ export function generateSlots(opts: GenerateSlotsOptions): DateTime[] {
     for (
       let t = open;
       t.plus({ minutes: total }) <= close;
-      t = t.plus({ minutes: opts.stepMin })
+      t = t.plus({ minutes: step })
     ) {
       if (t < earliestStart) continue; // lead time mínimo
 
@@ -94,7 +99,10 @@ export interface BookingRow {
  * pending conta apenas enquanto o hold estiver vivo (hold_expires_at > now).
  * É aqui que "hold expirado libera o horário" sem intervenção.
  */
-export function busyFromBookings(bookings: BookingRow[], now: DateTime): Range[] {
+export function busyFromBookings(
+  bookings: BookingRow[],
+  now: DateTime,
+): Range[] {
   return bookings
     .filter(
       (b) =>
