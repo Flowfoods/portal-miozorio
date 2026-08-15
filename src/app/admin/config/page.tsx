@@ -17,7 +17,14 @@ const DAY_LABEL: [string, string][] = [
   ["sun", "Domingo"],
 ];
 
-const NUMERIC_FIELDS: { key: string; label: string; hint: string }[] = [
+// `min` acompanha o piso de adminSaveSettings: os dois campos marcados com 1
+// derrubam a agenda se receberem zero.
+const NUMERIC_FIELDS: {
+  key: string;
+  label: string;
+  hint: string;
+  min?: number;
+}[] = [
   { key: "buffer_min", label: "Intervalo entre clientes (min)", hint: "15" },
   { key: "min_lead_hours", label: "Antecedência mínima (horas)", hint: "24" },
   { key: "max_lead_days", label: "Agenda aberta até (dias)", hint: "90" },
@@ -28,8 +35,13 @@ const NUMERIC_FIELDS: { key: string; label: string; hint: string }[] = [
     hint: "3",
   },
   { key: "strike_limit", label: "Cancelamentos até exigir sinal", hint: "3" },
-  { key: "hold_minutes", label: "Reserva do horário (min)", hint: "8" },
-  { key: "slot_step_min", label: "Passo dos horários (min)", hint: "30" },
+  { key: "hold_minutes", label: "Reserva do horário (min)", hint: "8", min: 1 },
+  {
+    key: "slot_step_min",
+    label: "Passo dos horários (min)",
+    hint: "30",
+    min: 1,
+  },
 ];
 
 export default async function AdminConfigPage() {
@@ -96,7 +108,7 @@ export default async function AdminConfigPage() {
                   className="input-mi mt-1 !py-2"
                   name={f.key}
                   type="number"
-                  min={0}
+                  min={f.min ?? 0}
                   defaultValue={numericValue[f.key]}
                   placeholder={f.hint}
                   required

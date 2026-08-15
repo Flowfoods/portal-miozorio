@@ -560,6 +560,10 @@ function parseDayRanges(raw: string): [string, string][] | null {
 export async function adminSaveSettings(formData: FormData): Promise<void> {
   await requireAdmin();
 
+  // Piso por campo: zero em "passo dos horários" trava a geração de horários
+  // e derruba o site; zero em "reserva do horário" faz todo agendamento nascer
+  // já vencido para a tela e vivo para a trava do banco.
+  const PISO: Record<string, number> = { slot_step_min: 1, hold_minutes: 1 };
   const numeric: Record<string, number> = {};
   for (const key of [
     "buffer_min",
@@ -572,8 +576,13 @@ export async function adminSaveSettings(formData: FormData): Promise<void> {
     "slot_step_min",
   ]) {
     const n = Number(formData.get(key));
-    if (!Number.isFinite(n) || n < 0) {
-      fail(`Valor inválido em ${key}.`);
+    const piso = PISO[key] ?? 0;
+    if (!Number.isFinite(n) || n < piso) {
+      fail(
+        piso > 0
+          ? `Valor inválido em ${key}: precisa ser ${piso} ou mais.`
+          : `Valor inválido em ${key}.`,
+      );
     }
     numeric[key] = n;
   }

@@ -3,7 +3,11 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getSettings } from "./settings";
 import { normalizeE164BR } from "./phone";
-import { evaluateCancellation, evaluateNoShow } from "./policies";
+import {
+  evaluateCancellation,
+  evaluateNoShow,
+  duracaoOcupadaMin,
+} from "./policies";
 import {
   creditarPontosServico,
   creditarPontosIndicacao,
@@ -293,9 +297,9 @@ export async function createManualBooking(
     };
   }
   // Duração TOTAL (soma dos itens) + buffer ÚNICO entre clientes (R2/buffer).
-  const totalDuration = rows.reduce((sum, r) => sum + r.durationMin, 0);
-  const bufferMin = Math.max(...rows.map((r) => r.service.bufferMin));
-  const endsAt = startsAt.plus({ minutes: totalDuration + bufferMin });
+  const endsAt = startsAt.plus({
+    minutes: duracaoOcupadaMin(rows, rows[0]!.service),
+  });
 
   // Cliente: existente por id, ou cadastro rápido (upsert por telefone).
   let customerId = input.customerId ?? null;
@@ -440,7 +444,7 @@ export async function rescheduleBooking(
 ): Promise<RescheduleResult> {
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { service: true },
+    include: { service: true, items: { include: { service: true } } },
   });
   if (!booking) {
     return { ok: false, code: "not_found", message: "Reserva não encontrada." };
@@ -463,8 +467,10 @@ export async function rescheduleBooking(
       message: "Data ou horário inválido.",
     };
   }
+  // Duração TOTAL (itens) + buffer ÚNICO — mesma conta da criação (R17: a
+  // remarcação não pode inventar regra própria de ocupação).
   const endsAt = startsAt.plus({
-    minutes: booking.service.durationMin + booking.service.bufferMin,
+    minutes: duracaoOcupadaMin(booking.items, booking.service),
   });
 
   const fmt = (d: Date) =>
@@ -757,6 +763,64 @@ export async function cancelBooking(
     strikes: result.newStrikes,
     requiresDeposit: result.requiresDeposit,
   };
+}
+
+/**
+ * Devolve à agenda os horários de reservas que a cliente abandonou.
+ *
+ * A tela e o banco discordavam sobre hold vencido: `availability`/`slots`
+ * deixam de contar a reserva assim que o hold expira, mas a trava do banco
+ * (EXCLUDE, `status IN ('pending','confirmed')`) não olha `hold_expires_at` —
+ * a linha continuava barrando o INSERT. O site voltava a OFERECER o horário e
+ * recusava quem tentasse pegá-lo, em laço, sem que a Mi ou a cliente
+ * entendessem por quê.
+ *
+ * Encerrar a linha resolve dos dois lados. Sem enum novo (R11: migration só
+ * aditiva, e schema em produção é gate do Rodolfo): usa
+ * `cancelled_by_business`, que é o status que NÃO pune a cliente
+ * (`policies.ts` — sem strike, sem retenção de sinal). O motivo fica no
+ * `booking_events` para a auditoria distinguir de um cancelamento da Mi.
+ */
+export async function expireStaleHolds(): Promise<{ expiradas: number }> {
+  const vencidas = await prisma.booking.findMany({
+    where: { status: "pending", holdExpiresAt: { lt: new Date() } },
+    select: { id: true },
+  });
+
+  let expiradas = 0;
+  for (const { id } of vencidas) {
+    try {
+      const encerrou = await prisma.$transaction(async (tx) => {
+        // Recheca dentro da transação: entre a leitura e agora a cliente pode
+        // ter concluído. O updateMany com as mesmas condições é a trava.
+        const r = await tx.booking.updateMany({
+          where: {
+            id,
+            status: "pending",
+            holdExpiresAt: { lt: new Date() },
+          },
+          data: { status: "cancelled_by_business", holdExpiresAt: null },
+        });
+        if (r.count === 0) return false;
+        await tx.bookingEvent.create({
+          data: {
+            bookingId: id,
+            fromStatus: "pending",
+            toStatus: "cancelled_by_business",
+            actor: "system",
+            reason: "reserva_nao_concluida",
+          },
+        });
+        return true;
+      });
+      if (encerrou) expiradas++;
+    } catch (e) {
+      // Uma linha problemática não pode impedir a limpeza das outras.
+      console.error("expireStaleHolds: falha em", id, e);
+    }
+  }
+
+  return { expiradas };
 }
 
 export async function getBookingStatus(id: string) {

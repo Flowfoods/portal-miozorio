@@ -78,3 +78,26 @@ export function evaluateNoShow(input: NoShowInput): NoShowResult {
     requiresDeposit: newStrikes >= input.strikeLimit,
   };
 }
+
+export interface DuracaoItem {
+  durationMin: number;
+  service: { bufferMin: number };
+}
+
+/**
+ * Minutos que um atendimento ocupa na agenda: soma das durações dos itens +
+ * UM buffer (o maior entre eles). Sem itens, cai no serviço primário.
+ *
+ * Fonte única para criação e remarcação: quando a remarcação tinha conta
+ * própria — só o serviço primário — "Maquiagem + Penteado" encolhia de 135
+ * para 75 minutos, e os 60 que sumiam voltavam a ser vendidos no site.
+ */
+export function duracaoOcupadaMin(
+  itens: DuracaoItem[],
+  servico: { durationMin: number; bufferMin: number },
+): number {
+  if (itens.length === 0) return servico.durationMin + servico.bufferMin;
+  const duracao = itens.reduce((sum, it) => sum + it.durationMin, 0);
+  const buffer = Math.max(...itens.map((it) => it.service.bufferMin));
+  return duracao + buffer;
+}
