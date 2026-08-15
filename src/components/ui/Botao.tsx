@@ -11,8 +11,10 @@ const BASE =
   "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-mi px-7 font-corpo text-base transition-colors disabled:cursor-not-allowed disabled:bg-mi-marrom-suave disabled:text-mi-branco";
 
 const VARIANTES: Record<Variante, string> = {
+  // Branco sobre #8A7361 = 4,46:1 — reprova AA por 0,9%. É o botão principal
+  // do site inteiro: o fundo vira o escuro (8,39:1) e o claro vira o hover.
   primario:
-    "bg-mi-marrom text-mi-branco shadow-suave hover:bg-mi-marrom-escuro",
+    "bg-mi-marrom-escuro text-mi-branco shadow-suave hover:bg-mi-marrom",
   secundario:
     "border border-mi-marrom text-mi-marrom-escuro hover:bg-mi-cinza",
   whatsapp:

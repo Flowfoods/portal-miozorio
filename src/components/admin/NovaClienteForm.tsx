@@ -17,30 +17,30 @@ export default function NovaClienteForm() {
   );
   return (
     <details className="mb-6 rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-      <summary className="cursor-pointer font-corpo text-sm text-mi-marrom">
+      <summary className="cursor-pointer font-corpo text-sm text-mi-marrom-escuro">
         ＋ Cadastrar cliente
       </summary>
       <form action={action} className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">Nome</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">Nome</span>
           <input name="name" required minLength={2} className="input-mi" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">WhatsApp</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">WhatsApp</span>
           <PhoneField />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">E-mail (opcional)</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">E-mail (opcional)</span>
           <input name="email" type="email" className="input-mi" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">
+          <span className="mb-1 block text-xs text-mi-texto/80">
             Nascimento (opcional)
           </span>
           <input type="date" name="birthDate" className="input-mi" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">
+          <span className="mb-1 block text-xs text-mi-texto/80">
             Origem do contato (opcional)
           </span>
           <input
@@ -50,11 +50,11 @@ export default function NovaClienteForm() {
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-mi-texto/60">Alergias (opcional)</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">Alergias (opcional)</span>
           <input name="allergies" className="input-mi" />
         </label>
         <label className="block sm:col-span-2">
-          <span className="mb-1 block text-xs text-mi-texto/60">Anotações (opcional)</span>
+          <span className="mb-1 block text-xs text-mi-texto/80">Anotações (opcional)</span>
           <input name="notes" className="input-mi" />
         </label>
         <label className="flex items-start gap-2 text-sm sm:col-span-2">

@@ -16,7 +16,7 @@ const WA =
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-5 py-16 text-center">
-      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Mi Ozorio · Beauty Artist
       </p>
       <h1 className="mt-3 font-titulo text-4xl text-mi-marrom-escuro">

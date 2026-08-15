@@ -46,13 +46,13 @@ export default async function PerfilPage() {
 
       <section className="mt-4 space-y-3 rounded-mi bg-mi-branco p-5 shadow-suave">
         <div>
-          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
             Nome
           </p>
           <p className="font-corpo text-mi-texto">{customer.name}</p>
         </div>
         <div>
-          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
             WhatsApp
           </p>
           <p className="font-corpo text-mi-texto">
@@ -61,13 +61,13 @@ export default async function PerfilPage() {
         </div>
         {customer.email && (
           <div>
-            <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+            <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
               E-mail
             </p>
             <p className="font-corpo text-mi-texto">{customer.email}</p>
           </div>
         )}
-        <p className="border-t border-mi-cinza/60 pt-3 font-corpo text-xs text-mi-texto/60">
+        <p className="border-t border-mi-cinza/60 pt-3 font-corpo text-xs text-mi-texto/80">
           Precisa atualizar algum dado? É só falar com a Mi no WhatsApp 💛
         </p>
       </section>
@@ -76,7 +76,7 @@ export default async function PerfilPage() {
         <h2 className="font-titulo text-lg text-mi-marrom-escuro">
           Entrar com Face ID / biometria
         </h2>
-        <p className="mb-3 mt-1 font-corpo text-xs text-mi-texto/60">
+        <p className="mb-3 mt-1 font-corpo text-xs text-mi-texto/80">
           Ative para entrar sem digitar senha, usando o reconhecimento do seu
           celular. Sua senha continua valendo 💛
         </p>

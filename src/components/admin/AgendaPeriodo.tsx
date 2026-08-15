@@ -48,7 +48,7 @@ export default function AgendaPeriodo({
       </div>
 
       {dias.length === 0 && (
-        <p className="rounded-mi bg-mi-superficie-elevada p-8 text-center font-corpo text-sm text-mi-texto/55 shadow-suave">
+        <p className="rounded-mi bg-mi-superficie-elevada p-8 text-center font-corpo text-sm text-mi-texto/80 shadow-suave">
           Nenhum registro nesse período 🤎 Tente ampliar as datas.
         </p>
       )}
@@ -64,7 +64,7 @@ export default function AgendaPeriodo({
                 className="mb-2 block font-titulo text-lg capitalize text-mi-marrom-escuro underline-offset-4 hover:underline"
               >
                 {d.toFormat("cccc, dd 'de' LLLL")}
-                <span className="ml-2 font-corpo text-xs normal-case text-mi-texto/55">
+                <span className="ml-2 font-corpo text-xs normal-case text-mi-texto/80">
                   {doDia.length} atendimento(s)
                 </span>
               </Link>
@@ -102,11 +102,11 @@ export default function AgendaPeriodo({
 function Total({ titulo, valor, sub }: { titulo: string; valor: string; sub: string }) {
   return (
     <div className="rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
         {titulo}
       </p>
       <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{valor}</p>
-      <p className="font-corpo text-xs text-mi-texto/55">{sub}</p>
+      <p className="font-corpo text-xs text-mi-texto/80">{sub}</p>
     </div>
   );
 }

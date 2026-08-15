@@ -46,11 +46,11 @@ export default async function MensagensPage() {
     <>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Mensagens</h1>
-        <Link href="/admin/crm" className="text-sm text-mi-marrom hover:underline">
+        <Link href="/admin/crm" className="text-sm text-mi-marrom-escuro hover:underline">
           ← CRM
         </Link>
       </div>
-      <p className="mb-6 max-w-2xl text-sm text-mi-texto/70">
+      <p className="mb-6 max-w-2xl text-sm text-mi-texto/80">
         Sugestões de mensagem esperando o seu toque: leia, deixe com a sua cara
         e envie — nada sai sem passar por você. O ritmo e a quantidade você
         ajusta nas{" "}
@@ -65,7 +65,7 @@ export default async function MensagensPage() {
       <section className="mt-10">
         <h2 className="mb-3 text-xl">Últimas tratadas</h2>
         {historico.length === 0 ? (
-          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/80 shadow-suave">
             Nada por aqui ainda.
           </p>
         ) : (
@@ -95,7 +95,7 @@ export default async function MensagensPage() {
                         ? "falhou"
                         : "descartada"}
                   </span>
-                  <span className="text-xs text-mi-texto/50">
+                  <span className="text-xs text-mi-texto/80">
                     {fmt(e.enviadoEm ?? e.createdAt)}
                   </span>
                 </span>

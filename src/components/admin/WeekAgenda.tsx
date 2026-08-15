@@ -93,7 +93,7 @@ export default function WeekAgenda({
                     <span className="block truncate text-mi-texto">
                       {b.customer.name.split(" ")[0]}
                     </span>
-                    <span className="block truncate text-mi-texto/60">
+                    <span className="block truncate text-mi-texto/80">
                       {b.service.name}
                     </span>
                   </Link>

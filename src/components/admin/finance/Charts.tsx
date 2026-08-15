@@ -24,7 +24,7 @@ export function BarrasReceitaDespesa({ serie }: { serie: PontoSerie[] }) {
 
   if (serie.length === 0) {
     return (
-      <p className="rounded-mi bg-mi-superficie-elevada p-8 text-center text-sm text-mi-texto/50 shadow-suave">
+      <p className="rounded-mi bg-mi-superficie-elevada p-8 text-center text-sm text-mi-texto/80 shadow-suave">
         Sem dados no período.
       </p>
     );
@@ -81,7 +81,7 @@ export function BarrasReceitaDespesa({ serie }: { serie: PontoSerie[] }) {
           <circle key={i} cx={p.cx} cy={p.cy} r="3.5" fill={p.v >= 0 ? LUCRO : PREJUIZO} stroke="#fff" strokeWidth="1.5" />
         ))}
       </svg>
-      <div className="mt-2 flex flex-wrap gap-4 px-1 text-xs text-mi-texto/70">
+      <div className="mt-2 flex flex-wrap gap-4 px-1 text-xs text-mi-texto/80">
         <Legenda cor={RECEITA} rotulo="Receita" />
         <Legenda cor={DESPESA} rotulo="Despesa" />
         <Legenda cor="#5C4A3D" rotulo="Resultado" linha />
@@ -126,9 +126,9 @@ export function Donut({
   let acc = 0;
   return (
     <div className="rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-      <p className="mb-3 font-corpo text-sm text-mi-texto/70">{titulo}</p>
+      <p className="mb-3 font-corpo text-sm text-mi-texto/80">{titulo}</p>
       {total === 0 ? (
-        <p className="py-8 text-center text-sm text-mi-texto/50">
+        <p className="py-8 text-center text-sm text-mi-texto/80">
           Nada lançado neste mês.
         </p>
       ) : (
@@ -168,7 +168,7 @@ export function Donut({
                   <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: f.color }} />
                   <span className="truncate text-mi-texto/80">{f.label}</span>
                 </span>
-                <span className="shrink-0 text-mi-texto/60">
+                <span className="shrink-0 text-mi-texto/80">
                   {Math.round((f.cents / total) * 100)}%
                 </span>
               </li>

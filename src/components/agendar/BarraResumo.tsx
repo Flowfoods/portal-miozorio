@@ -19,7 +19,7 @@ export default function BarraResumo({ servico, preco, detalhe }: BarraResumoProp
             {servico}
           </p>
           {detalhe ? (
-            <p className="truncate font-corpo text-xs capitalize text-mi-marrom">
+            <p className="truncate font-corpo text-xs capitalize text-mi-marrom-escuro">
               {detalhe}
             </p>
           ) : null}

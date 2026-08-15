@@ -43,7 +43,7 @@ export default async function ClubePage() {
     <main className="mx-auto max-w-5xl px-5 pb-24 pt-14">
       {/* Hero */}
       <section className="text-center">
-        <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+        <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
           Clube Mi Ozorio
         </p>
         <h1 className="mx-auto mt-3 max-w-2xl text-4xl leading-tight sm:text-5xl">
@@ -96,11 +96,11 @@ export default async function ClubePage() {
                 <p className="font-corpo text-3xl font-medium text-mi-marrom-escuro">
                   {r.custoPontos}
                 </p>
-                <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom">
+                <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom-escuro">
                   pontos
                 </p>
                 <p className="mt-3 font-corpo text-sm text-mi-texto/85">{r.nome}</p>
-                <p className="mt-1 font-corpo text-xs text-mi-texto/60">
+                <p className="mt-1 font-corpo text-xs text-mi-texto/80">
                   {r.tipo === "servico" ? "Serviço" : "Prêmio"}
                 </p>
               </div>
@@ -109,7 +109,7 @@ export default async function ClubePage() {
         </section>
       )}
 
-      <p className="mx-auto mt-10 max-w-xl text-center font-corpo text-xs text-mi-texto/60">
+      <p className="mx-auto mt-10 max-w-xl text-center font-corpo text-xs text-mi-texto/80">
         Produções de noiva ou debutante são sempre combinadas direto com a Mi no
         WhatsApp — cada grande dia é um projeto único
       </p>
@@ -118,7 +118,7 @@ export default async function ClubePage() {
       <section id="participar" className="mt-16 scroll-mt-24">
         <div className="mx-auto max-w-lg rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
           <h2 className="text-2xl">Entrar no clube</h2>
-          <p className="mb-6 mt-2 font-corpo text-sm text-mi-texto/70">
+          <p className="mb-6 mt-2 font-corpo text-sm text-mi-texto/80">
             Leva menos de um minuto — e já sai com seu link de indicação.
           </p>
           <JoinForm />

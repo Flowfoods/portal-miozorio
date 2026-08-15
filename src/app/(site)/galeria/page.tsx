@@ -27,7 +27,7 @@ export default async function GaleriaPage() {
       </header>
 
       {fotos.length === 0 ? (
-        <p className="font-corpo text-mi-texto/70">
+        <p className="font-corpo text-mi-texto/80">
           Em breve, os trabalhos da Mi por aqui.
         </p>
       ) : (

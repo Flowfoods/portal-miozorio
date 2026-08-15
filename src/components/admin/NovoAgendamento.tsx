@@ -359,7 +359,7 @@ export default function NovoAgendamento({
             setOpen(false);
             resetForm();
           }}
-          className="text-sm text-mi-marrom underline-offset-2 hover:underline"
+          className="text-sm text-mi-marrom-escuro underline-offset-2 hover:underline"
         >
           fechar
         </button>
@@ -447,7 +447,7 @@ export default function NovoAgendamento({
                     </label>
                   </div>
                   {ajustado && (
-                    <p className="mt-1 text-[11px] text-mi-marrom">
+                    <p className="mt-1 text-[11px] text-mi-marrom-escuro">
                       Tabela: {formatBRL(tabela)} · cobrado {formatBRL(cobrado)}
                     </p>
                   )}
@@ -457,7 +457,7 @@ export default function NovoAgendamento({
             <button
               type="button"
               onClick={addItem}
-              className="text-sm text-mi-marrom underline-offset-2 hover:underline"
+              className="text-sm text-mi-marrom-escuro underline-offset-2 hover:underline"
             >
               ＋ Adicionar serviço
             </button>
@@ -493,7 +493,7 @@ export default function NovoAgendamento({
                     setPicked(null);
                     setQuery("");
                   }}
-                  className="text-xs text-mi-marrom underline-offset-2 hover:underline"
+                  className="text-xs text-mi-marrom-escuro underline-offset-2 hover:underline"
                 >
                   trocar
                 </button>
@@ -516,13 +516,13 @@ export default function NovoAgendamento({
                           className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-mi-cinza"
                         >
                           <span>{c.name}</span>
-                          <span className="text-mi-texto/60">{c.phoneE164}</span>
+                          <span className="text-mi-texto/80">{c.phoneE164}</span>
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
-                <p className="mt-3 text-xs text-mi-texto/60">
+                <p className="mt-3 text-xs text-mi-texto/80">
                   Não achou? Cadastre rapidinho:
                 </p>
                 <div className="mt-1 grid gap-2 sm:grid-cols-2">
@@ -557,7 +557,7 @@ export default function NovoAgendamento({
             <button
               type="button"
               onClick={() => setAnamneseOpen((v) => !v)}
-              className="text-sm text-mi-marrom underline-offset-2 hover:underline"
+              className="text-sm text-mi-marrom-escuro underline-offset-2 hover:underline"
             >
               {anamneseOpen ? "− Esconder anamnese" : "＋ Anamnese (opcional)"}
             </button>
@@ -594,7 +594,7 @@ export default function NovoAgendamento({
           <div className="rounded-mi border border-mi-cinza bg-mi-superficie p-3">
             <span className="text-sm font-medium text-mi-marrom-escuro">
               Foto de referência{" "}
-              <span className="font-normal text-mi-texto/60">(opcional)</span>
+              <span className="font-normal text-mi-texto/80">(opcional)</span>
             </span>
             {photoPreview ? (
               <div className="mt-2 flex items-start gap-3">
@@ -608,7 +608,7 @@ export default function NovoAgendamento({
                   <button
                     type="button"
                     onClick={removePhoto}
-                    className="text-xs text-mi-marrom underline-offset-2 hover:underline"
+                    className="text-xs text-mi-marrom-escuro underline-offset-2 hover:underline"
                   >
                     remover foto
                   </button>
@@ -625,7 +625,7 @@ export default function NovoAgendamento({
                 </div>
               </div>
             ) : (
-              <label className="mt-2 flex min-h-[44px] cursor-pointer items-center justify-center rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 text-sm text-mi-marrom hover:border-mi-marrom">
+              <label className="mt-2 flex min-h-[44px] cursor-pointer items-center justify-center rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 text-sm text-mi-marrom-escuro hover:border-mi-marrom">
                 Anexar foto (JPG/PNG/WebP, até 5MB)
                 <input
                   type="file"
@@ -635,7 +635,7 @@ export default function NovoAgendamento({
                 />
               </label>
             )}
-            <p className="mt-2 text-[11px] text-mi-texto/55">
+            <p className="mt-2 text-[11px] text-mi-texto/80">
               Guardada em local privado, só você vê. Pode remover depois.
             </p>
           </div>
@@ -673,7 +673,7 @@ export default function NovoAgendamento({
               Avisar no WhatsApp
             </label>
           </div>
-          <p className="-mt-2 text-xs text-mi-texto/50">
+          <p className="-mt-2 text-xs text-mi-texto/80">
             O aviso automático no WhatsApp entra junto com as automações (em
             breve).
           </p>
@@ -685,7 +685,7 @@ export default function NovoAgendamento({
             <span className="text-sm font-medium text-mi-marrom-escuro">
               Horário
             </span>
-            <label className="flex items-center gap-2 text-xs text-mi-marrom">
+            <label className="flex items-center gap-2 text-xs text-mi-marrom-escuro">
               <input
                 type="checkbox"
                 checked={freeTime}
@@ -709,10 +709,10 @@ export default function NovoAgendamento({
           ) : (
             <div className="mt-3">
               {slotsLoading && (
-                <span className="text-sm text-mi-texto/60">carregando…</span>
+                <span className="text-sm text-mi-texto/80">carregando…</span>
               )}
               {!slotsLoading && slots && slots.length === 0 && (
-                <p className="rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 py-4 text-center text-sm text-mi-texto/70">
+                <p className="rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 py-4 text-center text-sm text-mi-texto/80">
                   Sem horário no padrão neste dia.
                   <br />
                   Marque “horário livre” acima para encaixar.
@@ -742,7 +742,7 @@ export default function NovoAgendamento({
           {/* Resumo */}
           <dl className="mt-4 space-y-1 border-t border-mi-cinza/60 pt-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-mi-texto/70">Dia / horário</dt>
+              <dt className="text-mi-texto/80">Dia / horário</dt>
               <dd className="text-mi-marrom-escuro">
                 {date
                   ? new Date(`${date}T00:00`).toLocaleDateString("pt-BR")
@@ -751,13 +751,13 @@ export default function NovoAgendamento({
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-mi-texto/70">Duração total</dt>
+              <dt className="text-mi-texto/80">Duração total</dt>
               <dd className="text-mi-marrom-escuro">
                 {totalDuration > 0 ? formatDuration(totalDuration) : "—"}
               </dd>
             </div>
             <div className="flex justify-between font-medium">
-              <dt className="text-mi-texto/70">Valor total</dt>
+              <dt className="text-mi-texto/80">Valor total</dt>
               <dd className="text-mi-marrom-escuro">{formatBRL(totalCents)}</dd>
             </div>
           </dl>
@@ -794,14 +794,14 @@ export default function NovoAgendamento({
             <h3 className="font-titulo text-xl text-mi-marrom-escuro">
               Confirmar agendamento
             </h3>
-            <p className="mt-1 text-sm text-mi-texto/70">
+            <p className="mt-1 text-sm text-mi-texto/80">
               {servicoNames} · {date ? new Date(`${date}T00:00`).toLocaleDateString("pt-BR") : ""}
               {time ? ` às ${time}` : ""}
             </p>
 
             {notify ? (
               <div className="mt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-mi-marrom">
+                <p className="text-xs font-medium uppercase tracking-wide text-mi-marrom-escuro">
                   Mensagem que será enviada no WhatsApp
                 </p>
                 <div className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-mi border border-mi-cinza bg-mi-superficie p-3 text-sm text-mi-texto">
@@ -811,7 +811,7 @@ export default function NovoAgendamento({
                 </div>
               </div>
             ) : (
-              <p className="mt-4 rounded-mi border border-dashed border-mi-cinza bg-mi-superficie p-3 text-sm text-mi-texto/70">
+              <p className="mt-4 rounded-mi border border-dashed border-mi-cinza bg-mi-superficie p-3 text-sm text-mi-texto/80">
                 “Avisar no WhatsApp” está desligado — nenhuma mensagem será
                 enviada à cliente.
               </p>

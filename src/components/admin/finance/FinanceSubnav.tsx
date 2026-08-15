@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/admin/financeiro", label: "Dashboard" },
+  { href: "/admin/financeiro", label: "Visão geral" },
   { href: "/admin/financeiro/custos", label: "Custos" },
   { href: "/admin/financeiro/receitas", label: "Receitas" },
   { href: "/admin/financeiro/categorias", label: "Categorias" },

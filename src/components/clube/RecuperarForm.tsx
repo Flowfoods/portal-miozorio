@@ -69,7 +69,7 @@ export default function RecuperarForm() {
     return (
       <form action={pedirAction} className="space-y-4">
         <label className="block">
-          <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+          <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
             Seu WhatsApp
           </span>
           <PhoneField />
@@ -88,7 +88,7 @@ export default function RecuperarForm() {
   if (step === "code") {
     return (
       <div className="space-y-4">
-        <p className="font-corpo text-sm text-mi-texto/70">
+        <p className="font-corpo text-sm text-mi-texto/80">
           Se este número tiver conta no Clube, enviamos um código de 6 dígitos
           por WhatsApp. Digite ele aqui:
         </p>
@@ -119,7 +119,7 @@ export default function RecuperarForm() {
           <button
             type="submit"
             disabled={cooldown > 0}
-            className="w-full font-corpo text-sm text-mi-marrom underline underline-offset-4 disabled:text-mi-texto/40 disabled:no-underline"
+            className="w-full font-corpo text-sm text-mi-marrom-escuro underline underline-offset-4 disabled:text-mi-texto/40 disabled:no-underline"
           >
             {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
           </button>
@@ -131,11 +131,11 @@ export default function RecuperarForm() {
   // step === "senha"
   return (
     <form action={senhaAction} className="space-y-4">
-      <p className="font-corpo text-sm text-mi-texto/70">
+      <p className="font-corpo text-sm text-mi-texto/80">
         Código confirmado 💛 Agora crie sua nova senha:
       </p>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Nova senha
         </span>
         <PasswordField
@@ -145,7 +145,7 @@ export default function RecuperarForm() {
           autoComplete="new-password"
           showStrength
         />
-        <span className="mt-1 block font-corpo text-xs text-mi-texto/55">
+        <span className="mt-1 block font-corpo text-xs text-mi-texto/80">
           Pelo menos 6 caracteres, diferente do seu telefone.
         </span>
       </label>

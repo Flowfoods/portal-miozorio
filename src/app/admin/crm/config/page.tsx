@@ -54,12 +54,12 @@ export default async function CrmConfigPage() {
         <h1 className="text-3xl">Configurações do CRM</h1>
         <Link
           href="/admin/crm"
-          className="text-sm text-mi-marrom hover:underline"
+          className="text-sm text-mi-marrom-escuro hover:underline"
         >
           ← CRM
         </Link>
       </div>
-      <p className="mb-6 max-w-2xl text-sm text-mi-texto/70">
+      <p className="mb-6 max-w-2xl text-sm text-mi-texto/80">
         Aqui você define o que faz uma cliente ser Campeã, Fiel ou estar
         sumida — do seu jeito. Use a prévia para ver o efeito antes de salvar;
         ao salvar, todas as clientes são reclassificadas na hora.
@@ -70,7 +70,7 @@ export default async function CrmConfigPage() {
       <section className="mt-10">
         <h2 className="mb-3 text-xl">Histórico de alterações</h2>
         {historico.length === 0 && (
-          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-4 text-sm text-mi-texto/80 shadow-suave">
             Nenhuma alteração salva ainda — valem os padrões do sistema.
           </p>
         )}
@@ -79,7 +79,7 @@ export default async function CrmConfigPage() {
             <div key={h.id} className="rounded-mi bg-mi-branco p-4 shadow-suave">
               <p className="text-sm font-medium">
                 {h.quando}{" "}
-                <span className="font-normal text-mi-texto/60">
+                <span className="font-normal text-mi-texto/80">
                   · {h.quem}
                 </span>
               </p>

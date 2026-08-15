@@ -136,7 +136,7 @@ export default function MobileNav() {
             <span className="block font-titulo text-2xl text-mi-marrom-escuro">
               Mi Ozorio
             </span>
-            <span className="mt-1.5 block font-corpo text-[10px] uppercase tracking-[0.3em] text-mi-marrom">
+            <span className="mt-1.5 block font-corpo text-[10px] uppercase tracking-[0.3em] text-mi-marrom-escuro">
               Beauty Artist
             </span>
           </span>
@@ -213,7 +213,7 @@ export default function MobileNav() {
 
         {/* Contato — rótulo + ícones, discreto */}
         <div className="relative border-t border-mi-cinza/60 px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5">
-          <p className="font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom">
+          <p className="font-corpo text-[10px] uppercase tracking-[0.25em] text-mi-marrom-escuro">
             Contato
           </p>
           <a

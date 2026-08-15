@@ -71,7 +71,7 @@ function Lista({ titulo, itens }: { titulo: string; itens: Servico[] }) {
             className="flex flex-col rounded-mi border border-mi-cinza bg-mi-branco p-6 shadow-suave"
           >
             <h3 className="font-titulo text-2xl text-mi-marrom-escuro">{s.name}</h3>
-            <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+            <p className="mt-1 font-corpo text-sm text-mi-texto/80">
               {formatDuration(s.durationMin)} · <Preco s={s} />
             </p>
             <div className="mt-4">
@@ -116,7 +116,7 @@ export default async function DiaADiaPage() {
         <>
           <Lista titulo="Cabelo" itens={cabelo} />
           <Lista titulo="Sobrancelhas" itens={sobrancelha} />
-          <p className="mt-2 font-corpo text-sm text-mi-texto/60">
+          <p className="mt-2 font-corpo text-sm text-mi-texto/80">
             Valores e horários de alguns serviços ainda estão sendo combinados —
             é só chamar que a Mi te ajuda.
           </p>

@@ -48,7 +48,7 @@ export default function RegraIndicacaoForm({
               value={percentual}
               onChange={(e) => setPercentual(e.target.value)}
             />
-            <span className="text-sm text-mi-texto/70">%</span>
+            <span className="text-sm text-mi-texto/80">%</span>
           </div>
         </label>
 
@@ -65,7 +65,7 @@ export default function RegraIndicacaoForm({
       </div>
 
       <fieldset className="text-xs">
-        <legend className="mb-1 text-mi-texto/70">
+        <legend className="mb-1 text-mi-texto/80">
           Quando a indicadora ganha pontos
         </legend>
         <label className="flex items-start gap-2 py-1">

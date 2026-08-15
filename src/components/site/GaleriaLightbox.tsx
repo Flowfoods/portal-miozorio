@@ -72,7 +72,7 @@ export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
               <button
                 type="button"
                 onClick={fechar}
-                className="font-corpo text-sm text-mi-marrom underline underline-offset-4 transition-colors hover:text-mi-marrom-escuro"
+                className="font-corpo text-sm text-mi-marrom-escuro underline underline-offset-4 transition-colors hover:text-mi-marrom-escuro"
               >
                 fechar
               </button>

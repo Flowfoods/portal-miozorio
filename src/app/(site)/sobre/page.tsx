@@ -27,7 +27,7 @@ export default async function SobrePage() {
     <main>
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 sm:py-24 md:grid-cols-2">
         <div>
-          <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+          <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
             Sobre a Mi
           </p>
           <h1 className="mt-5 font-titulo text-5xl leading-tight text-mi-marrom-escuro">

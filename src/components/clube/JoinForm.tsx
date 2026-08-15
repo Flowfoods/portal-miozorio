@@ -16,26 +16,26 @@ export default function JoinForm() {
     <form action={action} className="space-y-4">
       <Honeypot />
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu nome
         </span>
         <input name="name" required minLength={2} className="input-mi" />
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu WhatsApp
         </span>
         <PhoneField />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+          <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
             E-mail (opcional)
           </span>
           <input name="email" type="email" className="input-mi" />
         </label>
         <label className="block">
-          <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+          <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
             Aniversário (opcional — pra te mimar)
           </span>
           <input name="birthDate" type="date" className="input-mi" />

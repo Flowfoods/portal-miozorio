@@ -24,7 +24,7 @@ export default async function CrmJornadasPage() {
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Jornadas</h1>
-        <Link href="/admin/crm" className="text-sm text-mi-marrom hover:underline">
+        <Link href="/admin/crm" className="text-sm text-mi-marrom-escuro hover:underline">
           ← CRM
         </Link>
       </div>
@@ -37,7 +37,7 @@ export default async function CrmJornadasPage() {
 
       {jornadas.length === 0 ? (
         <form action={adminSeedJornadasPadrao}>
-          <p className="mb-3 text-sm text-mi-texto/70">
+          <p className="mb-3 text-sm text-mi-texto/80">
             Nenhuma jornada criada ainda. Crie as três padrão (todas desativadas).
           </p>
           <SubmitButton
@@ -64,13 +64,13 @@ export default async function CrmJornadasPage() {
                         className={`rounded-full px-2 py-0.5 text-xs ${
                           j.ativo
                             ? "bg-emerald-100 text-emerald-900"
-                            : "bg-mi-cinza/50 text-mi-texto/70"
+                            : "bg-mi-cinza/50 text-mi-texto/80"
                         }`}
                       >
                         {j.ativo ? "Ativa" : "Desativada"}
                       </span>
                     </p>
-                    <p className="mt-0.5 text-xs text-mi-texto/60">
+                    <p className="mt-0.5 text-xs text-mi-texto/80">
                       {GATILHO_LABEL[j.gatilho] ?? j.gatilho} · {j._count.envios}{" "}
                       envio(s)
                     </p>

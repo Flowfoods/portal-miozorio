@@ -44,7 +44,7 @@ function Anamnese({ data }: { data: unknown }) {
   ].filter(([, v]) => typeof v === "string" && v.trim());
   if (!rows.length) return null;
   return (
-    <dl className="mt-2 space-y-0.5 text-xs text-mi-texto/70">
+    <dl className="mt-2 space-y-0.5 text-xs text-mi-texto/80">
       {rows.map(([k, v]) => (
         <div key={String(k)}>
           <dt className="inline font-medium">{String(k)}: </dt>
@@ -115,7 +115,7 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
               </a>
               <form action={adminDeleteBookingPhoto}>
                 <input type="hidden" name="id" value={b.id} />
-                <button className="text-xs text-mi-marrom underline-offset-2 hover:underline">
+                <button className="text-xs text-mi-marrom-escuro underline-offset-2 hover:underline">
                   remover foto
                 </button>
               </form>
@@ -277,7 +277,7 @@ export default async function AdminAgendaPage({
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Agenda</h1>
-        <p className="text-sm text-mi-texto/70">
+        <p className="text-sm text-mi-texto/80">
           {confirmedWeek} confirmado(s) nos próximos 7 dias ·{" "}
           {pendingUpcoming.length} pendente(s)
         </p>
@@ -401,7 +401,7 @@ function DayView({
           próximo →
         </Link>
         {!day.equals(today) && (
-          <Link className="text-sm text-mi-marrom underline" href="/admin">
+          <Link className="text-sm text-mi-marrom-escuro underline" href="/admin">
             hoje
           </Link>
         )}
@@ -409,7 +409,7 @@ function DayView({
 
       <section className="space-y-3">
         {bookings.length === 0 && (
-          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/60 shadow-suave">
+          <p className="rounded-mi bg-mi-branco p-6 text-sm text-mi-texto/80 shadow-suave">
             Nenhum agendamento neste dia.
           </p>
         )}

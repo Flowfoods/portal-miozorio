@@ -30,7 +30,7 @@ export default async function NovaCampanhaPage() {
   return (
     <>
       <div className="mb-2">
-        <Link href="/admin/campanhas" className="text-sm text-mi-marrom underline">
+        <Link href="/admin/campanhas" className="text-sm text-mi-marrom-escuro underline">
           ← Campanhas
         </Link>
       </div>

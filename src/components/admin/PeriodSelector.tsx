@@ -75,7 +75,7 @@ export default function PeriodSelector({
       {/* Mobile: select. Desktop (sm+): chips. */}
       <div className="sm:hidden">
         <label className="block">
-          <span className="mb-1 block font-corpo text-xs text-mi-texto/60">
+          <span className="mb-1 block font-corpo text-xs text-mi-texto/80">
             Período
           </span>
           <select
@@ -116,7 +116,7 @@ export default function PeriodSelector({
       {custom && (
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="block">
-            <span className="mb-1 block font-corpo text-xs text-mi-texto/60">De</span>
+            <span className="mb-1 block font-corpo text-xs text-mi-texto/80">De</span>
             <input
               type="date"
               value={de}
@@ -126,7 +126,7 @@ export default function PeriodSelector({
             />
           </label>
           <label className="block">
-            <span className="mb-1 block font-corpo text-xs text-mi-texto/60">Até</span>
+            <span className="mb-1 block font-corpo text-xs text-mi-texto/80">Até</span>
             <input
               type="date"
               value={ate}
@@ -146,7 +146,7 @@ export default function PeriodSelector({
         </div>
       )}
 
-      <p className="mt-2 font-corpo text-sm text-mi-texto/70 first-letter:uppercase">
+      <p className="mt-2 font-corpo text-sm text-mi-texto/80 first-letter:uppercase">
         {extenso}
       </p>
       {error && (

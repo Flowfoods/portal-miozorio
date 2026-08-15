@@ -24,7 +24,7 @@ export default async function AdminPacotesPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Pacotes e perguntas</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Pacotes e FAQs das páginas de noiva e debutante. Enquanto uma categoria
         não tiver itens aqui, o site mostra o conteúdo padrão.
       </p>
@@ -39,9 +39,9 @@ export default async function AdminPacotesPage() {
             </h2>
 
             {/* Pacotes */}
-            <h3 className="mb-2 text-sm font-medium text-mi-texto/70">Pacotes</h3>
+            <h3 className="mb-2 text-sm font-medium text-mi-texto/80">Pacotes</h3>
             <details className="mb-3 rounded-mi bg-mi-branco p-4 shadow-suave">
-              <summary className="cursor-pointer text-sm text-mi-marrom">
+              <summary className="cursor-pointer text-sm text-mi-marrom-escuro">
                 ＋ Novo pacote
               </summary>
               <form action={adminCreatePacote} className="mt-3 space-y-2">
@@ -87,9 +87,9 @@ export default async function AdminPacotesPage() {
             ))}
 
             {/* FAQs */}
-            <h3 className="mb-2 mt-6 text-sm font-medium text-mi-texto/70">Perguntas frequentes</h3>
+            <h3 className="mb-2 mt-6 text-sm font-medium text-mi-texto/80">Perguntas frequentes</h3>
             <details className="mb-3 rounded-mi bg-mi-branco p-4 shadow-suave">
-              <summary className="cursor-pointer text-sm text-mi-marrom">＋ Nova pergunta</summary>
+              <summary className="cursor-pointer text-sm text-mi-marrom-escuro">＋ Nova pergunta</summary>
               <form action={adminCreateFaq} className="mt-3 space-y-2">
                 <input type="hidden" name="categoria" value={cat.key} />
                 <input name="pergunta" placeholder="Pergunta" required className="input-mi w-full !py-2" />

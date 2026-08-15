@@ -26,7 +26,7 @@ export default function ContaShell({
 }) {
   return (
     <main className="mx-auto max-w-lg px-5 pb-24 pt-10">
-      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
         Área da Cliente · Mi Ozorio
       </p>
       <nav aria-label="Sua área" className="mi-carrossel -mx-5 mt-4 px-5">

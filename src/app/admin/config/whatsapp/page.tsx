@@ -12,12 +12,12 @@ export default async function WhatsAppPage() {
   return (
     <>
       <div className="mb-2">
-        <Link href="/admin/config" className="text-sm text-mi-marrom underline">
+        <Link href="/admin/config" className="text-sm text-mi-marrom-escuro underline">
           ← Configurações
         </Link>
       </div>
       <h1 className="mb-2 text-3xl">Conectar o WhatsApp</h1>
-      <p className="mb-6 max-w-xl text-sm text-mi-texto/70">
+      <p className="mb-6 max-w-xl text-sm text-mi-texto/80">
         É o WhatsApp que envia os lembretes de horário, as confirmações e o código
         de recuperação de senha das clientes. Conecte uma vez, como no WhatsApp
         Web — só precisa refazer se sair do ar.

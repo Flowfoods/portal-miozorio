@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="font-titulo text-xl text-mi-marrom-escuro">Mi Ozorio</p>
-          <p className="mt-1 font-corpo text-sm text-mi-marrom">
+          <p className="mt-1 font-corpo text-sm text-mi-marrom-escuro">
             Maquiagem & penteado · Rio de Janeiro
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 border-t border-mi-cinza/60 py-4 text-center font-corpo text-xs text-mi-marrom">
+      <div className="flex items-center justify-center gap-3 border-t border-mi-cinza/60 py-4 text-center font-corpo text-xs text-mi-marrom-escuro">
         <span>© {new Date().getFullYear()} Milene Ozorio · Beauty Artist</span>
         <span aria-hidden>·</span>
         <Link href="/admin" className="hover:underline">

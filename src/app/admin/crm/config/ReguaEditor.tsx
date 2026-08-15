@@ -172,7 +172,7 @@ export default function ReguaEditor({ initial }: Props) {
       {/* Janela */}
       <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="text-lg">Período de análise</h2>
-        <p className="mt-1 text-sm text-mi-texto/70">
+        <p className="mt-1 text-sm text-mi-texto/80">
           Visitas e valor gasto contam dentro deste período.
         </p>
         <label className="mt-3 flex items-center gap-2 text-sm">
@@ -183,7 +183,7 @@ export default function ReguaEditor({ initial }: Props) {
       {/* Recência */}
       <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="text-lg">Recência — dias desde a última visita</h2>
-        <p className="mt-1 text-sm text-mi-texto/70">
+        <p className="mt-1 text-sm text-mi-texto/80">
           Quanto mais recente, maior a nota (1 a 5).
         </p>
         <div className="mt-3 space-y-2 text-sm">
@@ -193,7 +193,7 @@ export default function ReguaEditor({ initial }: Props) {
               {numInput(rec[i]!, (v) => setCorte(setRec, rec, i, v))} dias
             </label>
           ))}
-          <p className="text-mi-texto/60">
+          <p className="text-mi-texto/80">
             Nota 1: mais de {rec[3]} dias sem visitar.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function ReguaEditor({ initial }: Props) {
               atendimento(s)
             </label>
           ))}
-          <p className="text-mi-texto/60">Nota 1: abaixo de {freq[0]}.</p>
+          <p className="text-mi-texto/80">Nota 1: abaixo de {freq[0]}.</p>
         </div>
       </section>
 
@@ -227,14 +227,14 @@ export default function ReguaEditor({ initial }: Props) {
               )}
             </label>
           ))}
-          <p className="text-mi-texto/60">Nota 1: abaixo de R${valorReais[0]}.</p>
+          <p className="text-mi-texto/80">Nota 1: abaixo de R${valorReais[0]}.</p>
         </div>
       </section>
 
       {/* Segmentos */}
       <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="text-lg">Segmentos</h2>
-        <p className="mt-1 text-sm text-mi-texto/70">
+        <p className="mt-1 text-sm text-mi-texto/80">
           A primeira linha que combinar com as notas da cliente define o
           segmento dela. Pode repetir o mesmo nome em mais de uma linha. Se
           nenhuma combinar, vale a última.
@@ -348,7 +348,7 @@ export default function ReguaEditor({ initial }: Props) {
       {/* Réguas de mensagens (F4) */}
       <section className="rounded-mi bg-mi-branco p-4 shadow-suave">
         <h2 className="text-lg">Mensagens automáticas (réguas)</h2>
-        <p className="mt-1 text-sm text-mi-texto/70">
+        <p className="mt-1 text-sm text-mi-texto/80">
           As réguas só <strong>sugerem</strong> mensagens na sua fila — nada é
           enviado sem você ler, editar e mandar. Aqui você liga cada régua e
           define o ritmo.
@@ -402,7 +402,7 @@ export default function ReguaEditor({ initial }: Props) {
           ).map(([k, label]) => (
             <label key={k} className="block text-xs">
               {label}{" "}
-              <span className="text-mi-texto/50">
+              <span className="text-mi-texto/80">
                 (use {"{nome}"} e {"{dias}"})
               </span>
               <textarea
@@ -437,12 +437,12 @@ export default function ReguaEditor({ initial }: Props) {
               </span>
             ))}
             {Object.keys(preview.porSegmento).length === 0 && (
-              <span className="text-sm text-mi-texto/60">
+              <span className="text-sm text-mi-texto/80">
                 Nenhuma cliente na base ativa ainda.
               </span>
             )}
           </div>
-          <p className="mt-2 text-xs text-mi-texto/60">
+          <p className="mt-2 text-xs text-mi-texto/80">
             Nada foi salvo ainda — é só uma simulação.
           </p>
         </section>
@@ -466,7 +466,7 @@ export default function ReguaEditor({ initial }: Props) {
           type="button"
           onClick={verPrevia}
           disabled={pending}
-          className="rounded-mi border border-mi-marrom px-5 py-2.5 text-sm text-mi-marrom disabled:opacity-60"
+          className="rounded-mi border border-mi-marrom px-5 py-2.5 text-sm text-mi-marrom-escuro disabled:opacity-60"
         >
           {pending ? "Calculando…" : "Ver prévia"}
         </button>

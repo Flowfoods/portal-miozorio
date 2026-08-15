@@ -23,7 +23,7 @@ export default async function AdminConteudoPage() {
   return (
     <>
       <h1 className="mb-2 text-3xl">Textos do site</h1>
-      <p className="mb-6 text-sm text-mi-texto/70">
+      <p className="mb-6 text-sm text-mi-texto/80">
         Edite os textos das páginas. Deixe um campo igual ao original (ou vazio)
         para voltar ao texto de fábrica. As mudanças aparecem no site ao salvar.
       </p>
@@ -55,7 +55,7 @@ export default async function AdminConteudoPage() {
                       />
                     )}
                     {f.ajuda && (
-                      <span className="mt-1 block text-[11px] text-mi-texto/55">
+                      <span className="mt-1 block text-[11px] text-mi-texto/80">
                         {f.ajuda}
                       </span>
                     )}

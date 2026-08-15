@@ -21,7 +21,7 @@ export default async function RedefinirPage({
       <h1 className="mb-2 text-3xl">Nova senha</h1>
       {valido ? (
         <>
-          <p className="mb-8 text-sm text-mi-texto/70">
+          <p className="mb-8 text-sm text-mi-texto/80">
             Crie uma nova senha para sua conta do painel.
           </p>
           <ResetForm token={params.token} />

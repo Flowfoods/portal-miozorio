@@ -91,15 +91,15 @@ GROUP BY f.para`),
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl">Funil de noiva</h1>
-        <Link href="/admin/crm" className="text-sm text-mi-marrom hover:underline">
+        <h1 className="text-3xl">Jornada da noiva</h1>
+        <Link href="/admin/crm" className="text-sm text-mi-marrom-escuro hover:underline">
           ← CRM
         </Link>
       </div>
 
       <section className="mb-6 grid grid-cols-3 gap-3">
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/60">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">
             Em negociação
           </p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
@@ -107,7 +107,7 @@ GROUP BY f.para`),
           </p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/60">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">
             Contratos fechados
           </p>
           <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
@@ -115,7 +115,7 @@ GROUP BY f.para`),
           </p>
         </div>
         <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/60">
+          <p className="text-xs uppercase tracking-wide text-mi-texto/80">
             Paradas há {cfg.limiares.funilParadaDias}+ dias
           </p>
           <p
@@ -129,13 +129,13 @@ GROUP BY f.para`),
       </section>
 
       {noivas.length === 0 ? (
-        <p className="mb-5 text-sm text-mi-texto/60">
+        <p className="mb-5 text-sm text-mi-texto/80">
           Nenhuma noiva no funil ainda. Para incluir uma cliente, defina a etapa
           do funil na ficha dela.
         </p>
       ) : (
         <>
-          <p className="mb-4 text-sm text-mi-texto/70">
+          <p className="mb-4 text-sm text-mi-texto/80">
             Arraste os cartões entre as etapas (ou use ◀ ▶ no celular). O botão
             de WhatsApp abre com um rascunho da etapa — você sempre edita antes
             de enviar. Valores alimentam o total em negociação.
@@ -151,7 +151,7 @@ GROUP BY f.para`),
       <section className="mt-8">
         <h2 className="mb-2 text-xl">Tempo médio em cada etapa</h2>
         {tempoMap.size === 0 ? (
-          <p className="text-sm text-mi-texto/60">
+          <p className="text-sm text-mi-texto/80">
             Ainda sem histórico — os tempos aparecem conforme as noivas mudam de
             etapa a partir de agora.
           </p>

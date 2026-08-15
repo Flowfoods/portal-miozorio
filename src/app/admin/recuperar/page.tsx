@@ -17,7 +17,7 @@ export default function RecuperarPage() {
   return (
     <div className="mx-auto max-w-sm">
       <h1 className="mb-2 text-3xl">Esqueci a senha</h1>
-      <p className="mb-8 text-sm text-mi-texto/70">
+      <p className="mb-8 text-sm text-mi-texto/80">
         Informe o e-mail da sua conta do estúdio. Se houver uma conta, enviamos
         um link para criar uma nova senha.
       </p>

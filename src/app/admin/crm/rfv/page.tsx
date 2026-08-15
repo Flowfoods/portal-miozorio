@@ -61,7 +61,7 @@ export default async function CrmRfvPage({
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl">Segmentos</h1>
-        <Link href="/admin/crm" className="text-sm text-mi-marrom hover:underline">
+        <Link href="/admin/crm" className="text-sm text-mi-marrom-escuro hover:underline">
           ← CRM
         </Link>
       </div>
@@ -85,7 +85,7 @@ export default async function CrmRfvPage({
       </div>
 
       {clientes.length === 0 ? (
-        <p className="text-sm text-mi-texto/60">
+        <p className="text-sm text-mi-texto/80">
           Nenhuma cliente {seg ? `no segmento "${seg}"` : "segmentada"} ainda.
         </p>
       ) : (
@@ -101,12 +101,12 @@ export default async function CrmRfvPage({
               >
                 {c.name}
                 {!seg && c.rfvSegmento && (
-                  <span className="ml-2 text-xs font-normal text-mi-texto/60">
+                  <span className="ml-2 text-xs font-normal text-mi-texto/80">
                     · {c.rfvSegmento}
                   </span>
                 )}
               </Link>
-              <span className="flex items-center gap-1 text-xs text-mi-texto/70">
+              <span className="flex items-center gap-1 text-xs text-mi-texto/80">
                 R<Pill>{c.rScore ?? "–"}</Pill>
                 F<Pill>{c.fScore ?? "–"}</Pill>
                 V<Pill>{c.vScore ?? "–"}</Pill>
@@ -118,7 +118,7 @@ export default async function CrmRfvPage({
                 href={waLink(c.phoneE164)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-mi-marrom hover:underline"
+                className="text-sm text-mi-marrom-escuro hover:underline"
               >
                 {formatPhoneBR(c.phoneE164)}
               </a>

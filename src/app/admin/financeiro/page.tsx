@@ -123,7 +123,7 @@ export default async function FinanceiroDashboard({
             {c.var == null && <span className="text-mi-texto/40">· sem base anterior</span>}
           </span>
         ))}
-        <span className="text-xs text-mi-texto/50">
+        <span className="text-xs text-mi-texto/80">
           vs {formatPeriodoExtenso(anterior, tz)}
         </span>
       </section>
@@ -155,7 +155,7 @@ export default async function FinanceiroDashboard({
             <>
               {formatBRL(kpis.pontoEquilibrioCents)}
               {kpis.pontoEquilibrioAtendimentos != null && (
-                <span className="block text-xs font-normal text-mi-texto/60">
+                <span className="block text-xs font-normal text-mi-texto/80">
                   ≈ {kpis.pontoEquilibrioAtendimentos} atendimento(s)
                 </span>
               )}
@@ -166,10 +166,10 @@ export default async function FinanceiroDashboard({
         </Card>
         <Card titulo="CMV (insumos)">{pct(kpis.cmvPct)}</Card>
         <Card titulo="Custo fixo / receita">{pct(kpis.custoFixoSobreReceitaPct)}</Card>
-        <Card titulo="No-show no mês">
+        <Card titulo="Faltas no mês">
           {kpis.noShowCount}
           {kpis.noShowValorCents > 0 && (
-            <span className="block text-xs font-normal text-mi-texto/60">
+            <span className="block text-xs font-normal text-mi-texto/80">
               {formatBRL(kpis.noShowValorCents)} potenciais
             </span>
           )}
@@ -214,7 +214,7 @@ function Card({
 }) {
   return (
     <div className="rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">{titulo}</p>
+      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">{titulo}</p>
       <p className={`mt-1 font-titulo ${destaque ? "text-2xl" : "text-xl"} text-mi-marrom-escuro`}>
         {children}
       </p>
@@ -260,7 +260,7 @@ function DreTabela({ dre }: { dre: DRE }) {
               >
                 <td className={`px-4 py-2.5 ${isTotal ? "font-medium text-mi-marrom-escuro" : "text-mi-texto/80"}`}>
                   {l.rotulo}
-                  {l.extra && <span className="ml-2 text-xs text-mi-texto/55">{l.extra}</span>}
+                  {l.extra && <span className="ml-2 text-xs text-mi-texto/80">{l.extra}</span>}
                 </td>
                 <td
                   className={`px-4 py-2.5 text-right tabular-nums ${

@@ -36,7 +36,7 @@ export default async function DebutantesPage() {
         <span className="inline-block rounded-full border border-mi-cinza bg-mi-branco px-4 py-1.5 font-corpo text-[11px] uppercase tracking-[0.15em] text-mi-marrom-escuro">
           Atendimento exclusivo — uma debutante por dia
         </span>
-        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom">
+        <p className="mt-6 font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
           {content["debutantes.hero.eyebrow"]}
         </p>
         <h1 className="mt-5 text-balance font-titulo text-5xl leading-tight text-mi-marrom-escuro sm:text-6xl">
@@ -69,7 +69,7 @@ export default async function DebutantesPage() {
                 {p.preco}
               </p>
               {p.parcela && (
-                <p className="mt-1 font-corpo text-xs text-mi-marrom">
+                <p className="mt-1 font-corpo text-xs text-mi-marrom-escuro">
                   {p.parcela}
                 </p>
               )}
@@ -96,7 +96,7 @@ export default async function DebutantesPage() {
             <h2 className="font-titulo text-3xl text-mi-marrom-escuro">
               Ensaio externo
             </h2>
-            <p className="mt-2 font-corpo text-sm text-mi-marrom">
+            <p className="mt-2 font-corpo text-sm text-mi-marrom-escuro">
               Serviços avulsos para o ensaio pré-festa.
             </p>
           </header>

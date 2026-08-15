@@ -16,13 +16,13 @@ export default function LoginForm() {
   return (
     <form action={action} className="space-y-4">
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu WhatsApp
         </span>
         <PhoneField />
       </label>
       <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/70">
+        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Senha
         </span>
         <PasswordField
@@ -30,7 +30,7 @@ export default function LoginForm() {
           required
           autoComplete="current-password"
         />
-        <span className="mt-1 block font-corpo text-xs text-mi-texto/55">
+        <span className="mt-1 block font-corpo text-xs text-mi-texto/80">
           No primeiro acesso, sua senha é o seu próprio telefone (só os números).
         </span>
       </label>

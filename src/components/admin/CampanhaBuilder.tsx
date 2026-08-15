@@ -117,13 +117,13 @@ export default function CampanhaBuilder({
       {passo === 0 && (
         <div className="space-y-4">
           <div className="rounded-mi bg-mi-superficie-nav p-4 text-center">
-            <p className="text-xs uppercase tracking-wide text-mi-texto/55">
+            <p className="text-xs uppercase tracking-wide text-mi-texto/80">
               Quem vai receber
             </p>
             <p className="font-titulo text-4xl text-mi-marrom-escuro">
               {preview?.count ?? "…"}
             </p>
-            <p className="text-xs text-mi-texto/60">
+            <p className="text-xs text-mi-texto/80">
               {preview?.amostra.length
                 ? `ex.: ${preview.amostra.map((a) => a.nome.split(" ")[0]).join(", ")}`
                 : "clientes nesse filtro"}
@@ -161,7 +161,7 @@ export default function CampanhaBuilder({
           </label>
 
           <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-            <p className="text-sm text-mi-texto/70">Já fez o serviço</p>
+            <p className="text-sm text-mi-texto/80">Já fez o serviço</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {servicos.map((s) => (
                 <button
@@ -182,7 +182,7 @@ export default function CampanhaBuilder({
 
           {rfvSegmentos.length > 0 && (
             <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-              <p className="text-sm text-mi-texto/70">Grupo de clientes</p>
+              <p className="text-sm text-mi-texto/80">Grupo de clientes</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {rfvSegmentos.map((s) => (
                   <button
@@ -237,7 +237,7 @@ export default function CampanhaBuilder({
       {passo === 1 && (
         <div className="space-y-4">
           <label className="block">
-            <span className="mb-1 block text-sm text-mi-texto/70">Nome da campanha</span>
+            <span className="mb-1 block text-sm text-mi-texto/80">Nome da campanha</span>
             <input
               className="input-mi"
               value={nome}
@@ -248,7 +248,7 @@ export default function CampanhaBuilder({
 
           {templates.length > 0 && (
             <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-              <p className="text-sm text-mi-texto/70">Comece por um texto pronto</p>
+              <p className="text-sm text-mi-texto/80">Comece por um texto pronto</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {templates.map((t) => (
                   <button
@@ -265,14 +265,14 @@ export default function CampanhaBuilder({
           )}
 
           <label className="block">
-            <span className="mb-1 block text-sm text-mi-texto/70">Mensagem</span>
+            <span className="mb-1 block text-sm text-mi-texto/80">Mensagem</span>
             <textarea
               className="input-mi min-h-32"
               value={corpo}
               onChange={(e) => setCorpo(e.target.value)}
               placeholder="Escreva com o seu carinho de sempre 💛"
             />
-            <span className="mt-1 block text-xs text-mi-texto/55">
+            <span className="mt-1 block text-xs text-mi-texto/80">
               Pode usar: {"{nome}"} {"{servico_ultimo}"} {"{dias_sem_vir}"}{" "}
               {"{pontos_clube}"} {"{link_agenda}"}
             </span>
@@ -299,9 +299,9 @@ export default function CampanhaBuilder({
       {passo === 2 && (
         <div className="space-y-4">
           <div className="rounded-mi bg-mi-branco p-4 shadow-suave text-sm">
-            <p className="text-mi-texto/70">Resumo</p>
+            <p className="text-mi-texto/80">Resumo</p>
             <p className="mt-1 font-corpo text-mi-marrom-escuro">{nome}</p>
-            <p className="mt-1 text-mi-texto/70">
+            <p className="mt-1 text-mi-texto/80">
               Para <strong>{preview?.count ?? "…"}</strong> cliente(s)
             </p>
             <p className="mt-2 whitespace-pre-wrap rounded-mi bg-mi-superficie p-3 text-mi-texto">

@@ -71,7 +71,7 @@ export default async function InicioPage() {
         Olá, {primeiroNome} 💛
       </h1>
       {atendimentos > 0 && (
-        <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+        <p className="mt-1 font-corpo text-sm text-mi-texto/80">
           {atendimentos} momento(s) de cuidado com a Mi até aqui.
         </p>
       )}
@@ -85,13 +85,13 @@ export default async function InicioPage() {
       {/* Hora de se cuidar de novo (F5) — só quando passou da cadência */}
       {sugestao && (
         <section className="mt-6 overflow-hidden rounded-2xl border border-mi-marrom/40 bg-gradient-to-br from-mi-bege to-mi-branco p-6 shadow-suave">
-          <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom">
+          <p className="font-corpo text-xs uppercase tracking-[0.2em] text-mi-marrom-escuro">
             Hora de se cuidar de novo 💛
           </p>
           <h2 className="mt-2 font-titulo text-2xl text-mi-marrom-escuro">
             Que tal repetir {sugestao.servicoNome}?
           </h2>
-          <p className="mt-1 font-corpo text-sm text-mi-texto/70">
+          <p className="mt-1 font-corpo text-sm text-mi-texto/80">
             Faz {sugestao.diasDesde} dias do seu último cuidado com a Mi.
           </p>
           <div className="mt-4">
@@ -126,7 +126,7 @@ export default async function InicioPage() {
               <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
                 {proximo.service.name}
               </p>
-              <p className="font-corpo text-xs capitalize text-mi-texto/70">
+              <p className="font-corpo text-xs capitalize text-mi-texto/80">
                 {proximoDt.toFormat("cccc, dd 'de' LLLL")} ·{" "}
                 {proximoDt.toFormat("HH:mm")}
               </p>
@@ -153,12 +153,12 @@ export default async function InicioPage() {
         className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-mi-cinza bg-gradient-to-br from-mi-branco to-mi-bege p-6 shadow-suave transition-colors hover:border-mi-marrom"
       >
         <div>
-          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/55">
+          <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
             Seus pontos
           </p>
           <p className="font-titulo text-4xl text-mi-marrom-escuro">{saldo}</p>
         </div>
-        <span className="font-corpo text-sm text-mi-marrom">
+        <span className="font-corpo text-sm text-mi-marrom-escuro">
           Ver meu clube ›
         </span>
       </Link>

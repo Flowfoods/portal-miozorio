@@ -103,7 +103,7 @@ export default function AdminSidebar({
   return (
     <>
       {/* Barra superior só no mobile: hambúrguer + marca */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-mi-cinza/60 bg-mi-superficie-nav/90 px-4 py-3 backdrop-blur md:hidden">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-mi-cinza/60 bg-mi-superficie-nav px-4 py-3 backdrop-blur md:hidden">
         <button
           ref={hamburgerRef}
           type="button"
@@ -245,7 +245,7 @@ export default function AdminSidebar({
             onClick={() => signOut({ callbackUrl: "/admin/login" })}
             title="Sair"
             aria-label="Sair"
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-mi px-3 font-corpo text-sm text-mi-marrom transition-colors hover:bg-mi-marrom/10 md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-mi px-3 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:bg-mi-marrom/10 md:justify-center lg:justify-start group-data-[collapsed=true]:lg:justify-center"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

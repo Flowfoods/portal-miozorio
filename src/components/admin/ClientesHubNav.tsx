@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  */
 const ITEMS = [
   { href: "/admin/clientes", label: "Clientes" },
-  { href: "/admin/crm", label: "CRM" },
+  { href: "/admin/crm", label: "Relacionamento" },
   { href: "/admin/clube", label: "Clube" },
 ];
 
