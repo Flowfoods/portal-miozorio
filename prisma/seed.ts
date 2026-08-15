@@ -49,7 +49,13 @@ const businessSettings: Record<string, Prisma.InputJsonValue> = {
 type SeedService = {
   code: string;
   name: string;
-  category: "social" | "sobrancelha" | "cabelo" | "curso" | "noiva" | "debutante";
+  category:
+    | "social"
+    | "sobrancelha"
+    | "cabelo"
+    | "curso"
+    | "noiva"
+    | "debutante";
   durationMin: number;
   bufferMin: number;
   priceCents: number;
@@ -256,30 +262,176 @@ type SeedCategory = {
 
 const financialCategories: SeedCategory[] = [
   // Receita por origem (espelha service.category + venda avulsa)
-  { code: "rev-social", name: "Maquiagem social", kind: "revenue", color: "#8A7361", sort: 1 },
-  { code: "rev-cabelo", name: "Cabelo / dia a dia", kind: "revenue", color: "#A68A6D", sort: 2 },
-  { code: "rev-sobrancelha", name: "Sobrancelha", kind: "revenue", color: "#B9A487", sort: 3 },
-  { code: "rev-curso", name: "Curso de automaquiagem", kind: "revenue", color: "#C9B89C", sort: 4 },
-  { code: "rev-noiva", name: "Noiva (La Mariée)", kind: "revenue", color: "#7A5C49", sort: 5 },
-  { code: "rev-debutante", name: "Debutante", kind: "revenue", color: "#9C6F52", sort: 6 },
-  { code: "rev-avulsa", name: "Venda avulsa", kind: "revenue", color: "#D8CBB6", sort: 7 },
+  {
+    code: "rev-social",
+    name: "Maquiagem social",
+    kind: "revenue",
+    color: "#8A7361",
+    sort: 1,
+  },
+  {
+    code: "rev-cabelo",
+    name: "Cabelo / dia a dia",
+    kind: "revenue",
+    color: "#A68A6D",
+    sort: 2,
+  },
+  {
+    code: "rev-sobrancelha",
+    name: "Sobrancelha",
+    kind: "revenue",
+    color: "#B9A487",
+    sort: 3,
+  },
+  {
+    code: "rev-curso",
+    name: "Curso de automaquiagem",
+    kind: "revenue",
+    color: "#C9B89C",
+    sort: 4,
+  },
+  {
+    code: "rev-noiva",
+    name: "Noiva (La Mariée)",
+    kind: "revenue",
+    color: "#7A5C49",
+    sort: 5,
+  },
+  {
+    code: "rev-debutante",
+    name: "Debutante",
+    kind: "revenue",
+    color: "#9C6F52",
+    sort: 6,
+  },
+  {
+    code: "rev-avulsa",
+    name: "Venda avulsa",
+    kind: "revenue",
+    color: "#D8CBB6",
+    sort: 7,
+  },
   // Deduções sobre venda
-  { code: "exp-taxa-cartao", name: "Taxa de maquininha", kind: "expense", nature: "variable", dreGroup: "deducao_venda", color: "#C98A6B", sort: 10 },
-  { code: "exp-das", name: "DAS / Impostos sobre venda", kind: "expense", nature: "variable", dreGroup: "deducao_venda", color: "#B5705A", sort: 11 },
+  {
+    code: "exp-taxa-cartao",
+    name: "Taxa de maquininha",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "deducao_venda",
+    color: "#C98A6B",
+    sort: 10,
+  },
+  {
+    code: "exp-das",
+    name: "DAS / Impostos sobre venda",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "deducao_venda",
+    color: "#B5705A",
+    sort: 11,
+  },
   // Custos variáveis
-  { code: "exp-insumos", name: "Insumos e descartáveis", kind: "expense", nature: "variable", dreGroup: "custo_variavel", isCmv: true, color: "#8A9A5B", sort: 20 },
-  { code: "exp-deslocamento", name: "Deslocamento", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#6B8E9A", sort: 21 },
-  { code: "exp-comissao", name: "Comissão 2ª profissional", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#7C9A6B", sort: 22 },
-  { code: "exp-brindes", name: "Brindes e embalagens", kind: "expense", nature: "variable", dreGroup: "custo_variavel", color: "#A88FB0", sort: 23 },
+  {
+    code: "exp-insumos",
+    name: "Insumos e descartáveis",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "custo_variavel",
+    isCmv: true,
+    color: "#8A9A5B",
+    sort: 20,
+  },
+  {
+    code: "exp-deslocamento",
+    name: "Deslocamento",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "custo_variavel",
+    color: "#6B8E9A",
+    sort: 21,
+  },
+  {
+    code: "exp-comissao",
+    name: "Comissão 2ª profissional",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "custo_variavel",
+    color: "#7C9A6B",
+    sort: 22,
+  },
+  {
+    code: "exp-brindes",
+    name: "Brindes e embalagens",
+    kind: "expense",
+    nature: "variable",
+    dreGroup: "custo_variavel",
+    color: "#A88FB0",
+    sort: 23,
+  },
   // Custos fixos
-  { code: "exp-aluguel", name: "Aluguel do estúdio", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#5C4A3D", sort: 30 },
-  { code: "exp-energia", name: "Energia e climatização", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#6E5A4A", sort: 31 },
-  { code: "exp-agua", name: "Água", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#4A6E7A", sort: 32 },
-  { code: "exp-internet", name: "Internet", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#7A6E5A", sort: 33 },
-  { code: "exp-software", name: "Software, VPS e domínio", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#8A7361", sort: 34 },
-  { code: "exp-contador", name: "Contador", kind: "expense", nature: "fixed", dreGroup: "custo_fixo", color: "#9A8A7A", sort: 35 },
+  {
+    code: "exp-aluguel",
+    name: "Aluguel do estúdio",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#5C4A3D",
+    sort: 30,
+  },
+  {
+    code: "exp-energia",
+    name: "Energia e climatização",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#6E5A4A",
+    sort: 31,
+  },
+  {
+    code: "exp-agua",
+    name: "Água",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#4A6E7A",
+    sort: 32,
+  },
+  {
+    code: "exp-internet",
+    name: "Internet",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#7A6E5A",
+    sort: 33,
+  },
+  {
+    code: "exp-software",
+    name: "Software, VPS e domínio",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#8A7361",
+    sort: 34,
+  },
+  {
+    code: "exp-contador",
+    name: "Contador",
+    kind: "expense",
+    nature: "fixed",
+    dreGroup: "custo_fixo",
+    color: "#9A8A7A",
+    sort: 35,
+  },
   // Pró-labore (isolado no DRE)
-  { code: "exp-prolabore", name: "Pró-labore da Mi", kind: "expense", dreGroup: "pro_labore", color: "#3D3733", sort: 40 },
+  {
+    code: "exp-prolabore",
+    name: "Pró-labore da Mi",
+    kind: "expense",
+    dreGroup: "pro_labore",
+    color: "#3D3733",
+    sort: 40,
+  },
 ];
 
 /** Semeia/atualiza as categorias financeiras padrão (idempotente por code). */
@@ -301,7 +453,9 @@ async function ensureFinancialCategories() {
       create: { code: c.code, ...data },
     });
   }
-  console.log(`✓ financial_categories: ${financialCategories.length} categorias`);
+  console.log(
+    `✓ financial_categories: ${financialCategories.length} categorias`,
+  );
 }
 
 /**
@@ -335,6 +489,21 @@ async function main() {
   await ensureAdmin();
   await ensureFinancialCategories();
 
+  // Profissional única (schema já suporta N) — ANTES do --if-empty.
+  // A trava anti-double-booking é `EXCLUDE ... professional_id WITH =`, e em
+  // PostgreSQL `=` com NULL nunca conflita: sem profissional no banco, todo
+  // agendamento nasce com professional_id NULL e a R2 fica desarmada em
+  // silêncio. Como uma migration já insere serviços, o --if-empty abaixo
+  // encontrava serviços > 0 e voltava antes de criar a profissional — num
+  // banco virgem o portal subia sem trava. Idempotente, pode rodar sempre.
+  const existing = await prisma.professional.findFirst({
+    where: { name: "Milene Ozorio" },
+  });
+  if (!existing) {
+    await prisma.professional.create({ data: { name: "Milene Ozorio" } });
+  }
+  console.log("✓ professional: Milene Ozorio");
+
   // --if-empty (entrypoint do container): só semeia banco virgem, para nunca
   // sobrescrever ajustes feitos pela Mi no admin (R3) num restart.
   if (process.argv.includes("--if-empty")) {
@@ -353,16 +522,9 @@ async function main() {
       create: { key, value },
     });
   }
-  console.log(`✓ business_settings: ${Object.keys(businessSettings).length} chaves`);
-
-  // Profissional única (schema já suporta N)
-  const existing = await prisma.professional.findFirst({
-    where: { name: "Milene Ozorio" },
-  });
-  if (!existing) {
-    await prisma.professional.create({ data: { name: "Milene Ozorio" } });
-  }
-  console.log("✓ professional: Milene Ozorio");
+  console.log(
+    `✓ business_settings: ${Object.keys(businessSettings).length} chaves`,
+  );
 
   // Serviços (idempotente por code)
   for (const s of services) {

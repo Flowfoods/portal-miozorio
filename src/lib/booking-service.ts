@@ -14,6 +14,7 @@ import {
   creditarBonusReagendamento,
 } from "./clube-pontos";
 import { ensureClubMember } from "./clube";
+import { getAvailability } from "./availability";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 
 export interface CreateBookingInput {
@@ -45,14 +46,39 @@ export type CreateBookingResult =
         | "invalid_phone"
         | "invalid_datetime"
         | "slot_taken"
+        | "slot_unavailable"
         | "no_consent";
       message: string;
     };
+
+/** Reservas simultâneas em aberto (hold vivo) permitidas por telefone. */
+const MAX_PENDING_POR_TELEFONE = 2;
 
 function isExclusionViolation(e: unknown): boolean {
   // 23P01 = exclusion_violation da constraint no_overlap (R2).
   const msg = String((e as { message?: string })?.message ?? e);
   return msg.includes("23P01") || msg.includes("no_overlap");
+}
+
+/**
+ * Devolve a profissional ativa, criando-a se o banco não tiver nenhuma.
+ *
+ * A trava anti-double-booking é `EXCLUDE ... professional_id WITH =`, e em
+ * PostgreSQL um `=` com NULL nunca conflita: gravar `professional_id: null`
+ * desarma a R2 em silêncio, sem erro nenhum. Como o seed podia pular a criação
+ * da profissional num banco que já tinha serviços vindos de migration, o NULL
+ * era alcançável em produção — por isso aqui é garantia, não leitura.
+ */
+async function ensureProfessional(): Promise<{ id: string }> {
+  const existente = await prisma.professional.findFirst({
+    where: { active: true },
+    select: { id: true },
+  });
+  if (existente) return existente;
+  return prisma.professional.create({
+    data: { name: "Milene Ozorio" },
+    select: { id: true },
+  });
 }
 
 export async function createBooking(
@@ -92,6 +118,26 @@ export async function createBooking(
     return { ok: false, code: "invalid_phone", message: "WhatsApp inválido." };
   }
 
+  // Teto de reservas em aberto por telefone. Cada POST anônimo segurava um
+  // horário durante todo o hold; com a agenda de sáb/dom e passo de 30 min,
+  // algumas centenas de requisições deixavam a agenda inteira intransitável
+  // sem um único agendamento aparecer para a Mi.
+  const emAberto = await prisma.booking.count({
+    where: {
+      customer: { phoneE164: phone },
+      status: "pending",
+      holdExpiresAt: { gt: new Date() },
+    },
+  });
+  if (emAberto >= MAX_PENDING_POR_TELEFONE) {
+    return {
+      ok: false,
+      code: "slot_unavailable",
+      message:
+        "Você já tem um horário aguardando confirmação. Conclua ele antes de marcar outro 💛",
+    };
+  }
+
   const startsAt = DateTime.fromISO(`${input.date}T${input.time}`, {
     zone: tz,
   });
@@ -106,14 +152,28 @@ export async function createBooking(
     minutes: service.durationMin + service.bufferMin,
   });
 
+  // O horário precisa estar na disponibilidade REAL, não só ser uma data
+  // válida. Esta é a porta pública: o wizard só oferece o que veio de
+  // /api/availability, mas um POST forjado (madrugada, dia sem expediente,
+  // além do horizonte, antes do lead time) passava direto — a trava do banco
+  // cruza booking com booking e não conhece expediente nem schedule_blocks.
+  // Fecha também a corrida: a cliente carrega os horários, a Mi cadastra as
+  // férias, a cliente envia — e a Mi descobre com ela na porta.
+  const disponiveis = await getAvailability(service.id, input.date);
+  if (!disponiveis.includes(input.time)) {
+    return {
+      ok: false,
+      code: "slot_unavailable",
+      message: "Esse horário não está mais disponível.",
+    };
+  }
+
   const priceCents =
     input.location === "home" && service.priceHomeCents != null
       ? service.priceHomeCents
       : service.priceCents;
 
-  const professional = await prisma.professional.findFirst({
-    where: { active: true },
-  });
+  const professional = await ensureProfessional();
 
   const now = DateTime.now().setZone(tz);
   const holdExpiresAt = now.plus({ minutes: settings.holdMinutes });
@@ -156,7 +216,7 @@ export async function createBooking(
         data: {
           customerId: customer.id,
           serviceId: service.id,
-          professionalId: professional?.id ?? null,
+          professionalId: professional.id,
           startsAt: startsAt.toJSDate(),
           endsAt: endsAt.toJSDate(),
           status: "pending",
@@ -345,9 +405,7 @@ export async function createManualBooking(
   // Valor total = soma dos preços cobrados (snapshot no booking p/ retrocompat).
   const priceCents = rows.reduce((sum, r) => sum + r.precoCobradoCents, 0);
 
-  const professional = await prisma.professional.findFirst({
-    where: { active: true },
-  });
+  const professional = await ensureProfessional();
 
   try {
     const booking = await prisma.$transaction(async (tx) => {
@@ -355,7 +413,7 @@ export async function createManualBooking(
         data: {
           customerId,
           serviceId: primary.id, // serviço primário (retrocompat)
-          professionalId: professional?.id ?? null,
+          professionalId: professional.id,
           startsAt: startsAt.toJSDate(),
           endsAt: endsAt.toJSDate(),
           status: "confirmed",

@@ -74,6 +74,8 @@ export default function AgendarWizard() {
     reference: "",
     occasion: "",
     lgpd: false,
+    // Honeypot: invisível para a cliente, irresistível para robô.
+    site: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -156,8 +158,7 @@ export default function AgendarWizard() {
       { id: "todos", label: "Todos" },
       ...presentes.map((c) => ({
         id: c,
-        label:
-          CATEGORIA_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1),
+        label: CATEGORIA_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1),
       })),
     ];
   }, [services]);
@@ -263,6 +264,7 @@ export default function AgendarWizard() {
             ocasiao: form.occasion,
           },
           lgpdConsent: form.lgpd,
+          site: form.site,
           ...(daAreaCliente ? { source: "area_cliente" } : {}),
         }),
       });
@@ -279,7 +281,9 @@ export default function AgendarWizard() {
       }
       if (!res.ok) {
         const e = (await res.json().catch(() => ({}))) as { error?: string };
-        setFormError(e.error ?? "Não consegui criar seu agendamento. Tenta de novo?");
+        setFormError(
+          e.error ?? "Não consegui criar seu agendamento. Tenta de novo?",
+        );
         return;
       }
       const data = (await res.json()) as { id: string; holdExpiresAt: string };
@@ -377,7 +381,8 @@ export default function AgendarWizard() {
           <div className="mt-6 space-y-3">
             {servicosFiltrados?.map((s) => {
               const price = priceForLocation(s);
-              const unavailableHome = location === "home" && s.priceHomeCents === null;
+              const unavailableHome =
+                location === "home" && s.priceHomeCents === null;
               return (
                 <button
                   key={s.id}
@@ -535,9 +540,7 @@ export default function AgendarWizard() {
             <Field label="Qual a ocasião?">
               <select
                 value={form.occasion}
-                onChange={(e) =>
-                  setForm({ ...form, occasion: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, occasion: e.target.value })}
                 className="input-mi"
               >
                 <option value="">Selecione…</option>
@@ -549,12 +552,24 @@ export default function AgendarWizard() {
               </select>
             </Field>
 
+            {/* Honeypot — fora da tela e do leitor de tela; só robô preenche. */}
+            <input
+              type="text"
+              name="site"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={form.site}
+              onChange={(e) => setForm({ ...form, site: e.target.value })}
+              className="absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
+
             <label className="flex items-start gap-3 font-corpo text-sm text-mi-texto">
               <input
                 type="checkbox"
                 checked={form.lgpd}
                 onChange={(e) => setForm({ ...form, lgpd: e.target.checked })}
-                className="mt-1 h-5 w-5 accent-mi-marrom"
+                className="mt-1 h-5 w-5 shrink-0 accent-mi-marrom"
               />
               <span>
                 Li e aceito a{" "}
@@ -604,7 +619,9 @@ export default function AgendarWizard() {
           <HoldCountdown
             holdExpiresAt={booking.holdExpiresAt}
             onExpire={() => {
-              setFormError("O tempo da reserva expirou. Vamos escolher de novo?");
+              setFormError(
+                "O tempo da reserva expirou. Vamos escolher de novo?",
+              );
               setBooking(null);
               setConfirmed(false);
               setStep(3);
@@ -748,7 +765,10 @@ function HoldCountdown({
   onExpire: () => void;
 }) {
   const [left, setLeft] = useState(() =>
-    Math.max(0, Math.floor((new Date(holdExpiresAt).getTime() - Date.now()) / 1000)),
+    Math.max(
+      0,
+      Math.floor((new Date(holdExpiresAt).getTime() - Date.now()) / 1000),
+    ),
   );
   useEffect(() => {
     const t = setInterval(() => {
