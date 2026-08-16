@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { prisma } from "@/lib/prisma";
 import {
   avaliarAutomaticas,
@@ -18,17 +19,20 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  // Agendadas devidas → dispara (vira ATIVA dentro do dispararCampanha).
-  const devidas = await prisma.campanha.findMany({
-    where: { tipo: "PONTUAL", status: "AGENDADA", agendadaPara: { lte: new Date() } },
-    select: { id: true },
+
+  return comRegistro("campanhas", async () => {
+    // Agendadas devidas → dispara (vira ATIVA dentro do dispararCampanha).
+    const devidas = await prisma.campanha.findMany({
+      where: { tipo: "PONTUAL", status: "AGENDADA", agendadaPara: { lte: new Date() } },
+      select: { id: true },
+    });
+    let agendadasDisparadas = 0;
+    for (const c of devidas) {
+      const r = await dispararCampanha(c.id);
+      if (r.ok) agendadasDisparadas++;
+    }
+    const auto = await avaliarAutomaticas();
+    const conversoes = await registrarConversoes();
+    return NextResponse.json({ ok: true, agendadasDisparadas, ...auto, conversoes });
   });
-  let agendadasDisparadas = 0;
-  for (const c of devidas) {
-    const r = await dispararCampanha(c.id);
-    if (r.ok) agendadasDisparadas++;
-  }
-  const auto = await avaliarAutomaticas();
-  const conversoes = await registrarConversoes();
-  return NextResponse.json({ ok: true, agendadasDisparadas, ...auto, conversoes });
 }

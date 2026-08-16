@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { runDailyReminders, previewDueReminders } from "@/lib/reminders";
 
 /**
@@ -17,11 +18,14 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  // ?dry=1 → só mostra o que seria enviado hoje, sem enviar nem gravar.
-  if (new URL(req.url).searchParams.get("dry") === "1") {
-    const preview = await previewDueReminders();
-    return NextResponse.json({ ok: true, dryRun: true, ...preview });
-  }
-  const summary = await runDailyReminders();
-  return NextResponse.json({ ok: true, ...summary });
+
+  return comRegistro("lembretes", async () => {
+    // ?dry=1 → só mostra o que seria enviado hoje, sem enviar nem gravar.
+    if (new URL(req.url).searchParams.get("dry") === "1") {
+      const preview = await previewDueReminders();
+      return NextResponse.json({ ok: true, dryRun: true, ...preview });
+    }
+    const summary = await runDailyReminders();
+    return NextResponse.json({ ok: true, ...summary });
+  });
 }

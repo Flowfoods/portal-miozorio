@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { lerRegistros } from "@/lib/cron-registro";
 
 // Healthcheck do portal (M0.4). Usado no pós-deploy e pelo Uptime Kuma (M7).
 export const dynamic = "force-dynamic";
@@ -34,13 +35,34 @@ const BUILD = (() => {
   return "desconhecido";
 })();
 
-export async function GET() {
+export async function GET(req: Request) {
   let db: "ok" | "fail" = "fail";
   try {
     await prisma.$queryRaw`SELECT 1`;
     db = "ok";
   } catch {
     db = "fail";
+  }
+
+  // Detalhe operacional só com o segredo do cron na query — a resposta base é
+  // pública (Uptime Kuma bate nela) e não deve contar a rotina da casa.
+  const segredo = process.env.CRON_SECRET;
+  const pediu = new URL(req.url).searchParams.get("token");
+  const detalhado = !!segredo && pediu === segredo;
+
+  let crons: Record<string, { quando: string; ok: boolean }> | undefined;
+  if (detalhado && db === "ok") {
+    try {
+      const regs = await lerRegistros();
+      crons = Object.fromEntries(
+        Object.entries(regs).map(([k, v]) => [
+          k,
+          { quando: v.quando, ok: v.ok },
+        ]),
+      );
+    } catch {
+      crons = undefined;
+    }
   }
 
   const body = {
@@ -56,6 +78,7 @@ export async function GET() {
     cronSecret: process.env.CRON_SECRET ? ("ok" as const) : ("ausente" as const),
     version: process.env.APP_VERSION ?? "0.1.0",
     ts: new Date().toISOString(),
+    ...(crons ? { crons } : {}),
   };
 
   return NextResponse.json(body, { status: db === "ok" ? 200 : 503 });
