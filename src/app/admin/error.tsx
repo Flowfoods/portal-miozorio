@@ -14,6 +14,12 @@ export default function AdminError({
       <p className="mb-6 text-sm text-mi-texto/80">
         {error.message || "Não foi possível concluir a ação."}
       </p>
+      {error.digest && (
+        <p className="mb-6 font-mono text-xs text-mi-texto/60">
+          Código do erro: {error.digest} — mande um print desta tela para o
+          suporte.
+        </p>
+      )}
       <button
         onClick={reset}
         className="rounded-mi bg-mi-marrom-escuro px-5 py-2.5 text-sm text-white"
