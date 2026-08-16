@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { evolutionLogout } from "@/lib/evolution-connect";
+import { evolutionRecreate } from "@/lib/evolution-connect";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Encerra a sessão do WhatsApp para parear do zero.
+ * "Começar de novo": apaga e recria a instância na Evolution.
  *
- * Instância presa em "connecting" devolve QR que já nasce inválido — a pessoa
- * aponta a câmera, nada acontece, e não havia saída pelo painel. Este é o
- * "desligar e ligar de novo" que faltava.
+ * A versão anterior só fazia logout — que não alcança o caso real: instância
+ * com registro corrompido nem chega a ter sessão para deslogar (diagnóstico de
+ * 16/08, log verboso sem nenhum rastro de QR/pareamento). Recriar o registro
+ * é o único caminho que devolve um pareamento em folha.
  */
 export async function POST() {
   try {
@@ -17,12 +18,9 @@ export async function POST() {
   } catch {
     return NextResponse.json({ error: "não autorizado" }, { status: 401 });
   }
-  const ok = await evolutionLogout();
-  if (!ok) {
-    return NextResponse.json(
-      { error: "Não consegui encerrar a sessão agora. Tente de novo." },
-      { status: 502 },
-    );
+  const r = await evolutionRecreate();
+  if (!r.ok) {
+    return NextResponse.json({ error: r.message }, { status: 502 });
   }
   return NextResponse.json({ ok: true });
 }

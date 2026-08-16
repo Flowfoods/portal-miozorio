@@ -39,11 +39,19 @@ const OFFLINE: EvolutionStatus = {
   instance: null,
 };
 
-async function evoFetch(path: string, method = "GET"): Promise<unknown> {
+async function evoFetch(
+  path: string,
+  method = "GET",
+  body?: unknown,
+): Promise<unknown> {
   const { base, key } = cfg();
   const res = await fetch(`${base}${path}`, {
     method,
-    headers: { apikey: key },
+    headers: {
+      apikey: key,
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Evolution ${res.status}`);
@@ -99,6 +107,59 @@ export async function evolutionPairingCode(
  * aponta a câmera e nada acontece, indefinidamente. Sem um logout não havia
  * como sair desse estado pelo painel — só mexendo no container.
  */
+/**
+ * Apaga e recria a instância na Evolution — o "desligar da tomada" de verdade.
+ *
+ * Diagnóstico de 16/08: com log verboso (156 linhas), um pedido de pareamento
+ * não deixa NENHUM rastro — zero "qr", zero "pairing", zero erro. A instância
+ * existe como registro no banco da Evolution, mas o processo não a inicializa:
+ * registro corrompido. Logout não alcança isso (a sessão nem chega a existir);
+ * só apagar o registro e criar de novo destrava.
+ *
+ * Custo zero por desenho: a instância nunca conectou, e o histórico dela são
+ * 2 mensagens de junho. Se um dia isto rodar sobre uma instância SAUDÁVEL, o
+ * efeito é o mesmo do "desconectar e parear de novo" — nada além da sessão é
+ * perdido (mensagens vivem no banco da Evolution, não na instância).
+ */
+export async function evolutionRecreate(): Promise<
+  { ok: true } | { ok: false; message: string }
+> {
+  if (!evolutionConfigured()) {
+    return { ok: false, message: "WhatsApp não configurado no servidor." };
+  }
+  const { instance } = cfg();
+
+  // Desconecta antes se (e só se) estiver conectada — a guarda contra o 428
+  // que derruba a Evolution vive dentro de evolutionLogout.
+  await evolutionLogout();
+
+  // Apaga o registro. 404 = já não existia; qualquer outro erro também não
+  // impede a recriação — o create diz se o nome ainda está ocupado.
+  try {
+    await evoFetch(`/instance/delete/${instance}`, "DELETE");
+  } catch {
+    // segue para o create
+  }
+
+  try {
+    await evoFetch("/instance/create", "POST", {
+      instanceName: instance,
+      integration: "WHATSAPP-BAILEYS",
+      qrcode: true,
+    });
+    return { ok: true };
+  } catch (e) {
+    const msg = String((e as { message?: string })?.message ?? e);
+    // 403/409 = o delete não pegou e o nome segue ocupado.
+    return {
+      ok: false,
+      message: msg.includes("403") || msg.includes("409")
+        ? "A instância antiga não quis sair. Espere um minuto e tente de novo."
+        : "O WhatsApp não respondeu agora. Tente de novo em instantes.",
+    };
+  }
+}
+
 export async function evolutionLogout(): Promise<boolean> {
   if (!evolutionConfigured()) return false;
 
