@@ -147,6 +147,7 @@ export async function evolutionRecreate(): Promise<
       integration: "WHATSAPP-BAILEYS",
       qrcode: true,
     });
+    limparCacheQr(); // a instância nova não pode herdar QR da antiga
     return { ok: true };
   } catch (e) {
     const msg = String((e as { message?: string })?.message ?? e);
@@ -201,6 +202,29 @@ export async function evolutionState(): Promise<EvolutionState> {
 }
 
 /**
+ * O MESMO QR precisa sobreviver tempo suficiente para uma câmera focar.
+ *
+ * Cada chamada a /instance/connect gera um QR NOVO na Evolution — e a tela de
+ * pareamento consulta o status a cada 5s. Sem este cache, o QR trocava a cada
+ * consulta: a câmera não validava nunca (quando focava, o código já era
+ * outro), e o teto de 30 QRs por ciclo (QRCODE_LIMIT) queimava em ~2,5 min —
+ * daí em diante a Evolution parava de gerar e a tela ficava em "Gerando o
+ * QR…" para sempre. Visto em produção em 16/08: qrcodeCount subindo a cada 5s.
+ *
+ * 18s de vida: o WhatsApp rotaciona o desafio em ~20s, então o cache nunca
+ * serve QR morto. Módulo-escopo funciona porque o standalone roda em um único
+ * processo.
+ */
+let qrCache: { qr: string | null; pairing: string | null; em: number } | null =
+  null;
+const QR_CACHE_MS = 18_000;
+
+/** Zera o cache — chamado ao recriar a instância, para o QR nascer novo. */
+export function limparCacheQr(): void {
+  qrCache = null;
+}
+
+/**
  * Estado + QR para parear. Se já estiver "open", não pede QR. Best-effort: se a
  * Evolution estiver fora do ar, devolve state=null (a UI mostra o aviso).
  */
@@ -210,11 +234,22 @@ export async function evolutionStatus(): Promise<EvolutionStatus> {
 
   const state = await evolutionState();
   if (state === "open") {
+    qrCache = null;
     return {
       configured: true,
       state: "open",
       qrBase64: null,
       pairingCode: null,
+      instance,
+    };
+  }
+
+  if (qrCache?.qr && Date.now() - qrCache.em < QR_CACHE_MS) {
+    return {
+      configured: true,
+      state: state ?? "connecting",
+      qrBase64: qrCache.qr,
+      pairingCode: qrCache.pairing,
       instance,
     };
   }
@@ -226,17 +261,20 @@ export async function evolutionStatus(): Promise<EvolutionStatus> {
       pairingCode?: string | null;
       qrcode?: { base64?: string };
     };
-    const qr = j?.base64 ?? j?.qrcode?.base64 ?? null;
+    const bruto = j?.base64 ?? j?.qrcode?.base64 ?? null;
+    // A Evolution às vezes manda o base64 sem o prefixo data-uri.
+    const qr = bruto
+      ? bruto.startsWith("data:")
+        ? bruto
+        : `data:image/png;base64,${bruto}`
+      : null;
+    const pairing = j?.pairingCode ?? null;
+    if (qr) qrCache = { qr, pairing, em: Date.now() };
     return {
       configured: true,
       state: state ?? "connecting",
-      // A Evolution às vezes manda o base64 sem o prefixo data-uri.
-      qrBase64: qr
-        ? qr.startsWith("data:")
-          ? qr
-          : `data:image/png;base64,${qr}`
-        : null,
-      pairingCode: j?.pairingCode ?? null,
+      qrBase64: qr,
+      pairingCode: pairing,
       instance,
     };
   } catch {
