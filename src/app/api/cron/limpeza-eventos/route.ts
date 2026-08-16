@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { prisma } from "@/lib/prisma";
 import { getCrmConfig } from "@/lib/crm-config";
 
@@ -17,16 +18,19 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const cfg = await getCrmConfig();
-  const corte = DateTime.now()
-    .minus({ months: cfg.limiares.retencaoEventosMeses })
-    .toJSDate();
-  const r = await prisma.clientEvent.deleteMany({
-    where: { createdAt: { lt: corte } },
-  });
-  return NextResponse.json({
-    ok: true,
-    apagados: r.count,
-    retencaoMeses: cfg.limiares.retencaoEventosMeses,
+
+  return comRegistro("limpeza-eventos", async () => {
+    const cfg = await getCrmConfig();
+    const corte = DateTime.now()
+      .minus({ months: cfg.limiares.retencaoEventosMeses })
+      .toJSDate();
+    const r = await prisma.clientEvent.deleteMany({
+      where: { createdAt: { lt: corte } },
+    });
+    return NextResponse.json({
+      ok: true,
+      apagados: r.count,
+      retencaoMeses: cfg.limiares.retencaoEventosMeses,
+    });
   });
 }

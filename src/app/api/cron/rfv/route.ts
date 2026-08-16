@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { recalcularRFV } from "@/lib/rfv";
 
 /**
@@ -18,6 +19,9 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const resumo = await recalcularRFV();
-  return NextResponse.json({ ok: true, ...resumo });
+
+  return comRegistro("rfv", async () => {
+    const resumo = await recalcularRFV();
+    return NextResponse.json({ ok: true, ...resumo });
+  });
 }

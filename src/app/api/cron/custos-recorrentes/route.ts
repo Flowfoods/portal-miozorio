@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { getSettings } from "@/lib/settings";
 import { gerarRecorrentesDoMes } from "@/lib/finance/queries";
 
@@ -16,8 +17,11 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { timezone } = await getSettings();
-  const agora = DateTime.now().setZone(timezone);
-  const r = await gerarRecorrentesDoMes(agora.year, agora.month);
-  return NextResponse.json({ ok: true, mes: agora.toFormat("yyyy-MM"), ...r });
+
+  return comRegistro("custos-recorrentes", async () => {
+    const { timezone } = await getSettings();
+    const agora = DateTime.now().setZone(timezone);
+    const r = await gerarRecorrentesDoMes(agora.year, agora.month);
+    return NextResponse.json({ ok: true, mes: agora.toFormat("yyyy-MM"), ...r });
+  });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { dispatchOutbox } from "@/lib/whatsapp/service";
 
 /**
@@ -13,8 +14,11 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const url = new URL(req.url);
-  const limite = Number(url.searchParams.get("limite")) || undefined;
-  const resumo = await dispatchOutbox({ limite });
-  return NextResponse.json({ ok: true, ...resumo });
+
+  return comRegistro("whatsapp-outbox", async () => {
+    const url = new URL(req.url);
+    const limite = Number(url.searchParams.get("limite")) || undefined;
+    const resumo = await dispatchOutbox({ limite });
+    return NextResponse.json({ ok: true, ...resumo });
+  });
 }

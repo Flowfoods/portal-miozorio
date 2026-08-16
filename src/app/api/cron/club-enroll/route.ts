@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { enrollAllCustomers } from "@/lib/clube";
 
 /**
@@ -13,6 +14,9 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const r = await enrollAllCustomers();
-  return NextResponse.json({ ok: true, ...r });
+
+  return comRegistro("club-enroll", async () => {
+    const r = await enrollAllCustomers();
+    return NextResponse.json({ ok: true, ...r });
+  });
 }

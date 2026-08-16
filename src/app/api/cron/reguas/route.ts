@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/security";
+import { comRegistro } from "@/lib/cron-registro";
 import { gerarSugestoes } from "@/lib/reguas";
 
 /**
@@ -14,6 +15,9 @@ export async function POST(req: Request) {
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const resumo = await gerarSugestoes();
-  return NextResponse.json({ ok: true, ...resumo });
+
+  return comRegistro("reguas", async () => {
+    const resumo = await gerarSugestoes();
+    return NextResponse.json({ ok: true, ...resumo });
+  });
 }
