@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
 import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
+import { historiaDoAgendamento } from "@/lib/booking-historia";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import PainelHoje from "@/components/admin/PainelHoje";
 import WeekAgenda from "@/components/admin/WeekAgenda";
@@ -29,7 +30,13 @@ type BookingWithRels = Awaited<ReturnType<typeof queryDay>>[number];
 function queryDay(dayStart: Date, dayEnd: Date) {
   return prisma.booking.findMany({
     where: { startsAt: { gte: dayStart, lt: dayEnd } },
-    include: { customer: true, service: true },
+    include: {
+      customer: true,
+      service: true,
+      // Último evento: é ele que diz QUEM fez o quê. Sem isto a tela mostrava
+      // "Cancelado (Mi)" para reserva encerrada pelo sistema.
+      events: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
     orderBy: { startsAt: "asc" },
   });
 }
@@ -62,6 +69,8 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
   // Primeiro nome na confirmação: "Cancelar o horário da Ana?" evita o clique
   // no cartão errado muito melhor que "Tem certeza?".
   const primeiroNome = b.customer.name.trim().split(/\s+/)[0] || "essa cliente";
+  // Quem fez o quê, tirado do último evento — não do status cru.
+  const historia = historiaDoAgendamento(b.events[0]);
   // Alergia: vale tanto a da anamnese do atendimento quanto a da ficha (M11).
   const alergiaFicha = (b.customer.allergies ?? "").trim();
   const alergia = temAlergia(b.anamnesis) || alergiaFicha.length > 0;
@@ -128,6 +137,9 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
           {STATUS_LABEL[b.status]}
         </span>
       </div>
+      {historia && (
+        <p className="mt-1 font-corpo text-xs text-mi-texto/80">{historia}</p>
+      )}
       {actionable && (
         <div className="mt-3 flex flex-wrap gap-2">
           {b.status === "pending" && (
@@ -222,7 +234,13 @@ export default async function AdminAgendaPage({
       queryDay(day.toJSDate(), day.plus({ days: 1 }).toJSDate()),
       prisma.booking.findMany({
         where: { status: "pending", startsAt: { gte: today.toJSDate() } },
-        include: { customer: true, service: true },
+        include: {
+          customer: true,
+          service: true,
+          // Mesmo include do dia: sem os eventos o cartão volta a
+          // atribuir à Mi o que o sistema encerrou.
+          events: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
         orderBy: { startsAt: "asc" },
         take: 20,
       }),
@@ -266,7 +284,13 @@ export default async function AdminAgendaPage({
   const periodoBookings = periodoAtivo
     ? await prisma.booking.findMany({
         where: { startsAt: { gte: periodoAtivo.from, lte: periodoAtivo.to } },
-        include: { customer: true, service: true },
+        include: {
+          customer: true,
+          service: true,
+          // Mesmo include do dia: sem os eventos o cartão volta a
+          // atribuir à Mi o que o sistema encerrou.
+          events: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
         orderBy: { startsAt: "asc" },
       })
     : [];

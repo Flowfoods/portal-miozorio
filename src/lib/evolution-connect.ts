@@ -101,6 +101,16 @@ export async function evolutionPairingCode(
  */
 export async function evolutionLogout(): Promise<boolean> {
   if (!evolutionConfigured()) return false;
+
+  // Só desconecta o que está conectado. Pedir logout de instância que não está
+  // em "open" faz o Baileys lançar 428 (Precondition Required) — e essa exceção
+  // NÃO é tratada dentro da Evolution: derruba o processo inteiro e o container
+  // sai com código 1. Foi observado em produção em 15/08, com o rastro parando
+  // em logoutInstance. O botão "Começar de novo" chamava isto sem guarda
+  // nenhuma, justamente no estado em que o logout é ilegal.
+  const state = await evolutionState();
+  if (state !== "open") return true; // já desconectada: nada a fazer, sem erro
+
   const { instance } = cfg();
   for (const method of ["DELETE", "POST"]) {
     try {
