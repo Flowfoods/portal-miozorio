@@ -509,6 +509,12 @@ model MediaAsset {
   sort      Int      @default(0)
   published Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  // BUG D — original preservado + metadados de entrega (todas opcionais:
+  // fotos antigas não têm; migration 100% aditiva — R11).
+  origUrl   String?  @map("orig_url") // chave em orig/ (nunca servida)
+  width     Int? // dimensões do master — proporção sem layout shift
+  height    Int?
+  blurData  String?  @map("blur_data") // data URL p/ placeholder="blur"
 
   @@index([category, published])
   @@map("media_assets")

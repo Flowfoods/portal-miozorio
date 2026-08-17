@@ -1,24 +1,20 @@
 import Image from "next/image";
 import type { MediaAsset } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import SubmitButton from "@/components/admin/SubmitButton";
 import ConfirmForm from "@/components/admin/ConfirmForm";
-import { MEDIA_CATEGORIES, type MediaCategory } from "@/lib/media";
+import UploadFotos from "@/components/admin/UploadFotos";
 import {
-  adminUploadMedia,
+  MEDIA_CATEGORIES,
+  MEDIA_CATEGORY_LABEL as CATEGORY_LABEL,
+  type MediaCategory,
+} from "@/lib/media-shared";
+import {
   adminToggleMediaPublished,
   adminUpdateMediaAlt,
   adminDeleteMedia,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORY_LABEL: Record<MediaCategory, string> = {
-  hero: "Topo do site",
-  sobre: "Página Sobre",
-  portfolio: "Portfólio",
-  servico: "Serviços",
-};
 
 const CATEGORY_HINT: Record<MediaCategory, string> = {
   hero: "A foto principal, na primeira tela do site. A mais recente publicada é a que aparece.",
@@ -136,51 +132,8 @@ export default async function FotosPage({
         </p>
       )}
 
-      {/* Upload */}
-      <form
-        action={adminUploadMedia}
-        className="mt-6 space-y-3 rounded-mi bg-mi-branco p-4 shadow-suave"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="text-mi-texto">Onde a foto vai aparecer</span>
-            <select name="category" className="input-mi mt-1 w-full" required>
-              {MEDIA_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABEL[c]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="text-mi-texto">
-              Descrição (opcional — ajuda o Google)
-            </span>
-            <input
-              name="alt"
-              placeholder="Ex.: Maquiagem de madrinha pele negra"
-              className="input-mi mt-1 w-full"
-            />
-          </label>
-        </div>
-        <label className="block text-sm">
-          <span className="text-mi-texto">Fotos (pode escolher várias)</span>
-          <input
-            type="file"
-            name="files"
-            accept="image/*"
-            multiple
-            required
-            className="mt-1 block w-full text-sm text-mi-texto file:mr-3 file:rounded-mi file:border-0 file:bg-mi-cinza file:px-4 file:py-2.5 file:font-corpo file:text-sm file:text-mi-marrom-escuro"
-          />
-        </label>
-        <SubmitButton
-          pendingLabel="Enviando… 💛"
-          className="min-h-[48px] w-full rounded-mi bg-mi-marrom-escuro px-6 text-sm text-white hover:bg-mi-marrom disabled:opacity-60 sm:w-auto"
-        >
-          Enviar fotos
-        </SubmitButton>
-      </form>
+      {/* Upload (BUG D): foto a foto, com progresso e otimização no celular */}
+      <UploadFotos />
 
       {/* Galeria por categoria */}
       {MEDIA_CATEGORIES.map((c) => {
