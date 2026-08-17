@@ -33,7 +33,7 @@ const FRACAS = new Set([
 function medirForca(v: string): Forca {
   if (!v) return { score: 0, label: "", cor: "" };
   if (FRACAS.has(v.toLowerCase())) {
-    return { score: 0, label: "muito fácil de adivinhar", cor: "bg-mi-erro" };
+    return { score: 0, label: "muito fácil de adivinhar", cor: "bg-mi-erro-tinta" };
   }
   let n = 0;
   if (v.length >= 8) n++;

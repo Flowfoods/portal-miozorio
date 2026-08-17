@@ -85,7 +85,10 @@ export function BarrasReceitaDespesa({ serie }: { serie: PontoSerie[] }) {
           ref={innerRef}
           className="relative min-w-[560px]"
           onPointerMove={(e) => aoMover(e.clientX)}
-          onPointerDown={(e) => aoMover(e.clientX)}
+          // Toque abre no TAP completo (onClick), não ao apoiar o dedo p/ rolar.
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse") aoMover(e.clientX);
+          }}
           onClick={(e) => aoMover(e.clientX)}
           // No toque, o pointerleave dispara assim que o dedo levanta — só o
           // mouse fecha o tooltip ao sair; no celular ele fica até o próximo toque.

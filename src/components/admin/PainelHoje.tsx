@@ -2,7 +2,6 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
-import { formatBRL } from "@/lib/format";
 import { resumoDoMes } from "@/lib/finance/queries";
 
 /**
@@ -57,7 +56,16 @@ export default async function PainelHoje() {
         />
         <Card
           titulo="Resultado do mês"
-          valor={lucro != null ? formatBRL(lucro) : "—"}
+          // Sem centavos: com eles o kpi-sm estourava o card de meia largura em 360px.
+          valor={
+            lucro != null
+              ? (lucro / 100).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                  maximumFractionDigits: 0,
+                })
+              : "—"
+          }
           sub={now.setLocale("pt-BR").toFormat("LLLL")}
           href="/admin/financeiro"
           tom={lucro == null ? undefined : lucro >= 0 ? "ok" : "alerta"}

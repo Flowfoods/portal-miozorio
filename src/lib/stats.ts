@@ -195,17 +195,28 @@ export async function getResumoRange(
     },
   });
 
-  const bookings: ResumoBooking[] = rows.map((r) => ({
-    status: r.status,
-    priceCents: r.priceCents,
-    source: r.source,
-    startsAt: r.startsAt,
-    endsAt: r.endsAt,
-    serviceName: r.service.name,
-  }));
-
   // Ocupação só conta dias já decorridos (não inflar com o futuro do período).
   const occEnd = DateTime.min(end, now.plus({ days: 1 }).startOf("day"));
+  const occEndMs = occEnd.toMillis();
+
+  // Reservas confirmadas no FUTURO ficam fora da conta: elas só alimentariam o
+  // numerador da ocupação (confirmed não entra em faturamento/faltas), e o
+  // denominador já é cortado em occEnd — numerador e denominador precisam
+  // cobrir a mesma janela, como o comentário acima sempre prometeu.
+  // (Revisão adversarial 17/08: gauge chegava a 100% com metade em reservas
+  // futuras e aconselhava "abrir mais horários".)
+  const bookings: ResumoBooking[] = rows
+    .filter(
+      (r) => !(r.status === "confirmed" && r.startsAt.getTime() >= occEndMs),
+    )
+    .map((r) => ({
+      status: r.status,
+      priceCents: r.priceCents,
+      source: r.source,
+      startsAt: r.startsAt,
+      endsAt: r.endsAt,
+      serviceName: r.service.name,
+    }));
   const availableMin = availableMinutesInRange(
     settings.workingHours,
     start.toMillis(),
@@ -258,15 +269,17 @@ const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 export async function getResumoExtras(
   start: DateTime,
   end: DateTime,
+  /** Janela de comparação — a MESMA usada nos outros KPIs da página, para o
+   *  delta de "Novas clientes" não sair de uma base diferente (revisão 17/08:
+   *  a janela deslizante em ms divergia do mês-calendário e invertia sinal). */
+  antStart: DateTime,
+  antEnd: DateTime,
 ): Promise<ResumoExtras> {
   const settings = await getSettings();
   const zone = settings.timezone;
-  const key = `extras:${start.toISODate()}..${end.toISODate()}`;
+  const key = `extras:${start.toISODate()}..${end.toISODate()}|${antStart.toISODate()}..${antEnd.toISODate()}`;
   const cached = extrasCache.get(key);
   if (cached && Date.now() - cached.at < TTL_MS) return cached.data;
-
-  const durMs = end.toMillis() - start.toMillis();
-  const antStart = start.minus({ milliseconds: durMs });
 
   const [completed, novas, novasAnt, clientesPeriodo, proximosRows] =
     await Promise.all([
@@ -281,7 +294,7 @@ export async function getResumoExtras(
         where: { createdAt: { gte: start.toJSDate(), lt: end.toJSDate() } },
       }),
       prisma.customer.count({
-        where: { createdAt: { gte: antStart.toJSDate(), lt: start.toJSDate() } },
+        where: { createdAt: { gte: antStart.toJSDate(), lt: antEnd.toJSDate() } },
       }),
       prisma.booking.findMany({
         where: {
@@ -305,21 +318,26 @@ export async function getResumoExtras(
       }),
     ]);
 
-  // Série diária de faturamento (dias sem atendimento entram com 0).
+  // Série de faturamento (dias sem atendimento entram com 0). Períodos longos
+  // agregam por SEMANA em vez de truncar — a versão anterior cortava em 120
+  // dias em silêncio e o gráfico "perdia" o resto do período (revisão 17/08).
   const porDia = new Map<string, number>();
   for (const b of completed) {
     const d = DateTime.fromJSDate(b.startsAt, { zone }).toISODate()!;
     porDia.set(d, (porDia.get(d) ?? 0) + b.priceCents);
   }
   const serieDiaria: { label: string; valor: number }[] = [];
-  const dias = Math.min(120, Math.ceil(end.diff(start, "days").days));
-  for (let i = 0; i < dias; i++) {
+  const dias = Math.min(400, Math.ceil(end.diff(start, "days").days));
+  const passoDias = dias > 124 ? 7 : 1;
+  const hoje = DateTime.now().setZone(zone);
+  for (let i = 0; i < dias; i += passoDias) {
     const d = start.plus({ days: i });
-    if (d > DateTime.now().setZone(zone)) break; // futuro não entra na série
-    serieDiaria.push({
-      label: d.toFormat("d/M"),
-      valor: porDia.get(d.toISODate()!) ?? 0,
-    });
+    if (d > hoje) break; // futuro não entra na série
+    let valor = 0;
+    for (let j = 0; j < passoDias && i + j < dias; j++) {
+      valor += porDia.get(start.plus({ days: i + j }).toISODate()!) ?? 0;
+    }
+    serieDiaria.push({ label: d.toFormat("d/M"), valor });
   }
 
   const porDiaSemana = DIAS_SEMANA.map((label) => ({ label, valor: 0 }));

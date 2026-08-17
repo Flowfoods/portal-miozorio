@@ -108,7 +108,7 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
     return (
       <div className="rounded-mi bg-mi-sucesso/10 p-5 text-center ring-1 ring-mi-sucesso/40">
         <p className="font-titulo text-xl text-mi-sucesso-tinta">WhatsApp conectado ✅</p>
-        <p className="mt-1 text-sm text-mi-sucesso-tinta/80">
+        <p className="mt-1 text-sm text-mi-sucesso-tinta">
           Os lembretes, confirmações e códigos de recuperação já saem por aqui.
         </p>
         <button

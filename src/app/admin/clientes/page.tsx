@@ -65,15 +65,20 @@ export default async function AdminClientesPage({
         {customers.map((c) => (
           <div
             key={c.id}
-            className="rounded-2xl border border-mi-marrom-100 bg-mi-branco p-4 shadow-card"
+            className="relative rounded-2xl border border-mi-marrom-100 bg-mi-branco p-4 shadow-card transition-colors focus-within:bg-mi-marrom-50 hover:bg-mi-marrom-50"
           >
+            {/* Stretched link: o card INTEIRO abre a ficha (revisão 17/08 —
+                antes o alvo era só o nome, ~20px). O form "Perdoar" fica em
+                z-10, acima do link, e continua funcionando. */}
+            <Link
+              href={`/admin/clientes/${c.id}`}
+              className="absolute inset-0 z-0 rounded-2xl"
+              aria-label={`Abrir ficha de ${c.name}`}
+            />
             <div className="flex items-start justify-between gap-2">
-              <Link
-                href={`/admin/clientes/${c.id}`}
-                className="min-w-0 font-corpo font-medium text-mi-marrom-900 underline underline-offset-4"
-              >
+              <span className="min-w-0 font-corpo font-medium text-mi-marrom-900 underline underline-offset-4">
                 {c.name}
-              </Link>
+              </span>
               <RfvBadge segmento={c.rfvSegmento} />
             </div>
             <p className="mt-1 font-corpo text-rotulo text-mi-marrom-700">
@@ -94,8 +99,11 @@ export default async function AdminClientesPage({
               )}
             </div>
             {(c.strikes > 0 || c.requiresDeposit) && (
-              <form action={adminResetStrikes.bind(null, c.id)} className="mt-3">
-                <button className="min-h-[44px] rounded-mi border border-mi-marrom-200 px-4 font-corpo text-rotulo text-mi-marrom-800">
+              <form
+                action={adminResetStrikes.bind(null, c.id)}
+                className="relative z-10 mt-3"
+              >
+                <button className="min-h-[44px] rounded-mi border border-mi-marrom-200 bg-mi-branco px-4 font-corpo text-rotulo text-mi-marrom-800">
                   Perdoar
                 </button>
               </form>

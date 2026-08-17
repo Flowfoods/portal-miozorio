@@ -77,7 +77,7 @@ export default async function CampanhaDetalhePage({
         )}
         {m.pendentes > 0 && (
           <form action={aprovarPendentesAction.bind(null, camp.id)}>
-            <button className="rounded-mi bg-mi-sucesso px-4 py-2 text-sm text-white">
+            <button className="rounded-mi bg-mi-sucesso-tinta px-4 py-2 text-sm text-white">
               Aprovar e enviar {m.pendentes} pendente(s)
             </button>
           </form>
