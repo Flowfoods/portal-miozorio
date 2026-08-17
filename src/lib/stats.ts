@@ -228,3 +228,136 @@ export async function getResumo(
   const resumo = await getResumoRange(start, end);
   return { resumo, label, mesAtual: now.toFormat("yyyy-MM") };
 }
+
+// ── Extras do Resumo redesenhado (V3) — leituras puras, nada de regra nova ──
+
+export interface ResumoExtras {
+  /** Faturamento por dia (só completed), para o gráfico de área. */
+  serieDiaria: { label: string; valor: number }[];
+  /** Atendimentos completed por dia da semana (Seg..Dom). */
+  porDiaSemana: { label: string; valor: number }[];
+  /** Clientes criadas no período e no período anterior equivalente. */
+  novasClientes: number;
+  novasClientesAnterior: number;
+  /** Das clientes atendidas no período, quantas já eram da casa (retorno). */
+  retorno: { recorrentes: number; total: number };
+  /** Próximos agendamentos confirmados (a partir de agora). */
+  proximos: {
+    id: string;
+    cliente: string;
+    servico: string;
+    startsAt: Date;
+    location: string;
+  }[];
+}
+
+const extrasCache = new Map<string, { at: number; data: ResumoExtras }>();
+
+const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+export async function getResumoExtras(
+  start: DateTime,
+  end: DateTime,
+): Promise<ResumoExtras> {
+  const settings = await getSettings();
+  const zone = settings.timezone;
+  const key = `extras:${start.toISODate()}..${end.toISODate()}`;
+  const cached = extrasCache.get(key);
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.data;
+
+  const durMs = end.toMillis() - start.toMillis();
+  const antStart = start.minus({ milliseconds: durMs });
+
+  const [completed, novas, novasAnt, clientesPeriodo, proximosRows] =
+    await Promise.all([
+      prisma.booking.findMany({
+        where: {
+          status: "completed",
+          startsAt: { gte: start.toJSDate(), lt: end.toJSDate() },
+        },
+        select: { startsAt: true, priceCents: true, customerId: true },
+      }),
+      prisma.customer.count({
+        where: { createdAt: { gte: start.toJSDate(), lt: end.toJSDate() } },
+      }),
+      prisma.customer.count({
+        where: { createdAt: { gte: antStart.toJSDate(), lt: start.toJSDate() } },
+      }),
+      prisma.booking.findMany({
+        where: {
+          status: "completed",
+          startsAt: { gte: start.toJSDate(), lt: end.toJSDate() },
+        },
+        select: { customerId: true },
+        distinct: ["customerId"],
+      }),
+      prisma.booking.findMany({
+        where: { status: "confirmed", startsAt: { gte: new Date() } },
+        orderBy: { startsAt: "asc" },
+        take: 6,
+        select: {
+          id: true,
+          startsAt: true,
+          location: true,
+          customer: { select: { name: true } },
+          service: { select: { name: true } },
+        },
+      }),
+    ]);
+
+  // Série diária de faturamento (dias sem atendimento entram com 0).
+  const porDia = new Map<string, number>();
+  for (const b of completed) {
+    const d = DateTime.fromJSDate(b.startsAt, { zone }).toISODate()!;
+    porDia.set(d, (porDia.get(d) ?? 0) + b.priceCents);
+  }
+  const serieDiaria: { label: string; valor: number }[] = [];
+  const dias = Math.min(120, Math.ceil(end.diff(start, "days").days));
+  for (let i = 0; i < dias; i++) {
+    const d = start.plus({ days: i });
+    if (d > DateTime.now().setZone(zone)) break; // futuro não entra na série
+    serieDiaria.push({
+      label: d.toFormat("d/M"),
+      valor: porDia.get(d.toISODate()!) ?? 0,
+    });
+  }
+
+  const porDiaSemana = DIAS_SEMANA.map((label) => ({ label, valor: 0 }));
+  for (const b of completed) {
+    const wd = DateTime.fromJSDate(b.startsAt, { zone }).weekday; // 1..7
+    porDiaSemana[wd - 1]!.valor++;
+  }
+
+  // Retorno: clientes atendidas no período que já tinham completed ANTES dele.
+  const ids = clientesPeriodo.map((c) => c.customerId);
+  const recorrentes = ids.length
+    ? (
+        await prisma.booking.findMany({
+          where: {
+            status: "completed",
+            customerId: { in: ids },
+            startsAt: { lt: start.toJSDate() },
+          },
+          select: { customerId: true },
+          distinct: ["customerId"],
+        })
+      ).length
+    : 0;
+
+  const data: ResumoExtras = {
+    serieDiaria,
+    porDiaSemana,
+    novasClientes: novas,
+    novasClientesAnterior: novasAnt,
+    retorno: { recorrentes, total: ids.length },
+    proximos: proximosRows.map((p) => ({
+      id: p.id,
+      cliente: p.customer.name,
+      servico: p.service.name,
+      startsAt: p.startsAt,
+      location: p.location,
+    })),
+  };
+  extrasCache.set(key, { at: Date.now(), data });
+  return data;
+}

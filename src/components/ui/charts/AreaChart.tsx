@@ -41,9 +41,13 @@ export default function AreaChart({
   const linha = dados.map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.valor).toFixed(1)}`).join(" ");
   const area = `${linha} L${x(n - 1).toFixed(1)},${H - PAD_BOT} L${x(0).toFixed(1)},${H - PAD_BOT} Z`;
 
-  // rótulos do eixo X: primeiro, último e ~4 intermediários
+  // rótulos do eixo X: primeiro, último e ~4 intermediários — sem deixar um
+  // intermediário colar no último (colisão tipo "16/8 17/8").
   const passo = Math.max(1, Math.ceil(n / 6));
-  const mostraRotulo = (i: number) => i === 0 || i === n - 1 || i % passo === 0;
+  const mostraRotulo = (i: number) =>
+    i === 0 ||
+    i === n - 1 ||
+    (i % passo === 0 && n - 1 - i >= Math.ceil(passo / 2));
 
   const aoMover = (clientX: number) => {
     const box = boxRef.current?.getBoundingClientRect();
