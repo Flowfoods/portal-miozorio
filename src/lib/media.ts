@@ -21,8 +21,12 @@ import {
  *
  * Layout do volume:
  *   <MEDIA_DIR>/<id>.webp   → master público (2000px, q90) — o que o site serve
- *   <MEDIA_DIR>/orig/…      → ORIGINAL intacto, como chegou (nunca servido:
- *                             guarda EXIF/GPS; existe para regerar derivados)
+ *   <MEDIA_DIR>/orig/…      → o arquivo como CHEGOU AO SERVIDOR, intacto e
+ *                             nunca servido. Atenção: JPEG >4MB já chega
+ *                             pré-otimizado pelo navegador (≤4000px, q0.92,
+ *                             sem EXIF); HEIC/PNG/WebP e arquivos ≤4MB chegam
+ *                             direto da câmera (podem ter EXIF/GPS). Serve
+ *                             para regerar derivados se a estratégia mudar.
  *   <MEDIA_DIR>/priv/…      → fotos de referência de cliente + anexos (LGPD)
  */
 export const MEDIA_DIR =
