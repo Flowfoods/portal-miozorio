@@ -71,8 +71,12 @@ export default async function Home() {
               alt={heroFoto.alt}
               fill
               priority
+              quality={90}
               sizes="(max-width: 768px) 100vw, 480px"
               className="object-cover"
+              {...(heroFoto.blurData
+                ? { placeholder: "blur" as const, blurDataURL: heroFoto.blurData }
+                : {})}
             />
           ) : (
             <MonogramPlaceholder />
@@ -151,8 +155,15 @@ export default async function Home() {
                     alt={foto.alt}
                     fill
                     loading="lazy"
+                    quality={90}
                     sizes="(max-width: 640px) 50vw, 320px"
                     className="object-cover"
+                    {...(foto.blurData
+                      ? {
+                          placeholder: "blur" as const,
+                          blurDataURL: foto.blurData,
+                        }
+                      : {})}
                   />
                 </div>
               ))

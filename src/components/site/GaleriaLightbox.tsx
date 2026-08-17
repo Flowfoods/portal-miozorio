@@ -8,7 +8,14 @@ import { useRef, useState } from "react";
  * Esc, clique no backdrop e botão fecham; foco fica no dialog (comportamento
  * nativo de showModal). Alvos ≥44px (R19).
  */
-type Foto = { id: string; url: string; alt: string };
+type Foto = {
+  id: string;
+  url: string;
+  alt: string;
+  blurData?: string | null;
+  width?: number | null;
+  height?: number | null;
+};
 
 export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -38,8 +45,12 @@ export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
               alt={foto.alt}
               fill
               loading="lazy"
+              quality={85}
               sizes="(max-width: 640px) 50vw, 320px"
               className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              {...(foto.blurData
+                ? { placeholder: "blur" as const, blurDataURL: foto.blurData }
+                : {})}
             />
           </button>
         ))}
@@ -59,10 +70,14 @@ export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
               <Image
                 src={atual.url}
                 alt={atual.alt}
-                width={1200}
-                height={1500}
+                width={atual.width ?? 1200}
+                height={atual.height ?? 1500}
+                quality={90}
                 sizes="92vw"
                 className="h-auto max-h-[76vh] w-full object-contain"
+                {...(atual.blurData
+                  ? { placeholder: "blur" as const, blurDataURL: atual.blurData }
+                  : {})}
               />
             </div>
             <figcaption className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2">

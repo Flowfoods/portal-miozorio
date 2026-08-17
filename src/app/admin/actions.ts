@@ -28,10 +28,8 @@ import {
   rescheduleBooking,
 } from "@/lib/booking-service";
 import {
-  MEDIA_CATEGORIES,
-  MAX_UPLOAD_BYTES,
-  processUpload,
   deleteMediaFile,
+  deleteOriginalFile,
   processPrivatePhoto,
   deletePrivatePhoto,
   MAX_BOOKING_PHOTO_BYTES,
@@ -736,73 +734,15 @@ export async function adminResetUserPassword(
   revalidatePath("/admin/usuarias");
 }
 
-// ── Fotos do site (M8.4) ────────────────────────────────────────────────────
-
-/** Alt padrão por categoria — a Mi não precisa escrever descrição foto a foto. */
-const MEDIA_DEFAULT_ALT: Record<string, string> = {
-  hero: "Maquiagem por Milene Ozorio",
-  sobre: "Milene Ozorio no estúdio",
-  portfolio: "Produção de beleza por Mi Ozorio",
-  servico: "Serviço de beleza por Mi Ozorio",
-};
+// ── Fotos do site (M8.4; upload migrou p/ rota /api/admin/media no BUG D —
+// requests individuais com progresso; a server action estourava o body de
+// 25MB no lote e morria com erro genérico) ─────────────────────────────────
 
 function refreshMedia() {
   revalidatePath("/admin/fotos");
   revalidatePath("/");
   revalidatePath("/sobre");
-}
-
-export async function adminUploadMedia(formData: FormData): Promise<void> {
-  await requireAdmin();
-
-  const category = String(formData.get("category") ?? "");
-  if (!MEDIA_CATEGORIES.includes(category as never)) {
-    fail("Escolha onde a foto vai aparecer.");
-  }
-  const files = formData
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0);
-  if (!files.length) fail("Escolha pelo menos uma foto.");
-
-  const alt = String(formData.get("alt") ?? "").trim();
-  let saved = 0;
-  // Importação em lote (o acervo do Instagram são dezenas de arquivos de uma
-  // vez): um arquivo ruim PULA, não derruba o envio inteiro. Antes chamava
-  // fail() no primeiro problema — e o Next apaga a mensagem de server action em
-  // produção, então a Mi via a página de erro genérica sem saber quantas fotos
-  // tinham entrado nem qual arquivo era o culpado.
-  const pulados: string[] = [];
-  for (const file of files) {
-    if (file.size > MAX_UPLOAD_BYTES) {
-      pulados.push(`${file.name} (maior que 12MB)`);
-      continue;
-    }
-    let name: string;
-    try {
-      name = await processUpload(Buffer.from(await file.arrayBuffer()));
-    } catch {
-      pulados.push(`${file.name} (não consegui ler — tente em JPG ou PNG)`);
-      continue;
-    }
-    await prisma.mediaAsset.create({
-      data: {
-        url: `/media/${name}`,
-        alt: alt || MEDIA_DEFAULT_ALT[category] || "Foto Mi Ozorio",
-        category,
-        published: true,
-      },
-    });
-    saved++;
-  }
-  refreshMedia();
-
-  const params = new URLSearchParams({ enviadas: String(saved) });
-  if (pulados.length) {
-    // Só os 3 primeiros nomes: a URL não é lugar para despejar 40 arquivos.
-    params.set("pulados", String(pulados.length));
-    params.set("quais", pulados.slice(0, 3).join(" · ").slice(0, 300));
-  }
-  redirect(`/admin/fotos?${params.toString()}`);
+  revalidatePath("/galeria");
 }
 
 export async function adminToggleMediaPublished(id: string): Promise<void> {
@@ -833,6 +773,7 @@ export async function adminDeleteMedia(id: string): Promise<void> {
   if (!asset) fail("Foto não encontrada.");
   await prisma.mediaAsset.delete({ where: { id } });
   await deleteMediaFile(asset.url);
+  await deleteOriginalFile(asset.origUrl); // BUG D: o original vai junto
   refreshMedia();
 }
 

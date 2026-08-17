@@ -47,8 +47,12 @@ export default async function SobrePage() {
               alt={retrato.alt}
               fill
               priority
+              quality={90}
               sizes="(max-width: 768px) 100vw, 480px"
               className="object-cover"
+              {...(retrato.blurData
+                ? { placeholder: "blur" as const, blurDataURL: retrato.blurData }
+                : {})}
             />
           ) : (
             <MonogramPlaceholder />

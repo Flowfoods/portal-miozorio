@@ -41,9 +41,15 @@ const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
   experimental: {
-    // Upload de fotos do painel (M8.4) vai por server action multipart —
-    // o default de 1MB não comporta foto de celular.
+    // Foto do painel agora vai pela rota /api/admin/media (BUG D) — este
+    // limite cobre as demais actions multipart (foto de cliente, anexo).
     serverActions: { bodySizeLimit: "25mb" },
+  },
+  // Entrega das fotos (BUG D — F5): AVIF primeiro (melhor compressão),
+  // WebP de fallback; degraus alinhados aos derivados que o site realmente usa.
+  images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [400, 640, 828, 1080, 1200, 1600, 2000],
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
