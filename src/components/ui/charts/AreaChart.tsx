@@ -63,7 +63,11 @@ export default function AreaChart({
       style={{ minHeight: alturaMin }}
       onPointerMove={(e) => aoMover(e.clientX)}
       onPointerDown={(e) => aoMover(e.clientX)}
-      onPointerLeave={() => setAtivo(null)}
+          onClick={(e) => aoMover(e.clientX)}
+      // Toque: pointerleave dispara ao levantar o dedo — só mouse fecha.
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") setAtivo(null);
+      }}
     >
       <svg
         viewBox={`0 0 ${W} ${H}`}
