@@ -9,8 +9,12 @@
 - **Layout do volume:**
   - `/app/media/<id>.webp` — master público (2000px, WebP q90) — o único
     conteúdo que a rota `/media/[...path]` serve;
-  - `/app/media/orig/` — **originais intactos** (com EXIF/GPS) — NUNCA
-    servidos; existem para regerar derivados se a estratégia mudar;
+  - `/app/media/orig/` — o arquivo **como chegou ao servidor**, intacto e
+    NUNCA servido. Nuance importante: JPEG >4MB já chega pré-otimizado do
+    navegador (≤4000px q0.92, sem EXIF); HEIC/PNG/WebP e arquivos ≤4MB
+    chegam direto da câmera (podem ter EXIF/GPS). Serve para regerar
+    derivados; para acervo em resolução de impressão, guardar o export do
+    fotógrafo fora do site;
   - `/app/media/priv/` — fotos de referência de cliente + anexos do
     financeiro (LGPD) — só via rotas autenticadas.
 - **Fronteira pública:** `src/lib/media-path.ts` (`podeServirPublicamente`)
@@ -56,6 +60,7 @@ tar czf /root/backups/miozorio-media-$(date +%F).tar.gz -C /var/lib/docker/volum
 |---|---|
 | "não deu certo: X (tem N MB…)" | > 50MB de verdade — reexportar menor |
 | "não consegui ler essa foto" | formato exótico (RAW/TIFF)? magic bytes em `media-shared.ts` |
+| "não consegui gravar no servidor… disco cheio" | `df -h` na VPS / volume — HTTP 507 = ENOSPC/EACCES, não é a foto |
 | Foto some do site após deploy | mount `/app/media` sumiu do Dokploy — conferir `application.one` |
 | Upload trava em 4G | request é 1 foto por vez com retry; conferir tamanho pós-otimização no painel |
 | Galeria vazia com fotos no painel | `published` = false? banco fora? `/api/health` |

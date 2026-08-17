@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { processUpload } from "@/lib/media";
+import {
+  deleteMediaFile,
+  deleteOriginalFile,
+  processUpload,
+} from "@/lib/media";
 import {
   MAX_UPLOAD_BYTES,
   MEDIA_CATEGORIES,
@@ -63,7 +67,16 @@ export async function POST(req: Request): Promise<NextResponse> {
   let processed;
   try {
     processed = await processUpload(Buffer.from(await file.arrayBuffer()));
-  } catch {
+  } catch (e) {
+    // ENOSPC/EACCES é problema do SERVIDOR (disco cheio, permissão) — dizer
+    // "tente em JPG" para uma foto válida mandaria a Mi para um loop inútil.
+    const code = (e as NodeJS.ErrnoException)?.code;
+    if (typeof code === "string" && code.startsWith("E")) {
+      return erro(
+        507,
+        "Não consegui gravar a foto no servidor — pode ser disco cheio. Avise o suporte.",
+      );
+    }
     return erro(
       415,
       "Não consegui ler essa foto — tente em JPG, PNG, WebP ou HEIC.",
@@ -71,18 +84,26 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const alt = String(form.get("alt") ?? "").trim();
-  const asset = await prisma.mediaAsset.create({
-    data: {
-      url: processed.url,
-      origUrl: processed.origUrl,
-      width: processed.width,
-      height: processed.height,
-      blurData: processed.blurData,
-      alt: alt || DEFAULT_ALT[category as MediaCategory],
-      category,
-      published: true,
-    },
-  });
+  let asset;
+  try {
+    asset = await prisma.mediaAsset.create({
+      data: {
+        url: processed.url,
+        origUrl: processed.origUrl,
+        width: processed.width,
+        height: processed.height,
+        blurData: processed.blurData,
+        alt: alt || DEFAULT_ALT[category as MediaCategory],
+        category,
+        published: true,
+      },
+    });
+  } catch {
+    // Sem linha no banco, os arquivos seriam órfãos invisíveis no volume.
+    await deleteMediaFile(processed.url);
+    await deleteOriginalFile(processed.origUrl);
+    return erro(500, "Deu um erro ao salvar a foto — tente de novo.");
+  }
 
   revalidatePath("/admin/fotos");
   revalidatePath("/");
