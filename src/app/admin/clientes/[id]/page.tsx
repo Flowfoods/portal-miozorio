@@ -90,15 +90,21 @@ export default async function FichaClientePage({
     prisma.$queryRawUnsafe<
       { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[]
     >(
+      // $1::uuid: o Prisma tipa parâmetro string como text, e uuid = text não
+      // existe no Postgres (42883) — derrubava a ficha INTEIRA desde 05/07.
       `SELECT
          COUNT(*) FILTER (WHERE tipo = 'SESSAO_INICIADA'
            AND created_at >= now() - INTERVAL '30 days')::int AS "visitas30",
          COUNT(*) FILTER (WHERE tipo IN ('INICIOU_AGENDAMENTO','ABANDONOU_AGENDAMENTO')
            AND created_at >= now() - INTERVAL '30 days')::int AS "tentativas30",
          MAX(created_at) FILTER (WHERE tipo IN ('SESSAO_INICIADA','LOGIN_CLUBE')) AS "ultimoAcesso"
-       FROM client_events WHERE client_id = $1`,
+       FROM client_events WHERE client_id = $1::uuid`,
       customer.id,
-    ),
+    ).catch((e): { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[] => {
+      // Atividade é seção auxiliar: se falhar, a ficha continua de pé.
+      console.error("ficha: resumo de atividade falhou", e);
+      return [];
+    }),
   ]);
   const atividade = resumoAtividade[0] ?? {
     visitas30: 0,
