@@ -32,7 +32,14 @@ export default async function GaleriaPage() {
         </p>
       ) : (
         <GaleriaLightbox
-          fotos={fotos.map((f) => ({ id: f.id, url: f.url, alt: f.alt }))}
+          fotos={fotos.map((f) => ({
+            id: f.id,
+            url: f.url,
+            alt: f.alt,
+            blurData: f.blurData,
+            width: f.width,
+            height: f.height,
+          }))}
         />
       )}
 
