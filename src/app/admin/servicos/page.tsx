@@ -160,7 +160,14 @@ export default async function AdminServicosPage() {
             <form action={adminUpdateService}>
               <input type="hidden" name="id" value={s.id} />
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-lg">{s.name}</h2>
+                <h2 className="flex flex-wrap items-center gap-2 text-lg">
+                  {s.name}
+                  {lockedOffline && (
+                    <span className="rounded-full bg-mi-marrom-100 px-2.5 py-0.5 font-corpo text-micro font-medium text-mi-marrom-800">
+                      Sob consulta · WhatsApp
+                    </span>
+                  )}
+                </h2>
                 <span className="text-xs text-mi-texto/80">
                   {CATEGORY_LABEL[s.category] ?? s.category} · {s.code}
                 </span>
@@ -289,7 +296,7 @@ export default async function AdminServicosPage() {
                       <form
                         action={adminRemoveServiceAvailability.bind(null, a.id)}
                       >
-                        <button className="text-xs text-red-800 underline-offset-2 hover:underline">
+                        <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
                           remover
                         </button>
                       </form>
@@ -339,7 +346,7 @@ export default async function AdminServicosPage() {
                 action={adminDeleteService.bind(null, s.id)}
                 className="mt-2 text-right"
               >
-                <button className="text-xs text-red-800 underline-offset-2 hover:underline">
+                <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
                   Excluir serviço (sem histórico)
                 </button>
               </form>

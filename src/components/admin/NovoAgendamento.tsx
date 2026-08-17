@@ -484,7 +484,7 @@ export default function NovoAgendamento({
                 <span className="text-sm text-mi-texto">
                   {picked.name} · {picked.phoneE164}
                   {picked.strikes > 0 && (
-                    <span className="text-red-800"> · ⚠ {picked.strikes}</span>
+                    <span className="text-mi-erro-tinta"> · ⚠ {picked.strikes}</span>
                   )}
                 </span>
                 <button
@@ -766,7 +766,7 @@ export default function NovoAgendamento({
 
       {/* Rodapé sticky: erro + salvar sempre visível */}
       <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-3 rounded-b-mi border-t border-mi-cinza/60 bg-mi-superficie-elevada px-4 py-3">
-        {error && <p className="mr-auto text-sm text-red-700">{error}</p>}
+        {error && <p className="mr-auto text-sm text-mi-erro-tinta">{error}</p>}
         <button
           type="button"
           disabled={!canSubmit || submitting}
@@ -817,7 +817,7 @@ export default function NovoAgendamento({
               </p>
             )}
 
-            {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+            {error && <p className="mt-3 text-sm text-mi-erro-tinta">{error}</p>}
 
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button

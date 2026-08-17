@@ -83,7 +83,7 @@ export default function WeekAgenda({
                         {alergia && (
                           <span
                             title="Alergia registrada"
-                            className="rounded bg-red-600 px-1 text-[9px] font-bold text-white"
+                            className="rounded bg-mi-erro px-1 text-[9px] font-bold text-white"
                           >
                             ⚠
                           </span>

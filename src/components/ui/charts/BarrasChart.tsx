@@ -58,7 +58,13 @@ export default function BarrasChart({
             const destaque = temDestaqueManual ? d.destaque : d.valor === pico;
             const hPct = (d.valor / max) * 100;
             return (
-              <div key={`${grupoId}-${i}`} className="flex h-full w-full max-w-14 flex-col items-center justify-end">
+              <div
+                key={`${grupoId}-${i}`}
+                // Coluna inteira é área de toque (44px+ de alvo no mobile).
+                onPointerEnter={() => setAtivo(i)}
+                onClick={() => setAtivo(ativo === i ? null : i)}
+                className="flex h-full w-full max-w-14 cursor-pointer flex-col items-center justify-end"
+              >
                 <button
                   type="button"
                   aria-label={`${d.label}: ${fmt(d.valor)}`}

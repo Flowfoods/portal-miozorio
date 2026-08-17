@@ -50,7 +50,7 @@ function LoginForm() {
         Acesso restrito. Entre com sua conta do estúdio.
       </p>
       {search.get("reset") === "ok" && (
-        <p className="mb-6 rounded-mi bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="mb-6 rounded-mi bg-mi-sucesso/10 px-4 py-3 text-sm text-mi-sucesso-tinta">
           Senha redefinida. Entre com a nova senha.
         </p>
       )}
@@ -74,7 +74,7 @@ function LoginForm() {
           required
         />
         {error && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-mi-erro-tinta">
             {error}
           </p>
         )}

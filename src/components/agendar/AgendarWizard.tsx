@@ -633,7 +633,7 @@ export default function AgendarWizard() {
             </label>
 
             {formError && (
-              <p className="font-corpo text-sm text-red-700">{formError}</p>
+              <p className="font-corpo text-sm text-mi-erro-tinta">{formError}</p>
             )}
 
             {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
@@ -691,7 +691,7 @@ export default function AgendarWizard() {
           />
 
           {formError && (
-            <p className="mt-3 font-corpo text-sm text-red-700">{formError}</p>
+            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">{formError}</p>
           )}
 
           <button

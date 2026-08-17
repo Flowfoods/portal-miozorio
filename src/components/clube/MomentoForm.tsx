@@ -180,7 +180,7 @@ export default function MomentoForm({
             className="block w-full font-corpo text-sm text-mi-texto file:mr-3 file:rounded-mi file:border-0 file:bg-mi-cinza file:px-4 file:py-2.5 file:font-corpo file:text-sm file:text-mi-marrom-escuro"
           />
           {qtdNovas > maxNovas && (
-            <span className="mt-1 block font-corpo text-xs text-red-700">
+            <span className="mt-1 block font-corpo text-xs text-mi-erro-tinta">
               Só as {maxNovas} primeiras fotos serão enviadas.
             </span>
           )}
@@ -204,7 +204,7 @@ export default function MomentoForm({
       )}
 
       {state?.error && (
-        <p className="font-corpo text-sm text-red-700">{state.error}</p>
+        <p className="font-corpo text-sm text-mi-erro-tinta">{state.error}</p>
       )}
 
       <BotaoEnviar label={editar ? "Reenviar para a Mi" : "Enviar para a Mi"} />

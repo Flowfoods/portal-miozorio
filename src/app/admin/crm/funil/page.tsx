@@ -120,7 +120,7 @@ GROUP BY f.para`),
           </p>
           <p
             className={`mt-1 font-titulo text-2xl ${
-              paradas > 0 ? "text-red-700" : "text-mi-marrom-escuro"
+              paradas > 0 ? "text-mi-erro-tinta" : "text-mi-marrom-escuro"
             }`}
           >
             {paradas}

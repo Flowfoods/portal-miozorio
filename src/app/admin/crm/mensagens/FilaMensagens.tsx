@@ -78,7 +78,7 @@ export default function FilaMensagens({
   return (
     <div className="space-y-4">
       {!whatsappOk && (
-        <p className="rounded-mi bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-mi bg-mi-alerta/10 px-4 py-3 text-sm text-mi-alerta-tinta">
           O WhatsApp ainda não está configurado no servidor — dá para revisar e
           descartar sugestões, mas não enviar.
         </p>
@@ -89,8 +89,8 @@ export default function FilaMensagens({
           role="alert"
           className={`rounded-mi px-4 py-3 text-sm ${
             msg.tipo === "ok"
-              ? "bg-emerald-50 text-emerald-900"
-              : "bg-red-50 text-red-800"
+              ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
+              : "bg-mi-erro/10 text-mi-erro-tinta"
           }`}
         >
           {msg.texto}

@@ -6,13 +6,14 @@ import { formatBRL } from "@/lib/format";
 import { TZ_PADRAO } from "@/lib/periods";
 import { PRESETS_AUTOMATICOS } from "@/lib/campanhas/service";
 import { ativarPresetAction, alternarStatusAction } from "./actions";
+import StatCard from "@/components/ui/StatCard";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_TOM: Record<string, string> = {
   RASCUNHO: "text-mi-texto/80",
-  ATIVA: "text-emerald-700",
-  PAUSADA: "text-amber-700",
+  ATIVA: "text-mi-sucesso-tinta",
+  PAUSADA: "text-mi-alerta-tinta",
   CONCLUIDA: "text-mi-texto/80",
 };
 
@@ -50,23 +51,19 @@ export default async function CampanhasPage() {
         </Link>
       </div>
 
-      <section className="mb-6 grid grid-cols-3 gap-3">
-        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Mensagens no mês</p>
-          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">{msgsMes}</p>
-        </div>
-        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Conversão média</p>
-          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
-            {enviosTotal ? `${taxa}%` : "—"}
-          </p>
-        </div>
-        <div className="rounded-mi bg-mi-branco p-4 shadow-suave">
-          <p className="text-xs uppercase tracking-wide text-mi-texto/80">Receita atribuída</p>
-          <p className="mt-1 font-titulo text-2xl text-mi-marrom-escuro">
-            {receita ? formatBRL(receita) : "—"}
-          </p>
-        </div>
+      <section className="mb-6 grid gap-4 sm:grid-cols-3">
+        <StatCard
+          variant="hero"
+          rotulo="Receita atribuída"
+          valor={receita ? formatBRL(receita) : "—"}
+          periodo="vindas de campanha"
+        />
+        <StatCard rotulo="Mensagens no mês" valor={String(msgsMes)} periodo="enviadas" />
+        <StatCard
+          rotulo="Conversão média"
+          valor={enviosTotal ? `${taxa}%` : "—"}
+          periodo="agendou depois da mensagem"
+        />
       </section>
 
       <section className="mb-8">
@@ -85,7 +82,7 @@ export default async function CampanhasPage() {
                 <div className="mt-3 flex items-center gap-2">
                   {on ? (
                     <>
-                      <span className="text-xs text-emerald-700">● Ativa</span>
+                      <span className="text-xs text-mi-sucesso-tinta">● Ativa</span>
                       {camp && (
                         <form action={alternarStatusAction.bind(null, camp.id, false)}>
                           <button className="text-xs text-mi-marrom-escuro underline">pausar</button>

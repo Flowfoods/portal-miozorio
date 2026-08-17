@@ -28,7 +28,7 @@ export default async function RedefinirPage({
         </>
       ) : (
         <>
-          <p className="mb-6 rounded-mi bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="mb-6 rounded-mi bg-mi-erro/10 px-4 py-3 text-sm text-mi-erro-tinta">
             Esse link expirou ou já foi usado.
           </p>
           <Link href="/admin/recuperar" className="text-mi-marrom underline">

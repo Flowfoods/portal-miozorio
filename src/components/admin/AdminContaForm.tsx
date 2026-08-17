@@ -47,8 +47,8 @@ export default function AdminContaForm() {
           autoComplete="new-password"
           required
         />
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {ok && <p className="text-sm text-emerald-700">{ok}</p>}
+        {error && <p className="text-sm text-mi-erro-tinta">{error}</p>}
+        {ok && <p className="text-sm text-mi-sucesso-tinta">{ok}</p>}
         <SubmitButton
           pendingLabel="Salvando…"
           className="rounded-mi bg-mi-marrom-escuro px-4 py-2.5 text-sm text-white transition-opacity disabled:opacity-60"

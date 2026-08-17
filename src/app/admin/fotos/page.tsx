@@ -75,7 +75,7 @@ function FotoCard({ asset }: { asset: MediaAsset }) {
           >
             <button
               type="submit"
-              className="min-h-[44px] px-2 text-xs text-red-700 underline-offset-2 hover:underline"
+              className="min-h-[44px] px-2 text-xs text-mi-erro-tinta underline-offset-2 hover:underline"
             >
               Excluir
             </button>
@@ -112,7 +112,7 @@ export default async function FotosPage({
           role="status"
           className={`mt-4 rounded-mi px-4 py-3 text-sm ${
             pulados > 0
-              ? "bg-amber-50 text-amber-900"
+              ? "bg-mi-alerta/10 text-mi-alerta-tinta"
               : "bg-mi-bege text-mi-marrom-escuro"
           }`}
         >

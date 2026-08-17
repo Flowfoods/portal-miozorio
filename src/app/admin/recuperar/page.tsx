@@ -22,7 +22,7 @@ export default function RecuperarPage() {
         um link para criar uma nova senha.
       </p>
       {ok ? (
-        <p className="rounded-mi bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="rounded-mi bg-mi-sucesso/10 px-4 py-3 text-sm text-mi-sucesso-tinta">
           {ok}
         </p>
       ) : (
@@ -44,7 +44,7 @@ export default function RecuperarPage() {
             autoComplete="username"
             required
           />
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {error && <p className="text-sm text-mi-erro-tinta">{error}</p>}
           <SubmitButton
             pendingLabel="Enviando…"
             className="w-full rounded-mi bg-mi-marrom-escuro px-4 py-3 text-white transition-opacity disabled:opacity-60"

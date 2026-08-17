@@ -8,16 +8,16 @@ export const dynamic = "force-dynamic";
 
 /** Rótulos gentis dos eventos de auth (Auth F1.2) — nada de jargão de sistema. */
 const EVENTO: Record<string, { label: string; tom: string }> = {
-  login_ok: { label: "Entrou", tom: "text-emerald-700" },
+  login_ok: { label: "Entrou", tom: "text-mi-sucesso-tinta" },
   login_fail: { label: "Tentativa que não deu certo", tom: "text-mi-texto/80" },
-  locked: { label: "Conta pausada (tentativas demais)", tom: "text-amber-700" },
-  throttled: { label: "Bloqueio por excesso de acessos (IP)", tom: "text-amber-700" },
+  locked: { label: "Conta pausada (tentativas demais)", tom: "text-mi-alerta-tinta" },
+  throttled: { label: "Bloqueio por excesso de acessos (IP)", tom: "text-mi-alerta-tinta" },
   reset_request: { label: "Pediu redefinição por e-mail", tom: "text-mi-texto/80" },
-  reset_done: { label: "Redefiniu a senha", tom: "text-emerald-700" },
+  reset_done: { label: "Redefiniu a senha", tom: "text-mi-sucesso-tinta" },
   recover_request: { label: "Pediu recuperação por WhatsApp", tom: "text-mi-texto/80" },
-  recover_ok: { label: "Recuperou a senha", tom: "text-emerald-700" },
+  recover_ok: { label: "Recuperou a senha", tom: "text-mi-sucesso-tinta" },
   recover_fail: { label: "Código de recuperação incorreto", tom: "text-mi-texto/80" },
-  password_changed: { label: "Trocou a senha", tom: "text-emerald-700" },
+  password_changed: { label: "Trocou a senha", tom: "text-mi-sucesso-tinta" },
 };
 
 export default async function AcessosPage() {

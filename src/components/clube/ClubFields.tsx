@@ -38,7 +38,7 @@ export function Honeypot() {
 export function FormError({ error }: { error: string | undefined }) {
   if (!error) return null;
   return (
-    <p className="rounded-mi bg-red-50 px-4 py-3 text-sm text-red-900 ring-1 ring-red-200">
+    <p className="rounded-mi bg-mi-erro/10 px-4 py-3 text-sm text-mi-erro-tinta ring-1 ring-mi-erro/40">
       {error}
     </p>
   );

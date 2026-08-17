@@ -63,7 +63,7 @@ export default async function CrmJornadasPage() {
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs ${
                           j.ativo
-                            ? "bg-emerald-100 text-emerald-900"
+                            ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
                             : "bg-mi-cinza/50 text-mi-texto/80"
                         }`}
                       >
@@ -79,7 +79,7 @@ export default async function CrmJornadasPage() {
                     <button
                       className={`rounded-mi px-4 py-2 text-sm ${
                         j.ativo
-                          ? "border border-mi-cinza text-red-800"
+                          ? "border border-mi-cinza text-mi-erro-tinta"
                           : "bg-mi-marrom-escuro text-white"
                       }`}
                     >

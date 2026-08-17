@@ -80,7 +80,7 @@ export default async function AdminBloqueiosPage() {
                 )}
               </div>
               <form action={adminDeleteBlock.bind(null, b.id)}>
-                <button className="rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-red-800">
+                <button className="rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-mi-erro-tinta">
                   Remover
                 </button>
               </form>

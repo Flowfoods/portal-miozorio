@@ -17,7 +17,12 @@ import { periodoDaRequest } from "@/lib/periods-server";
 import PeriodSelector from "@/components/admin/PeriodSelector";
 import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
 import FinanceControls from "@/components/admin/finance/FinanceControls";
-import { BarrasReceitaDespesa, Donut } from "@/components/admin/finance/Charts";
+import { BarrasReceitaDespesa } from "@/components/admin/finance/Charts";
+import StatCard from "@/components/ui/StatCard";
+import ChartCard from "@/components/ui/ChartCard";
+import RoscaChart from "@/components/ui/charts/RoscaChart";
+import { ChartVazio } from "@/components/ui/charts/estados";
+import { fmtBRL } from "@/lib/charts/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -104,52 +109,49 @@ export default async function FinanceiroDashboard({
         error={pr.error}
       />
 
-      {/* Comparação discreta com o período anterior equivalente */}
-      <section className="mb-6 flex flex-wrap gap-x-6 gap-y-1 rounded-mi bg-mi-superficie-elevada px-4 py-3 text-sm shadow-suave">
-        {comparacoes.map((c) => (
-          <span key={c.rotulo} className="text-mi-texto/80">
-            {c.rotulo}: <strong className="text-mi-marrom-escuro">{formatBRL(c.atual)}</strong>{" "}
-            {c.var != null && (
-              <span
-                className={
-                  (c.inverso ? c.var <= 0 : c.var >= 0)
-                    ? "text-emerald-700"
-                    : "text-red-700"
-                }
-              >
-                {c.var >= 0 ? "▲" : "▼"} {pct(Math.abs(c.var))}
-              </span>
-            )}
-            {c.var == null && <span className="text-mi-texto/40">· sem base anterior</span>}
-          </span>
-        ))}
-        <span className="text-xs text-mi-texto/80">
-          vs {formatPeriodoExtenso(anterior, tz)}
-        </span>
-      </section>
-
       {alertas.length > 0 && (
         <div className="mb-6 space-y-2">
           {alertas.map((a) => (
-            <p key={a} className="rounded-mi bg-amber-50 px-4 py-2.5 text-sm text-amber-900 ring-1 ring-amber-200">
+            <p key={a} className="rounded-mi bg-mi-alerta/10 px-4 py-2.5 text-sm text-mi-alerta-tinta ring-1 ring-mi-alerta/40">
               {a}
             </p>
           ))}
         </div>
       )}
 
-      {/* KPIs */}
+      {/* KPIs — UM herói (o resultado), demais brancos, deltas vs anterior */}
+      <section className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          variant="hero"
+          rotulo="Resultado do período"
+          valor={formatBRL(dre.lucroLiquidoCents)}
+          delta={comparacoes[2]!.var}
+          periodo={`vs ${formatPeriodoExtenso(anterior, tz)}`}
+        />
+        <StatCard
+          rotulo="Entrou"
+          valor={formatBRL(dre.receitaBrutaCents)}
+          delta={comparacoes[0]!.var}
+          periodo="vs período anterior"
+        />
+        <StatCard
+          rotulo="Saiu"
+          valor={formatBRL(saiuAtual)}
+          delta={comparacoes[1]!.var}
+          deltaInverso
+          periodo="vs período anterior"
+        />
+        <StatCard
+          rotulo="Ticket médio"
+          valor={kpis.ticketMedioCents != null ? formatBRL(kpis.ticketMedioCents) : "—"}
+          periodo="por atendimento"
+        />
+      </section>
+
+      {/* Indicadores secundários, compactos */}
       <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card titulo="Resultado do período" destaque>
-          <span className={dre.lucroLiquidoCents >= 0 ? "text-emerald-700" : "text-red-700"}>
-            {formatBRL(dre.lucroLiquidoCents)}
-          </span>
-        </Card>
         <Card titulo="Margem líquida">{pct(kpis.margemLiquidaPct)}</Card>
         <Card titulo="Margem de contribuição">{pct(kpis.margemContribuicaoPct)}</Card>
-        <Card titulo="Ticket médio">
-          {kpis.ticketMedioCents != null ? formatBRL(kpis.ticketMedioCents) : "—"}
-        </Card>
         <Card titulo="Ponto de equilíbrio">
           {kpis.pontoEquilibrioCents != null ? (
             <>
@@ -177,21 +179,58 @@ export default async function FinanceiroDashboard({
       </section>
 
       {/* Gráfico comparativo */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-xl">Receita × Despesa (6 meses)</h2>
+      <ChartCard
+        titulo="Receita × Despesa (6 meses)"
+        className="mb-4"
+        resumoA11y={`Comparativo mensal de receita e despesa dos últimos 6 meses, com linha de resultado. Resultado do período atual: ${formatBRL(dre.lucroLiquidoCents)}.`}
+      >
         <BarrasReceitaDespesa serie={serie} />
-      </section>
+      </ChartCard>
 
-      {/* Donuts */}
+      {/* Composição por categoria (paleta de dados fixa, máx. 6 fatias) */}
       <section className="mb-8 grid gap-4 lg:grid-cols-2">
-        <Donut
+        <ChartCard
           titulo="Receita por origem"
-          fatias={breakdown.receita.map((f) => ({ label: f.name, cents: f.cents, color: f.color }))}
-        />
-        <Donut
+          resumoA11y={
+            breakdown.receita.length
+              ? `Receita por origem: ${breakdown.receita.map((f) => f.name).join(", ")}.`
+              : "Sem receita no período."
+          }
+        >
+          {breakdown.receita.length === 0 ? (
+            <ChartVazio
+              titulo="Nada entrou ainda"
+              descricao="A composição da receita aparece aqui quando os primeiros valores forem lançados."
+              altura={180}
+            />
+          ) : (
+            <RoscaChart
+              fatias={breakdown.receita.map((f) => ({ label: f.name, valor: f.cents }))}
+              formatoTotal={fmtBRL}
+            />
+          )}
+        </ChartCard>
+        <ChartCard
           titulo="Despesa por categoria"
-          fatias={breakdown.despesa.map((f) => ({ label: f.name, cents: f.cents, color: f.color }))}
-        />
+          resumoA11y={
+            breakdown.despesa.length
+              ? `Despesa por categoria: ${breakdown.despesa.map((f) => f.name).join(", ")}.`
+              : "Sem despesa no período."
+          }
+        >
+          {breakdown.despesa.length === 0 ? (
+            <ChartVazio
+              titulo="Nenhum custo lançado"
+              descricao="Lance os custos do período para enxergar para onde o dinheiro vai."
+              altura={180}
+            />
+          ) : (
+            <RoscaChart
+              fatias={breakdown.despesa.map((f) => ({ label: f.name, valor: f.cents }))}
+              formatoTotal={fmtBRL}
+            />
+          )}
+        </ChartCard>
       </section>
 
       {/* DRE */}
@@ -206,16 +245,14 @@ export default async function FinanceiroDashboard({
 function Card({
   titulo,
   children,
-  destaque,
 }: {
   titulo: string;
   children: React.ReactNode;
-  destaque?: boolean;
 }) {
   return (
-    <div className="rounded-mi bg-mi-superficie-elevada p-4 shadow-suave">
-      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">{titulo}</p>
-      <p className={`mt-1 font-titulo ${destaque ? "text-2xl" : "text-xl"} text-mi-marrom-escuro`}>
+    <div className="rounded-2xl border border-mi-marrom-100 bg-mi-branco p-4 shadow-card">
+      <p className="font-corpo text-micro uppercase text-mi-marrom-700">{titulo}</p>
+      <p className="mt-1 font-corpo text-lg font-semibold tabular-nums text-mi-marrom-900">
         {children}
       </p>
     </div>
@@ -254,7 +291,7 @@ function DreTabela({ dre }: { dre: DRE }) {
             return (
               <tr
                 key={l.rotulo}
-                className={`border-b border-mi-cinza/50 ${isTotal ? "bg-mi-bege/40" : ""} ${
+                className={`border-b border-mi-marrom-100/70 ${isTotal ? "bg-mi-marrom-50" : ""} ${
                   isFinal ? "border-b-0" : ""
                 }`}
               >
@@ -266,8 +303,8 @@ function DreTabela({ dre }: { dre: DRE }) {
                   className={`px-4 py-2.5 text-right tabular-nums ${
                     isFinal
                       ? l.cents >= 0
-                        ? "font-semibold text-emerald-700"
-                        : "font-semibold text-red-700"
+                        ? "font-semibold text-mi-sucesso-tinta"
+                        : "font-semibold text-mi-erro-tinta"
                       : isTotal
                         ? "font-medium text-mi-marrom-escuro"
                         : "text-mi-texto/80"

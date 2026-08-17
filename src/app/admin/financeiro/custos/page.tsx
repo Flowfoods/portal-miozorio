@@ -176,7 +176,7 @@ export default async function CustosPage({
                 <td className="px-4 py-3 text-right tabular-nums">{formatBRL(d.amountCents)}</td>
                 <td className="px-4 py-3 text-right">
                   <ConfirmForm action={adminDeleteExpense.bind(null, d.id)} message="Remover este custo do histórico?">
-                    <button className="text-xs text-red-700 underline-offset-2 hover:underline">Excluir</button>
+                    <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">Excluir</button>
                   </ConfirmForm>
                 </td>
               </tr>

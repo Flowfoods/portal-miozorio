@@ -34,9 +34,9 @@ export const SEGMENTO_LABEL: Record<SegmentoClube, string> = {
 
 export const SEGMENTO_STYLE: Record<SegmentoClube, string> = {
   NOVA: "bg-mi-bege text-mi-marrom-escuro",
-  RECORRENTE: "bg-emerald-100 text-emerald-900",
-  EMBAIXADORA: "bg-amber-100 text-amber-900",
-  EM_RECONEXAO: "bg-red-50 text-red-800",
+  RECORRENTE: "bg-mi-sucesso/10 text-mi-sucesso-tinta",
+  EMBAIXADORA: "bg-mi-alerta/10 text-mi-alerta-tinta",
+  EM_RECONEXAO: "bg-mi-erro/10 text-mi-erro-tinta",
 };
 
 export interface SegmentoInput {

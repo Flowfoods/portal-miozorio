@@ -81,7 +81,7 @@ export default async function AdminPacotesPage() {
                   <button className="rounded-mi border border-mi-cinza px-3 py-2 text-sm">Salvar</button>
                 </form>
                 <form action={adminDeletePacote.bind(null, p.id)} className="mt-1">
-                  <button className="text-xs text-red-700 underline-offset-2 hover:underline">Excluir pacote</button>
+                  <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">Excluir pacote</button>
                 </form>
               </div>
             ))}
@@ -113,7 +113,7 @@ export default async function AdminPacotesPage() {
                   </div>
                 </form>
                 <form action={adminDeleteFaq.bind(null, f.id)} className="mt-1">
-                  <button className="text-xs text-red-700 underline-offset-2 hover:underline">Excluir pergunta</button>
+                  <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">Excluir pergunta</button>
                 </form>
               </div>
             ))}

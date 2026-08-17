@@ -96,7 +96,7 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
 
   if (!st.configured) {
     return (
-      <div className="rounded-mi bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+      <div className="rounded-mi bg-mi-alerta/10 p-4 text-sm text-mi-alerta-tinta ring-1 ring-mi-alerta/40">
         O WhatsApp ainda não está configurado no servidor (faltam as variáveis
         <code className="mx-1">EVOLUTION_API_URL/KEY/INSTANCE</code>). Assim que
         elas estiverem no ambiente, o QR aparece aqui.
@@ -106,14 +106,14 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
 
   if (st.state === "open") {
     return (
-      <div className="rounded-mi bg-emerald-50 p-5 text-center ring-1 ring-emerald-200">
-        <p className="font-titulo text-xl text-emerald-800">WhatsApp conectado ✅</p>
-        <p className="mt-1 text-sm text-emerald-900/80">
+      <div className="rounded-mi bg-mi-sucesso/10 p-5 text-center ring-1 ring-mi-sucesso/40">
+        <p className="font-titulo text-xl text-mi-sucesso-tinta">WhatsApp conectado ✅</p>
+        <p className="mt-1 text-sm text-mi-sucesso-tinta/80">
           Os lembretes, confirmações e códigos de recuperação já saem por aqui.
         </p>
         <button
           onClick={buscar}
-          className="mt-4 rounded-mi border border-emerald-300 px-4 py-2 text-sm text-emerald-800 transition-colors hover:bg-emerald-100"
+          className="mt-4 rounded-mi border border-mi-sucesso/40 px-4 py-2 text-sm text-mi-sucesso-tinta transition-colors hover:bg-mi-sucesso/10"
         >
           Verificar de novo
         </button>
@@ -206,7 +206,7 @@ export default function WhatsAppConnect({ inicial }: { inicial: Status }) {
           </div>
         )}
         {erroPair && (
-          <p role="alert" className="mt-2 text-sm text-red-700">
+          <p role="alert" className="mt-2 text-sm text-mi-erro-tinta">
             {erroPair}
           </p>
         )}

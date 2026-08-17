@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
-import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
+import StatusPill from "@/components/ui/StatusPill";
 import { historiaDoAgendamento } from "@/lib/booking-historia";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
 import PainelHoje from "@/components/admin/PainelHoje";
@@ -97,13 +97,13 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             {formatBRL(b.priceCents)}
           </p>
           {alergia && (
-            <p className="mt-1 text-xs font-medium text-red-800">
+            <p className="mt-1 text-xs font-medium text-mi-erro-tinta">
               ⚠ Alergia registrada
               {alergiaFicha && <> (ficha): {alergiaFicha}</>}
             </p>
           )}
           {b.customer.strikes > 0 && (
-            <p className="text-xs text-red-800">
+            <p className="text-xs text-mi-erro-tinta">
               ⚠ {b.customer.strikes} cancelamento(s) em cima da hora
             </p>
           )}
@@ -131,11 +131,7 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             </div>
           )}
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs ${STATUS_STYLE[b.status]}`}
-        >
-          {STATUS_LABEL[b.status]}
-        </span>
+        <StatusPill status={b.status} />
       </div>
       {historia && (
         <p className="mt-1 font-corpo text-xs text-mi-texto/80">{historia}</p>
@@ -173,7 +169,7 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             action={adminCancelBooking.bind(null, b.id)}
             message={`Cancelar o horário de ${primeiroNome}? Não dá para desfazer.`}
           >
-            <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-red-800">
+            <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-mi-erro-tinta">
               Cancelar
             </button>
           </ConfirmForm>

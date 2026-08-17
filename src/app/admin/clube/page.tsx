@@ -129,7 +129,7 @@ export default async function AdminClubePage({
         <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
           Resgates a entregar{" "}
           {vouchers.length > 0 && (
-            <span className="rounded-full bg-amber-100 px-3 py-0.5 text-sm text-amber-900">
+            <span className="rounded-full bg-mi-alerta/10 px-3 py-0.5 text-sm text-mi-alerta-tinta">
               {vouchers.length}
             </span>
           )}
@@ -357,7 +357,7 @@ export default async function AdminClubePage({
                   action={adminDeleteReward.bind(null, r.id)}
                   className="mt-1"
                 >
-                  <button className="text-xs text-red-700 underline-offset-2 hover:underline">
+                  <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
                     Excluir
                   </button>
                 </form>

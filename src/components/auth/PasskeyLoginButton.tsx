@@ -78,7 +78,7 @@ export default function PasskeyLoginButton({
         {busy ? "Aguarde…" : "Entrar com Face ID / biometria"}
       </button>
       {erro && (
-        <p role="alert" className="mt-2 text-sm text-red-700">
+        <p role="alert" className="mt-2 text-sm text-mi-erro-tinta">
           {erro}
         </p>
       )}

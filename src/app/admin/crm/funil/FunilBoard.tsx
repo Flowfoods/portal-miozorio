@@ -86,7 +86,7 @@ export default function FunilBoard({
   return (
     <>
       {erro && (
-        <p role="alert" className="mb-3 rounded-mi bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p role="alert" className="mb-3 rounded-mi bg-mi-erro/10 px-4 py-3 text-sm text-mi-erro-tinta">
           {erro}
         </p>
       )}
@@ -138,7 +138,7 @@ export default function FunilBoard({
                         {parada && (
                           <span
                             title={`Sem movimento há ${c.diasNaEtapa} dias`}
-                            className="shrink-0 rounded bg-red-600 px-1.5 text-[10px] font-bold text-white"
+                            className="shrink-0 rounded bg-mi-erro px-1.5 text-[10px] font-bold text-white"
                           >
                             {c.diasNaEtapa}d
                           </span>

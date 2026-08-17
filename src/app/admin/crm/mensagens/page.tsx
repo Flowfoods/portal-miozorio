@@ -83,9 +83,9 @@ export default async function MensagensPage() {
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs ${
                       e.status === "enviado"
-                        ? "bg-emerald-100 text-emerald-900"
+                        ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
                         : e.status === "falha"
-                          ? "bg-red-100 text-red-900"
+                          ? "bg-mi-erro/10 text-mi-erro-tinta"
                           : "bg-mi-cinza text-mi-texto"
                     }`}
                   >
