@@ -39,7 +39,13 @@ export default function BarrasChart({
   const pico = Math.max(...dados.map((d) => d.valor));
 
   return (
-    <div className="overflow-x-auto pb-1" onPointerLeave={() => setAtivo(null)}>
+    <div
+      className="overflow-x-auto pb-1"
+      // Toque: pointerleave dispara ao levantar o dedo — só mouse fecha.
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") setAtivo(null);
+      }}
+    >
       <div
         className="relative"
         style={{ height: altura, minWidth: dados.length * larguraMinCat }}
