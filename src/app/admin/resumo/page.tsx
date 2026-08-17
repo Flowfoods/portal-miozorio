@@ -63,6 +63,11 @@ export default async function ResumoPage({
     : selDt.plus({ months: 1 }).startOf("month");
 
   // Período anterior equivalente (para os deltas dos KPIs).
+  // Mês CORRENTE (parcial): comparar com o mês passado INTEIRO pintava o herói
+  // de vermelho no dia 15 só porque faltava meio mês (revisão 17/08). A base
+  // justa é o mês anterior até o MESMO dia — pro-rata.
+  const agora = DateTime.now().setZone(tz);
+  const mesCorrenteParcial = !pr && sel === mesAtual;
   const antStart = pr
     ? DateTime.fromISO(periodoAnterior(pr.period, tz).deISO, { zone: tz }).startOf("day")
     : selDt.minus({ months: 1 }).startOf("month");
@@ -70,14 +75,22 @@ export default async function ResumoPage({
     ? DateTime.fromISO(periodoAnterior(pr.period, tz).ateISO, { zone: tz })
         .plus({ days: 1 })
         .startOf("day")
-    : start;
+    : mesCorrenteParcial
+      ? DateTime.min(antStart.plus({ days: agora.day }), start)
+      : start;
 
   const [periodResumo, anterior, extras] = await Promise.all([
     pr ? getResumoRange(start, end) : Promise.resolve(null),
     getResumoRange(antStart, antEnd),
-    getResumoExtras(start, end),
+    getResumoExtras(start, end, antStart, antEnd),
   ]);
   const resumo = periodResumo ?? resumoMes;
+
+  const legendaDelta = mesCorrenteParcial
+    ? "vs mesmo ponto do mês passado"
+    : pr
+      ? "vs período anterior"
+      : "vs mês anterior";
 
   const prev = selDt.minus({ months: 1 }).toFormat("yyyy-MM");
   const next = selDt.plus({ months: 1 }).toFormat("yyyy-MM");
@@ -161,25 +174,25 @@ export default async function ResumoPage({
           rotulo="Faturamento"
           valor={brl(resumo.faturamentoCents)}
           delta={delta(resumo.faturamentoCents, anterior.faturamentoCents)}
-          periodo="vs período anterior"
+          periodo={legendaDelta}
         />
         <StatCard
           rotulo="Atendimentos"
           valor={String(resumo.atendimentos)}
           delta={delta(resumo.atendimentos, anterior.atendimentos)}
-          periodo="vs período anterior"
+          periodo={legendaDelta}
         />
         <StatCard
           rotulo="Ticket médio"
           valor={brl(resumo.ticketMedioCents)}
           delta={delta(resumo.ticketMedioCents, anterior.ticketMedioCents)}
-          periodo="vs período anterior"
+          periodo={legendaDelta}
         />
         <StatCard
           rotulo="Novas clientes"
           valor={String(extras.novasClientes)}
           delta={delta(extras.novasClientes, extras.novasClientesAnterior)}
-          periodo="vs período anterior"
+          periodo={legendaDelta}
         />
       </div>
 
@@ -332,7 +345,7 @@ export default async function ResumoPage({
           valor={String(resumo.canceladas)}
           delta={delta(resumo.canceladas, anterior.canceladas)}
           deltaInverso
-          periodo="vs período anterior"
+          periodo={legendaDelta}
         />
         <StatCard
           rotulo="Taxa de retorno"

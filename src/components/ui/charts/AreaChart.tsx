@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { SERIES, GRID, EIXO_TEXTO, fmtBRL, fmtInt } from "@/lib/charts/theme";
 
 export type PontoArea = { label: string; valor: number };
@@ -28,14 +28,18 @@ export default function AreaChart({
 }) {
   const [ativo, setAtivo] = useState<number | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const gradId = useMemo(() => `mi-area-${Math.floor(W * H)}`, []);
+  // useId gera ":r1:" — os dois-pontos quebram url(#...) em alguns browsers.
+  const gradId = `mi-area-${useId().replace(/:/g, "")}`;
 
   if (dados.length === 0) return null;
   const fmt = (v: number) => (formato === "brl" ? fmtBRL(v) : fmtInt(v));
 
   const max = Math.max(...dados.map((d) => d.valor), 1);
   const n = dados.length;
-  const x = (i: number) => PAD_X + (i * (W - PAD_X * 2)) / Math.max(1, n - 1);
+  // n=1 (preset "Hoje"): ponto único centralizado — sem isso o path 'M x,y'
+  // não desenha nada e o card parece vazio com dado existente.
+  const x = (i: number) =>
+    n === 1 ? W / 2 : PAD_X + (i * (W - PAD_X * 2)) / (n - 1);
   const y = (v: number) => PAD_TOP + (1 - v / max) * (H - PAD_TOP - PAD_BOT);
 
   const linha = dados.map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.valor).toFixed(1)}`).join(" ");
@@ -62,8 +66,11 @@ export default function AreaChart({
       className="relative"
       style={{ minHeight: alturaMin }}
       onPointerMove={(e) => aoMover(e.clientX)}
-      onPointerDown={(e) => aoMover(e.clientX)}
-          onClick={(e) => aoMover(e.clientX)}
+      // Toque abre no TAP completo (onClick), não ao apoiar o dedo para rolar.
+      onPointerDown={(e) => {
+        if (e.pointerType === "mouse") aoMover(e.clientX);
+      }}
+      onClick={(e) => aoMover(e.clientX)}
       // Toque: pointerleave dispara ao levantar o dedo — só mouse fecha.
       onPointerLeave={(e) => {
         if (e.pointerType === "mouse") setAtivo(null);
@@ -95,7 +102,10 @@ export default function AreaChart({
             vectorEffect="non-scaling-stroke"
           />
         ))}
-        <path d={area} fill={`url(#${gradId})`} />
+        {n > 1 && <path d={area} fill={`url(#${gradId})`} />}
+        {n === 1 && (
+          <circle cx={x(0)} cy={y(dados[0]!.valor)} r="5" fill={SERIES[0]} stroke="#fff" strokeWidth="2" />
+        )}
         <path
           d={linha}
           fill="none"
@@ -136,7 +146,10 @@ export default function AreaChart({
         <div
           role="status"
           className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-xl bg-mi-branco px-3 py-1.5 font-corpo shadow-card ring-1 ring-mi-marrom-100"
-          style={{ left: `${(ativo / Math.max(1, n - 1)) * 100}%`, top: 0 }}
+          style={{
+            left: `${Math.min(0.86, Math.max(0.14, n === 1 ? 0.5 : ativo / (n - 1))) * 100}%`,
+            top: 0,
+          }}
         >
           <span className="block whitespace-nowrap text-micro uppercase text-mi-marrom-700">
             {dados[ativo].label}

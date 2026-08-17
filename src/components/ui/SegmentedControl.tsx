@@ -30,7 +30,7 @@ export default function SegmentedControl({
           key={it.href}
           href={it.href}
           aria-current={it.ativo ? "page" : undefined}
-          className={`inline-flex min-h-[36px] shrink-0 items-center rounded-full px-4 font-corpo text-rotulo transition-colors ${
+          className={`inline-flex min-h-[44px] md:min-h-[36px] shrink-0 items-center rounded-full px-4 font-corpo text-rotulo transition-colors ${
             it.ativo
               ? "bg-mi-marrom-700 font-medium text-mi-branco"
               : "text-mi-marrom-800 hover:bg-mi-marrom-50"
