@@ -157,7 +157,7 @@ export default async function ReceitasPage({
                 <td className="px-4 py-3 text-right tabular-nums">{formatBRL(r.amountCents)}</td>
                 <td className="px-4 py-3 text-right">
                   <ConfirmForm action={adminDeleteRevenue.bind(null, r.id)} message="Remover esta receita do histórico?">
-                    <button className="text-xs text-red-700 underline-offset-2 hover:underline">Excluir</button>
+                    <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">Excluir</button>
                   </ConfirmForm>
                 </td>
               </tr>

@@ -21,9 +21,9 @@ export const dynamic = "force-dynamic";
 const STATUS_CHIP: Record<string, { label: string; classes: string }> = {
   pendente: {
     label: "A Mi vai ler com carinho",
-    classes: "bg-amber-100 text-amber-900",
+    classes: "bg-mi-alerta/10 text-mi-alerta-tinta",
   },
-  aprovado: { label: "No ar 💛", classes: "bg-emerald-100 text-emerald-900" },
+  aprovado: { label: "No ar 💛", classes: "bg-mi-sucesso/10 text-mi-sucesso-tinta" },
   rejeitado: {
     label: "Não publicado",
     classes: "bg-mi-cinza text-mi-texto/80",
@@ -141,7 +141,7 @@ export default async function MomentosPage({
                     </Link>
                     <form action={excluirMomentoAction}>
                       <input type="hidden" name="id" value={m.id} />
-                      <button className="font-corpo text-sm text-mi-texto/80 underline underline-offset-4 transition-colors hover:text-red-700">
+                      <button className="font-corpo text-sm text-mi-texto/80 underline underline-offset-4 transition-colors hover:text-mi-erro-tinta">
                         Excluir
                       </button>
                     </form>

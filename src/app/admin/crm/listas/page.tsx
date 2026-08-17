@@ -195,7 +195,7 @@ async function ListaVisitou({ destaque }: { destaque: number }) {
         linhas={rows.map((r) => [
           <NomeLink key="n" id={r.id} nome={r.name} />,
           r.tentativas >= destaque ? (
-            <span key="t" className="font-bold text-red-700">
+            <span key="t" className="font-bold text-mi-erro-tinta">
               {r.tentativas}
             </span>
           ) : (

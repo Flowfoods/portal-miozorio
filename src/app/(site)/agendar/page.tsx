@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMeta({
 
 export default function AgendarPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       {/* O wizard é client component e usa useSearchParams: o Next desiste do
           SSR na fronteira mais próxima. Sem fallback, o <main> era servido
           vazio e a cliente via branco até o JS hidratar — num Android médio em

@@ -32,7 +32,7 @@ export default function ResetForm({ token }: { token: string }) {
         autoComplete="new-password"
         required
       />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-mi-erro-tinta">{error}</p>}
       <SubmitButton
         pendingLabel="Salvando…"
         className="w-full rounded-mi bg-mi-marrom-escuro px-4 py-3 text-white transition-opacity disabled:opacity-60"

@@ -60,7 +60,7 @@ export default async function AdminDepoimentosPage() {
             {pendentes.map((m) => (
               <div
                 key={m.id}
-                className="rounded-mi border border-amber-200 bg-mi-branco p-5 shadow-suave"
+                className="rounded-mi border border-mi-alerta/40 bg-mi-branco p-5 shadow-suave"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <p className="font-corpo text-sm font-medium text-mi-marrom-escuro">
@@ -226,7 +226,7 @@ export default async function AdminDepoimentosPage() {
                   <span
                     className={`rounded-full px-3 py-1 text-xs ${
                       t.published
-                        ? "bg-emerald-100 text-emerald-900"
+                        ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
                         : "bg-mi-cinza text-mi-texto/80"
                     }`}
                   >
@@ -238,7 +238,7 @@ export default async function AdminDepoimentosPage() {
                     </span>
                   )}
                   {t.destaque && (
-                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-900">
+                    <span className="rounded-full bg-mi-alerta/10 px-3 py-1 text-xs text-mi-alerta-tinta">
                       ★ destaque
                     </span>
                   )}
@@ -293,7 +293,7 @@ export default async function AdminDepoimentosPage() {
                   </>
                 )}
                 <form action={adminDeleteTestimonial.bind(null, t.id)}>
-                  <button className="rounded-mi px-3 py-1.5 text-sm text-red-700 underline-offset-4 hover:underline">
+                  <button className="rounded-mi px-3 py-1.5 text-sm text-mi-erro-tinta underline-offset-4 hover:underline">
                     Excluir
                   </button>
                 </form>

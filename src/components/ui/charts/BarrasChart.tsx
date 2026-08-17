@@ -1,0 +1,108 @@
+"use client";
+
+import { useId, useState } from "react";
+import { DESTAQUE, BARRA, GRID, EIXO_TEXTO, fmtBRL, fmtInt } from "@/lib/charts/theme";
+
+export type BarraDado = { label: string; valor: number; destaque?: boolean };
+
+/**
+ * Barras verticais (atendimentos por dia da semana etc.). Topo arredondado
+ * 6px, eixo Y sempre a partir do zero, grade só horizontal. O pico é
+ * destacado em marrom-700 e o resto fica em marrom-300 — é a hierarquia que
+ * guia o olho. Tooltip custom por toque/hover/foco (nada de title nativo).
+ * Entrada 400ms ease-out uma vez só; respeita prefers-reduced-motion.
+ */
+export default function BarrasChart({
+  dados,
+  formato = "int",
+  unidade,
+  altura = 220,
+  larguraMinCat = 44,
+}: {
+  dados: BarraDado[];
+  /** Serializável (página server → componente client): moeda ou inteiro. */
+  formato?: "brl" | "int";
+  /** Sufixo do tooltip, ex.: "atendimento(s)". */
+  unidade?: string;
+  altura?: number;
+  /** Abaixo disso o container rola horizontal (mobile, muitas categorias). */
+  larguraMinCat?: number;
+}) {
+  const [ativo, setAtivo] = useState<number | null>(null);
+  const grupoId = useId();
+  if (dados.length === 0) return null;
+  const fmt = (v: number) =>
+    (formato === "brl" ? fmtBRL(v) : fmtInt(v)) + (unidade ? ` ${unidade}` : "");
+
+  const max = Math.max(...dados.map((d) => d.valor), 1);
+  const temDestaqueManual = dados.some((d) => d.destaque);
+  const pico = Math.max(...dados.map((d) => d.valor));
+
+  return (
+    <div className="overflow-x-auto pb-1" onPointerLeave={() => setAtivo(null)}>
+      <div
+        className="relative"
+        style={{ height: altura, minWidth: dados.length * larguraMinCat }}
+      >
+        {/* grade horizontal (25/50/75/100) — sem borda externa */}
+        {[0, 25, 50, 75].map((p) => (
+          <div
+            key={p}
+            aria-hidden="true"
+            className="absolute inset-x-0"
+            style={{ bottom: `calc(24px + (100% - 24px) * ${p / 100})`, borderTop: `1px solid ${GRID}` }}
+          />
+        ))}
+        <div className="absolute inset-0 flex items-end justify-around gap-2 px-1">
+          {dados.map((d, i) => {
+            const destaque = temDestaqueManual ? d.destaque : d.valor === pico;
+            const hPct = (d.valor / max) * 100;
+            return (
+              <div
+                key={`${grupoId}-${i}`}
+                // Coluna inteira é área de toque (44px+ de alvo no mobile).
+                onPointerEnter={() => setAtivo(i)}
+                onClick={() => setAtivo(ativo === i ? null : i)}
+                className="flex h-full w-full max-w-14 cursor-pointer flex-col items-center justify-end"
+              >
+                <button
+                  type="button"
+                  aria-label={`${d.label}: ${fmt(d.valor)}`}
+                  onPointerEnter={() => setAtivo(i)}
+                  onFocus={() => setAtivo(i)}
+                  onBlur={() => setAtivo(null)}
+                  onClick={() => setAtivo(ativo === i ? null : i)}
+                  className="mi-chart-in relative w-full min-w-6 origin-bottom rounded-t-[6px] outline-offset-2 transition-[opacity] focus-visible:outline focus-visible:outline-2 focus-visible:outline-mi-marrom-700"
+                  style={{
+                    height: `calc((100% - 24px) * ${hPct / 100})`,
+                    minHeight: d.valor > 0 ? 4 : 0,
+                    backgroundColor: destaque ? DESTAQUE : BARRA,
+                    opacity: ativo === null || ativo === i ? 1 : 0.55,
+                  }}
+                >
+                  {ativo === i && (
+                    <span
+                      role="status"
+                      className="pointer-events-none absolute -top-11 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-xl bg-mi-branco px-3 py-1.5 font-corpo shadow-card ring-1 ring-mi-marrom-100"
+                    >
+                      <span className="block text-micro uppercase text-mi-marrom-700">{d.label}</span>
+                      <span className="block text-rotulo font-semibold tabular-nums text-mi-marrom-900">
+                        {fmt(d.valor)}
+                      </span>
+                    </span>
+                  )}
+                </button>
+                <span
+                  className="mt-1.5 block h-[18px] truncate font-corpo text-[12px]"
+                  style={{ color: EIXO_TEXTO }}
+                >
+                  {d.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import type { Booking, Customer, Service } from "@prisma/client";
 import { formatBRL } from "@/lib/format";
-import { STATUS_LABEL, STATUS_STYLE } from "./bookingStatus";
+import StatusPill from "@/components/ui/StatusPill";
 
 type Row = Booking & { customer: Customer; service: Service };
 
@@ -82,11 +82,7 @@ export default function AgendaPeriodo({
                         · {b.customer.name.split(" ")[0]} · {b.service.name} ·{" "}
                         {formatBRL(b.priceCents)}
                       </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${STATUS_STYLE[b.status]}`}
-                      >
-                        {STATUS_LABEL[b.status]}
-                      </span>
+                      <StatusPill status={b.status} className="shrink-0" />
                     </Link>
                   </li>
                 ))}

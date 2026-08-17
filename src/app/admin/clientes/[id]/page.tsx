@@ -8,7 +8,7 @@ import { EVENTO_LABEL } from "@/lib/crm-listas";
 import { REGUA_LABEL } from "@/lib/reguas";
 import { lerAnamnese } from "@/lib/anamnesis";
 import SubmitButton from "@/components/admin/SubmitButton";
-import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
+import StatusPill from "@/components/ui/StatusPill";
 import { contarIndicacoesFechadas } from "@/lib/clube";
 import {
   adminUpdateCustomer,
@@ -158,7 +158,7 @@ export default async function FichaClientePage({
       </div>
 
       {customer.allergies && (
-        <div className="mb-6 rounded-mi bg-red-50 p-4 text-sm text-red-900 ring-1 ring-red-200">
+        <div className="mb-6 rounded-mi bg-mi-erro/10 p-4 text-sm text-mi-erro-tinta ring-1 ring-mi-erro/40">
           <p className="font-medium">⚠ Alergia registrada na ficha</p>
           <p className="mt-1 whitespace-pre-line">{customer.allergies}</p>
         </div>
@@ -295,7 +295,7 @@ export default async function FichaClientePage({
             registrada aqui.
           </p>
           {customer.photoConsent ? (
-            <p className="mb-3 text-sm text-emerald-900">
+            <p className="mb-3 text-sm text-mi-sucesso-tinta">
               ✓ Autorizou o uso de fotos
               {customer.photoConsentAt && (
                 <>
@@ -321,7 +321,7 @@ export default async function FichaClientePage({
             <button
               className={`rounded-mi px-4 py-2 text-sm ${
                 customer.photoConsent
-                  ? "border border-mi-cinza text-red-800"
+                  ? "border border-mi-cinza text-mi-erro-tinta"
                   : "bg-mi-marrom-escuro text-white"
               }`}
             >
@@ -340,7 +340,7 @@ export default async function FichaClientePage({
             falta(s) · {concluidos} atendimento(s) concluído(s)
           </p>
           {customer.requiresDeposit && (
-            <p className="mt-2 text-sm text-red-800">
+            <p className="mt-2 text-sm text-mi-erro-tinta">
               ⚠ Só reagenda mediante pagamento de sinal.
             </p>
           )}
@@ -557,9 +557,9 @@ export default async function FichaClientePage({
                     <li key={m.id}>
                       {m.nivel}ª indicação · {m.beneficio} ·{" "}
                       {m.resgatadoEm ? (
-                        <span className="text-emerald-900">entregue</span>
+                        <span className="text-mi-sucesso-tinta">entregue</span>
                       ) : (
-                        <span className="text-amber-900">a entregar</span>
+                        <span className="text-mi-alerta-tinta">a entregar</span>
                       )}
                     </li>
                   ))}
@@ -710,16 +710,12 @@ export default async function FichaClientePage({
                   {b.location === "home" ? "domicílio" : "estúdio"} ·{" "}
                   {formatBRL(b.priceCents)}
                   {alergiaAnamnese && (
-                    <span className="block text-xs text-red-800">
+                    <span className="block text-xs text-mi-erro-tinta">
                       ⚠ Alergia informada nesse atendimento: {alergiaAnamnese}
                     </span>
                   )}
                 </span>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs ${STATUS_STYLE[b.status]}`}
-                >
-                  {STATUS_LABEL[b.status]}
-                </span>
+                <StatusPill status={b.status} />
               </Link>
             );
           })}

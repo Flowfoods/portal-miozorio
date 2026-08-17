@@ -154,7 +154,7 @@ export default async function ClubeTabPage({
         {erroResgate && (
           <p
             role="alert"
-            className="mt-3 rounded-mi bg-red-50 px-4 py-3 font-corpo text-sm text-red-800"
+            className="mt-3 rounded-mi bg-mi-erro/10 px-4 py-3 font-corpo text-sm text-mi-erro-tinta"
           >
             {erroResgate}
           </p>
@@ -226,8 +226,8 @@ export default async function ClubeTabPage({
                   <span
                     className={`shrink-0 text-xs ${
                       v.status === "entregue"
-                        ? "text-emerald-700"
-                        : "text-amber-700"
+                        ? "text-mi-sucesso-tinta"
+                        : "text-mi-alerta-tinta"
                     }`}
                   >
                     {v.status === "entregue" ? "entregue" : "mostre na visita"}
@@ -267,7 +267,7 @@ export default async function ClubeTabPage({
                 </span>
                 <span
                   className={`shrink-0 font-corpo text-sm font-medium ${
-                    t.pontos >= 0 ? "text-emerald-700" : "text-mi-marrom"
+                    t.pontos >= 0 ? "text-mi-sucesso-tinta" : "text-mi-marrom"
                   }`}
                 >
                   {t.pontos >= 0 ? "+" : ""}

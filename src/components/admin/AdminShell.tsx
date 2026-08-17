@@ -32,7 +32,7 @@ export default function AdminShell({
   }
 
   return (
-    <div className="min-h-screen bg-mi-superficie md:flex">
+    <div className="min-h-dvh bg-mi-superficie md:flex">
       <AdminSidebar badges={badges} />
       <div className="min-w-0 flex-1 bg-mi-superficie">
         <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-10">

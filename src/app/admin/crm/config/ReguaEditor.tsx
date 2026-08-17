@@ -274,7 +274,7 @@ export default function ReguaEditor({ initial }: Props) {
                     onClick={() =>
                       setRegras((rs) => rs.filter((_, j) => j !== i))
                     }
-                    className="rounded-mi border border-mi-cinza px-2 py-1 text-red-800"
+                    className="rounded-mi border border-mi-cinza px-2 py-1 text-mi-erro-tinta"
                     aria-label="Remover"
                   >
                     ✕
@@ -453,8 +453,8 @@ export default function ReguaEditor({ initial }: Props) {
           role="alert"
           className={`rounded-mi px-4 py-3 text-sm ${
             msg.tipo === "ok"
-              ? "bg-emerald-50 text-emerald-900"
-              : "bg-red-50 text-red-800"
+              ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
+              : "bg-mi-erro/10 text-mi-erro-tinta"
           }`}
         >
           {msg.texto}

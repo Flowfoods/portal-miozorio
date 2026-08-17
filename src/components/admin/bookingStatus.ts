@@ -11,10 +11,10 @@ export const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const STATUS_STYLE: Record<BookingStatus, string> = {
-  pending: "bg-amber-100 text-amber-900",
-  confirmed: "bg-emerald-100 text-emerald-900",
+  pending: "bg-mi-alerta/10 text-mi-alerta-tinta",
+  confirmed: "bg-mi-sucesso/10 text-mi-sucesso-tinta",
   completed: "bg-mi-cinza text-mi-texto",
-  cancelled_by_client: "bg-red-50 text-red-800",
-  cancelled_by_business: "bg-red-50 text-red-800",
-  no_show: "bg-red-100 text-red-900",
+  cancelled_by_client: "bg-mi-erro/10 text-mi-erro-tinta",
+  cancelled_by_business: "bg-mi-erro/10 text-mi-erro-tinta",
+  no_show: "bg-mi-erro/10 text-mi-erro-tinta",
 };

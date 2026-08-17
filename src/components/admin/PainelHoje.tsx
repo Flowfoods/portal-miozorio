@@ -43,7 +43,13 @@ export default async function PainelHoje() {
   return (
     <section className="mb-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card titulo="Hoje" valor={`${hojeCount}`} sub="atendimento(s)" href={`/admin?data=${hojeISO}`} />
+        <Card
+          titulo="Hoje"
+          valor={`${hojeCount}`}
+          sub="atendimento(s)"
+          href={`/admin?data=${hojeISO}`}
+          hero
+        />
         <Card
           titulo="Aguardando"
           valor={`${pendentesCount}`}
@@ -67,7 +73,7 @@ export default async function PainelHoje() {
       {alerta && (
         <Link
           href="/admin/financeiro"
-          className="mt-3 block rounded-mi bg-amber-50 px-4 py-2 text-sm text-amber-900 ring-1 ring-amber-200"
+          className="mt-3 block rounded-mi bg-mi-alerta/10 px-4 py-2 text-sm text-mi-alerta-tinta ring-1 ring-mi-alerta/40"
         >
           {alerta}
         </Link>
@@ -89,32 +95,45 @@ function Card({
   sub,
   href,
   tom,
+  hero,
 }: {
   titulo: string;
   valor: string;
   sub: string;
   href?: string;
   tom?: "ok" | "alerta";
+  hero?: boolean;
 }) {
-  const valorCor =
-    tom === "ok"
-      ? "text-emerald-700"
+  const valorCor = hero
+    ? "text-mi-branco"
+    : tom === "ok"
+      ? "text-mi-sucesso-tinta"
       : tom === "alerta"
-        ? "text-red-700"
-        : "text-mi-marrom-escuro";
+        ? "text-mi-erro-tinta"
+        : "text-mi-marrom-900";
   const inner = (
     <>
-      <p className="font-corpo text-xs uppercase tracking-wide text-mi-texto/80">
+      <p
+        className={`font-corpo text-micro uppercase ${hero ? "text-mi-branco/85" : "text-mi-marrom-700"}`}
+      >
         {titulo}
       </p>
-      <p className={`mt-1 font-titulo text-2xl ${valorCor}`}>{valor}</p>
-      <p className="font-corpo text-xs capitalize text-mi-texto/80">{sub}</p>
+      <p className={`mt-1 font-corpo text-kpi-sm tabular-nums ${valorCor}`}>{valor}</p>
+      <p
+        className={`font-corpo text-rotulo capitalize ${hero ? "text-mi-branco/75" : "text-mi-marrom-700"}`}
+      >
+        {sub}
+      </p>
     </>
   );
-  const cls =
-    "block rounded-mi bg-mi-superficie-elevada p-4 shadow-suave transition-colors";
+  const cls = hero
+    ? "block rounded-2xl bg-mi-marrom-700 p-4 shadow-card transition-colors"
+    : "block rounded-2xl border border-mi-marrom-100 bg-mi-branco p-4 shadow-card transition-colors";
   return href ? (
-    <Link href={href} className={`${cls} hover:bg-mi-bege/40`}>
+    <Link
+      href={href}
+      className={`${cls} ${hero ? "hover:bg-mi-marrom-800" : "hover:bg-mi-marrom-50"}`}
+    >
       {inner}
     </Link>
   ) : (

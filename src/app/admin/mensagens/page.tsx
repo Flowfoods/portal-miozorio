@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 
 const STATUS: { key: string; label: string; tom: string }[] = [
   { key: "", label: "Todas", tom: "" },
-  { key: "QUEUED", label: "Na fila", tom: "text-amber-700" },
+  { key: "QUEUED", label: "Na fila", tom: "text-mi-alerta-tinta" },
   // "Enviada" só quer dizer que a Evolution aceitou a mensagem — não que ela
   // chegou no celular da cliente. Chamar isso de "Enviada" fazia a Mi decidir
   // sobre uma cliente com base numa certeza que o dado não tem.
-  { key: "SENT", label: "Saiu daqui", tom: "text-emerald-700" },
-  { key: "DELIVERED", label: "Chegou", tom: "text-emerald-800" },
-  { key: "FAILED", label: "Falhas", tom: "text-red-700" },
+  { key: "SENT", label: "Saiu daqui", tom: "text-mi-sucesso-tinta" },
+  { key: "DELIVERED", label: "Chegou", tom: "text-mi-sucesso-tinta" },
+  { key: "FAILED", label: "Falhas", tom: "text-mi-erro-tinta" },
   { key: "OPTED_OUT", label: "Pediu pra não receber", tom: "text-mi-texto/80" },
 ];
 
@@ -155,7 +155,7 @@ export default async function MensagensPage({
                   )}
                 </div>
                 {m.erro && (
-                  <p className="mt-1 text-xs text-red-700/70">{m.erro}</p>
+                  <p className="mt-1 text-xs text-mi-erro-tinta/70">{m.erro}</p>
                 )}
               </li>
             );

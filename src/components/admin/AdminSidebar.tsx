@@ -143,7 +143,7 @@ export default function AdminSidebar({
         role={open ? "dialog" : undefined}
         aria-modal={open ? true : undefined}
         aria-label="Navegação do painel"
-        className="group fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-mi-cinza/60 bg-mi-superficie-nav shadow-nav-col transition-transform duration-200 data-[open=true]:translate-x-0 motion-reduce:transition-none md:sticky md:top-0 md:z-auto md:h-screen md:w-16 md:translate-x-0 lg:w-60 data-[collapsed=true]:lg:w-16"
+        className="group fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-mi-cinza/60 bg-mi-superficie-nav shadow-nav-col transition-transform duration-200 data-[open=true]:translate-x-0 motion-reduce:transition-none md:sticky md:top-0 md:z-auto md:h-dvh md:w-16 md:translate-x-0 lg:w-60 data-[collapsed=true]:lg:w-16"
       >
         {/* Cabeçalho: marca + recolher (lg) */}
         <div className="flex h-[57px] items-center gap-2 border-b border-mi-cinza/60 px-3 md:justify-center lg:justify-between group-data-[collapsed=true]:lg:justify-center">

@@ -122,7 +122,7 @@ export default function PasskeyManager({
                       });
                   }}
                   disabled={pending}
-                  className="text-red-700 underline underline-offset-2"
+                  className="text-mi-erro-tinta underline underline-offset-2"
                 >
                   Remover
                 </button>

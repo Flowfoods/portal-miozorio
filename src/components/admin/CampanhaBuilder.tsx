@@ -336,7 +336,7 @@ export default function CampanhaBuilder({
             )}
           </div>
 
-          {erro && <p className="text-sm text-red-700">{erro}</p>}
+          {erro && <p className="text-sm text-mi-erro-tinta">{erro}</p>}
           <div className="flex gap-2">
             <button
               onClick={() => setPasso(1)}

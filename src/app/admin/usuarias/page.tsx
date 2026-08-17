@@ -84,8 +84,8 @@ export default async function AdminUsuariasPage() {
                   <span
                     className={`rounded-full px-3 py-1 text-xs ${
                       u.active
-                        ? "bg-emerald-100 text-emerald-900"
-                        : "bg-red-100 text-red-900"
+                        ? "bg-mi-sucesso/10 text-mi-sucesso-tinta"
+                        : "bg-mi-erro/10 text-mi-erro-tinta"
                     }`}
                   >
                     {u.active ? "ativa" : "desativada"}

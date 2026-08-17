@@ -95,7 +95,7 @@ export default async function RecorrentesPage() {
                 <td className="px-4 py-3 text-right tabular-nums">{formatBRL(r.amountCents)}</td>
                 <td className="px-4 py-3">
                   {r.active ? (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-900">ativo</span>
+                    <span className="rounded-full bg-mi-sucesso/10 px-2 py-0.5 text-xs text-mi-sucesso-tinta">ativo</span>
                   ) : (
                     <span className="text-xs text-mi-texto/80">inativo</span>
                   )}

@@ -33,7 +33,7 @@ const FRACAS = new Set([
 function medirForca(v: string): Forca {
   if (!v) return { score: 0, label: "", cor: "" };
   if (FRACAS.has(v.toLowerCase())) {
-    return { score: 0, label: "muito fácil de adivinhar", cor: "bg-red-500" };
+    return { score: 0, label: "muito fácil de adivinhar", cor: "bg-mi-erro" };
   }
   let n = 0;
   if (v.length >= 8) n++;
@@ -43,11 +43,11 @@ function medirForca(v: string): Forca {
   if (/[^A-Za-z0-9]/.test(v)) n++;
   const score = Math.min(4, n) as Forca["score"];
   const escala: Record<Forca["score"], Forca> = {
-    0: { score: 0, label: "muito fraca", cor: "bg-red-500" },
-    1: { score: 1, label: "fraca", cor: "bg-red-400" },
-    2: { score: 2, label: "razoável", cor: "bg-amber-400" },
-    3: { score: 3, label: "boa", cor: "bg-emerald-400" },
-    4: { score: 4, label: "forte", cor: "bg-emerald-500" },
+    0: { score: 0, label: "muito fraca", cor: "bg-mi-erro" },
+    1: { score: 1, label: "fraca", cor: "bg-mi-erro" },
+    2: { score: 2, label: "razoável", cor: "bg-mi-alerta" },
+    3: { score: 3, label: "boa", cor: "bg-mi-sucesso" },
+    4: { score: 4, label: "forte", cor: "bg-mi-sucesso" },
   };
   return escala[score];
 }
@@ -114,7 +114,7 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(function PasswordField
       </div>
 
       {caps && (
-        <p role="status" className="mt-1 font-corpo text-xs text-amber-700">
+        <p role="status" className="mt-1 font-corpo text-xs text-mi-alerta-tinta">
           ⚠️ Caps Lock ativado
         </p>
       )}

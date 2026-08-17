@@ -21,6 +21,28 @@
   --font-titulo-stack: var(--font-titulo), "Cormorant Garamond", serif;
   --font-corpo-stack: var(--font-corpo), "Jost", "Inter", sans-serif;
 
+  /* ── Escala do marrom (redesign V1) — fonte da verdade no tailwind.config.ts.
+     500 é a cor da marca; texto < 18px sobre fundo claro usa 700+ (AA). */
+  --mi-marrom-50: #f7f4f1;
+  --mi-marrom-100: #ede6e0;
+  --mi-marrom-200: #dccec3;
+  --mi-marrom-300: #c4af9f;
+  --mi-marrom-400: #a78f7b;
+  --mi-marrom-500: #8a7361;
+  --mi-marrom-600: #75604f;
+  --mi-marrom-700: #6b5849;
+  --mi-marrom-800: #4e4137;
+  --mi-marrom-900: #332b24;
+  /* Apoio (nude/terroso): superfície × tinta — só a tinta vira texto. */
+  --mi-sucesso: #7a8b6f;
+  --mi-sucesso-tinta: #46573b;
+  --mi-alerta: #c08552;
+  --mi-alerta-tinta: #7d5128;
+  --mi-erro: #a65d57;
+  --mi-erro-tinta: #7e3a35;
+
   --radius: 14px;
-  --shadow-suave: 0 8px 30px rgb(0 0 0 / 0.06);
+  /* Sombra sempre em marrom translúcido (51 43 36 = marrom-900) — preto puro
+     sobre bege suja a interface. */
+  --shadow-suave: 0 8px 30px rgb(51 43 36 / 0.07);
 }
