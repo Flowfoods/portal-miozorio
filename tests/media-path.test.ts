@@ -40,4 +40,14 @@ describe("media pública · fronteira com o store privado (LGPD)", () => {
   it("recusa o próprio diretório privado", () => {
     expect(pode("priv")).toBe(false);
   });
+
+  // BUG D: os ORIGINAIS guardam EXIF/GPS e vivem em orig/ — jamais servidos.
+  it("NÃO serve o diretório de originais (EXIF/GPS intactos)", () => {
+    expect(pode("orig", "abc123.webp")).toBe(false);
+    expect(pode(".", "orig", "abc123.webp")).toBe(false);
+  });
+
+  it("recusa qualquer subdiretório — só a raiz pública é servível", () => {
+    expect(pode("qualquer-pasta", "foto.webp")).toBe(false);
+  });
 });

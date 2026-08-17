@@ -4,50 +4,129 @@ import path from "node:path";
 import sharp from "sharp";
 import type { MediaAsset } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  KIND_EXT,
+  MAX_UPLOAD_BYTES,
+  MEDIA_CATEGORIES,
+  sniffImageKind,
+  type ImageKind,
+  type MediaCategory,
+} from "@/lib/media-shared";
 
 /**
- * Sistema de mídia (M8.4). Arquivos ficam fora do bundle, em MEDIA_DIR
- * (volume persistente no Dokploy montado em /app/media; localmente ./media),
- * e são servidos pela rota /media/[...path] com cache imutável — o nome do
- * arquivo é único por upload, então nunca muda de conteúdo.
+ * Sistema de mídia (M8.4, refeito no BUG D). Arquivos ficam fora do bundle,
+ * em MEDIA_DIR (volume persistente `miozorio-media` montado em /app/media;
+ * localmente ./media), e são servidos pela rota /media/[...path] com cache
+ * imutável — o nome do arquivo é único por upload, então nunca muda.
+ *
+ * Layout do volume:
+ *   <MEDIA_DIR>/<id>.webp   → master público (2000px, q90) — o que o site serve
+ *   <MEDIA_DIR>/orig/…      → ORIGINAL intacto, como chegou (nunca servido:
+ *                             guarda EXIF/GPS; existe para regerar derivados)
+ *   <MEDIA_DIR>/priv/…      → fotos de referência de cliente + anexos (LGPD)
  */
 export const MEDIA_DIR =
   process.env.MEDIA_DIR ?? path.join(process.cwd(), "media");
 
-export const MEDIA_CATEGORIES = [
-  "hero",
-  "sobre",
-  "portfolio",
-  "servico",
-] as const;
-export type MediaCategory = (typeof MEDIA_CATEGORIES)[number];
+// Re-export: quem roda no servidor pode continuar importando daqui; código de
+// cliente importa direto de media-shared (este módulo puxa sharp/fs).
+export { MAX_UPLOAD_BYTES, MEDIA_CATEGORIES };
+export type { MediaCategory };
 
-const MAX_DIM = 1600;
-const WEBP_QUALITY = 82;
-/** Limite por foto (antes da compressão) — celular comum gera 3–8MB. */
-export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+/** Originais intactos — subdiretório NUNCA servido pela rota pública. */
+export const ORIGINALS_DIR = path.join(MEDIA_DIR, "orig");
 
 /**
- * Processa um upload: corrige rotação EXIF, limita a 1600px no maior lado e
- * converte para WebP. Retorna o nome do arquivo gravado em MEDIA_DIR.
- * Lança se o buffer não for uma imagem que o sharp entenda (ex.: HEIC).
+ * Master público: 2000px cobre o hero em qualquer tela real (o next/image
+ * gera os tamanhos menores a partir dele). q90 + smartSubsample preservam
+ * transição de cor de pele/batom/sombra — 82 "genérico" borrava exatamente
+ * o que vende o trabalho da Mi. Nunca upscale (withoutEnlargement).
  */
-export async function processUpload(input: Buffer): Promise<string> {
-  const webp = await sharp(input)
+const MASTER_DIM = 2000;
+const MASTER_QUALITY = 90;
+
+export type ProcessedUpload = {
+  /** Caminho público (/media/<arquivo>.webp). */
+  url: string;
+  /** Chave do original em orig/ (relativa a MEDIA_DIR). */
+  origUrl: string;
+  /** Dimensões do master — reserva proporção no site (zero layout shift). */
+  width: number;
+  height: number;
+  /** Placeholder borrado (data URL) para placeholder="blur". */
+  blurData: string;
+};
+
+/**
+ * Decodifica o buffer para algo que o sharp lê. HEIC de iPhone não tem
+ * decoder no sharp empacotado (patente do HEVC) — converte via heic-convert
+ * (WASM, mais lento; aceitável no volume da Mi). Lança se não for imagem.
+ */
+async function toDecodable(
+  input: Buffer,
+): Promise<{ buf: Buffer; kind: ImageKind }> {
+  const kind = sniffImageKind(input);
+  if (!kind) throw new Error("Arquivo não é uma imagem aceita.");
+  if (kind === "heic") {
+    const { default: heicConvert } = await import("heic-convert");
+    const jpeg = await heicConvert({
+      buffer: input,
+      format: "JPEG",
+      quality: 0.95,
+    });
+    return { buf: Buffer.from(jpeg), kind };
+  }
+  return { buf: input, kind };
+}
+
+/**
+ * Processa um upload do site: valida o CONTEÚDO (magic bytes), corrige a
+ * rotação EXIF, guarda o ORIGINAL intacto em orig/ e gera o master público
+ * WebP (2000px, q90, sem metadados — EXIF/GPS ficam só no original privado).
+ */
+export async function processUpload(input: Buffer): Promise<ProcessedUpload> {
+  const { buf, kind } = await toDecodable(input);
+  const base = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
+
+  const { data: master, info } = await sharp(buf)
     .rotate()
-    .resize(MAX_DIM, MAX_DIM, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
+    .resize(MASTER_DIM, MASTER_DIM, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: MASTER_QUALITY, smartSubsample: true, effort: 5 })
+    .toBuffer({ resolveWithObject: true });
+
+  const blur = await sharp(buf)
+    .rotate()
+    .resize(16, 16, { fit: "inside" })
+    .webp({ quality: 40 })
     .toBuffer();
-  const name = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}.webp`;
-  await mkdir(MEDIA_DIR, { recursive: true });
-  await writeFile(path.join(MEDIA_DIR, name), webp);
-  return name;
+
+  const origName = `${base}.${KIND_EXT[kind]}`;
+  await mkdir(ORIGINALS_DIR, { recursive: true });
+  await writeFile(path.join(ORIGINALS_DIR, origName), input);
+  await writeFile(path.join(MEDIA_DIR, `${base}.webp`), master);
+
+  return {
+    url: `/media/${base}.webp`,
+    origUrl: `orig/${origName}`,
+    width: info.width,
+    height: info.height,
+    blurData: `data:image/webp;base64,${blur.toString("base64")}`,
+  };
 }
 
 /** Apaga o arquivo físico de um asset (best-effort — a linha do banco manda). */
 export async function deleteMediaFile(url: string): Promise<void> {
   const name = path.basename(url); // ignora diretórios — só o arquivo
   await unlink(path.join(MEDIA_DIR, name)).catch(() => undefined);
+}
+
+/** Apaga o original correspondente (best-effort). */
+export async function deleteOriginalFile(
+  origUrl: string | null,
+): Promise<void> {
+  if (!origUrl) return;
+  const name = path.basename(origUrl);
+  await unlink(path.join(ORIGINALS_DIR, name)).catch(() => undefined);
 }
 
 // ── Fotos PRIVADAS (foto de referência da cliente — LGPD) ──────────────────
@@ -57,12 +136,14 @@ export const PRIVATE_MEDIA_DIR = path.join(MEDIA_DIR, "priv");
 /** Limite por foto de cliente (LGPD/feature 2): ~5MB antes da compressão. */
 export const MAX_BOOKING_PHOTO_BYTES = 5 * 1024 * 1024;
 
-/** Processa uma foto privada (WebP, 1600px) → devolve a chave (nome do arquivo). */
+/** Processa uma foto privada (WebP, 1600px) → devolve a chave (nome do arquivo).
+ * Também aceita HEIC de iPhone (mesmo caminho de decodificação do upload público). */
 export async function processPrivatePhoto(input: Buffer): Promise<string> {
-  const webp = await sharp(input)
+  const { buf } = await toDecodable(input);
+  const webp = await sharp(buf)
     .rotate()
-    .resize(MAX_DIM, MAX_DIM, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
+    .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
     .toBuffer();
   const name = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.webp`;
   await mkdir(PRIVATE_MEDIA_DIR, { recursive: true });
