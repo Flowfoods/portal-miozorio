@@ -3,6 +3,13 @@ import DeltaBadge from "@/components/ui/DeltaBadge";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import ChartCard from "@/components/ui/ChartCard";
 import EstadoVazio from "@/components/ui/EstadoVazio";
+import BarrasChart from "@/components/ui/charts/BarrasChart";
+import AreaChart from "@/components/ui/charts/AreaChart";
+import RoscaChart from "@/components/ui/charts/RoscaChart";
+import GaugeChart from "@/components/ui/charts/GaugeChart";
+import BarrasHChart from "@/components/ui/charts/BarrasHChart";
+import { ChartCarregando, ChartVazio, ChartErro } from "@/components/ui/charts/estados";
+import { fmtBRL, fmtInt } from "@/lib/charts/theme";
 
 /**
  * Vitrine interna do design system (não linkada na navegação). Mostra tokens
@@ -134,7 +141,7 @@ export default function DesignSystemPage({
       </div>
 
       <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
-        ChartCard (área do gráfico entra na V2) · EstadoVazio
+        ChartCard · EstadoVazio
       </h2>
       <div className="mb-10 grid gap-4 lg:grid-cols-2">
         <ChartCard
@@ -148,16 +155,106 @@ export default function DesignSystemPage({
               ]}
             />
           }
+          resumoA11y="Faturamento diário crescendo de R$ 120 no dia 1º até R$ 460 no dia 30, com pico de R$ 520 no dia 27."
         >
-          <div className="flex h-48 items-center justify-center rounded-mi bg-mi-marrom-50 font-corpo text-rotulo text-mi-marrom-700">
-            área do gráfico (V2)
-          </div>
+          <AreaChart
+            dados={[120, 180, 150, 240, 210, 320, 280, 260, 350, 330, 410, 380, 460, 520, 460].map(
+              (v, i) => ({ label: `${i * 2 + 1}/8`, valor: v * 100 }),
+            )}
+            formato="brl"
+          />
         </ChartCard>
         <EstadoVazio
           titulo="Nenhum atendimento ainda"
           descricao="Quando a primeira cliente agendar, o movimento do mês aparece aqui."
           cta={{ label: "Criar agendamento", href: "/admin" }}
         />
+      </div>
+
+      <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
+        Gráficos — tipos (V2)
+      </h2>
+      <div className="mb-10 grid gap-4 lg:grid-cols-2">
+        <ChartCard
+          titulo="Atendimentos por dia da semana"
+          resumoA11y="Sábado é o dia de pico com 14 atendimentos; domingo tem 11; os dias de semana ficam entre 1 e 4."
+        >
+          <BarrasChart
+            dados={[
+              { label: "Seg", valor: 1 },
+              { label: "Ter", valor: 2 },
+              { label: "Qua", valor: 2 },
+              { label: "Qui", valor: 4 },
+              { label: "Sex", valor: 3 },
+              { label: "Sáb", valor: 14 },
+              { label: "Dom", valor: 11 },
+            ]}
+            formato="int"
+            unidade="atendimento(s)"
+          />
+        </ChartCard>
+        <ChartCard
+          titulo="Taxa de ocupação da agenda"
+          resumoA11y="A agenda do período está 69% ocupada."
+        >
+          <div className="flex h-full min-h-[200px] items-center justify-center">
+            <GaugeChart
+              fracao={0.69}
+              rotulo="da agenda ocupada"
+              detalhe="Horários livres no sábado à tarde — vale divulgar."
+            />
+          </div>
+        </ChartCard>
+        <ChartCard
+          titulo="Distribuição por tipo de serviço"
+          resumoA11y="Maquiagem social representa 45% dos atendimentos, penteado 25%, sobrancelha 15%, escova 10% e outros 5%."
+        >
+          <RoscaChart
+            fatias={[
+              { label: "Maquiagem social", valor: 4500 },
+              { label: "Penteado", valor: 2500 },
+              { label: "Sobrancelha", valor: 1500 },
+              { label: "Escova", valor: 1000 },
+              { label: "Hidratação", valor: 300 },
+              { label: "Reconstrução", valor: 150 },
+              { label: "Cronograma", valor: 50 },
+            ]}
+            formatoTotal={(t) => fmtInt(t)}
+          />
+        </ChartCard>
+        <ChartCard
+          titulo="Serviços mais vendidos"
+          resumoA11y="Ranking: maquiagem social lidera com R$ 3.200, seguida de penteado com R$ 1.900."
+        >
+          <BarrasHChart
+            dados={[
+              { label: "Maquiagem social", valor: 320000, extra: "18×" },
+              { label: "Penteado", valor: 190000, extra: "11×" },
+              { label: "Escova", valor: 82500, extra: "5×" },
+              { label: "Sobrancelha", valor: 45000, extra: "6×" },
+              { label: "Hidratação", valor: 25500, extra: "1×" },
+            ]}
+            formato={fmtBRL}
+          />
+        </ChartCard>
+      </div>
+
+      <h2 className="mb-3 font-titulo text-xl text-mi-marrom-escuro">
+        Gráficos — os três estados obrigatórios
+      </h2>
+      <div className="mb-10 grid gap-4 lg:grid-cols-3">
+        <ChartCard titulo="Carregando (skeleton com formato)">
+          <ChartCarregando formato="barras" />
+        </ChartCard>
+        <ChartCard titulo="Vazio (convite, não área morta)">
+          <ChartVazio
+            titulo="Ainda sem movimento"
+            descricao="Assim que os primeiros atendimentos forem concluídos, o gráfico da semana nasce aqui."
+          />
+        </ChartCard>
+        <ChartCard titulo="Erro (discreto, com recarregar)">
+          <ChartErro recarregarHref="/admin/design-system" />
+        </ChartCard>
       </div>
     </>
   );

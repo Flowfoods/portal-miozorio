@@ -100,11 +100,41 @@
 .mi-shake {
   animation: miShake 0.4s ease-in-out;
 }
+/* Gráficos (V2): entrada 400ms ease-out, UMA vez (animação CSS de mount —
+   re-render do mesmo nó não repete). Só transform/opacity. */
+@keyframes miChartIn {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes miChartInX {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.mi-chart-in {
+  animation: miChartIn 0.4s ease-out;
+}
+.mi-chart-in-x {
+  animation: miChartInX 0.4s ease-out;
+}
+.mi-chart-fade {
+  animation: miFadeIn 0.4s ease-out;
+}
 @media (prefers-reduced-motion: reduce) {
   .mi-drawer-in,
   .mi-fade-in,
   .mi-item-in,
-  .mi-shake {
+  .mi-shake,
+  .mi-chart-in,
+  .mi-chart-in-x,
+  .mi-chart-fade {
     animation: none;
   }
 }
