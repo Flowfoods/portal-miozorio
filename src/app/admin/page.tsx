@@ -335,7 +335,7 @@ export default async function AdminAgendaPage({
           <Link
             href={`/admin?data=${day.toISODate()}`}
             className={`min-h-[44px] rounded-[10px] px-4 leading-9 ${
-              !isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom"
+              !isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom-800"
             }`}
           >
             Dia
@@ -343,7 +343,7 @@ export default async function AdminAgendaPage({
           <Link
             href={`/admin?vista=semana&data=${day.toISODate()}`}
             className={`min-h-[44px] rounded-[10px] px-4 leading-9 ${
-              isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom"
+              isWeek ? "bg-mi-branco text-mi-marrom-escuro shadow-suave" : "text-mi-marrom-800"
             }`}
           >
             Semana

@@ -76,7 +76,7 @@ export default function StatCard({
       {periodo && (
         <p
           className={`mt-1 font-corpo text-rotulo ${
-            hero ? "text-mi-branco/75" : "text-mi-marrom-500"
+            hero ? "text-mi-branco/75" : "text-mi-marrom-700"
           }`}
         >
           {periodo}

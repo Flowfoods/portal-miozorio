@@ -18,7 +18,7 @@ export default function DeltaBadge({
 }) {
   if (valor === null) {
     return (
-      <span className={`font-corpo text-micro text-mi-marrom-500 ${className}`}>
+      <span className={`font-corpo text-micro text-mi-marrom-700 ${className}`}>
         sem base anterior
       </span>
     );

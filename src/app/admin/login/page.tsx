@@ -94,7 +94,7 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="my-5 flex items-center gap-3 text-xs text-mi-texto/40">
+      <div className="my-5 flex items-center gap-3 text-xs text-mi-texto/80">
         <span className="h-px flex-1 bg-mi-cinza" />
         ou
         <span className="h-px flex-1 bg-mi-cinza" />
@@ -102,7 +102,7 @@ function LoginForm() {
       <PasskeyLoginButton area="admin" />
 
       <p className="mt-6 text-center text-sm">
-        <Link href="/admin/recuperar" className="text-mi-marrom underline">
+        <Link href="/admin/recuperar" className="text-mi-marrom-700 underline">
           Esqueci a senha
         </Link>
       </p>

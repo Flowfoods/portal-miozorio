@@ -127,7 +127,7 @@ export default async function ResumoPage({
               ) : (
                 <span
                   aria-hidden="true"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-mi-marrom-300"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-mi-marrom-500"
                 >
                   →
                 </span>

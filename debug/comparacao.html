@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Redesign Mi Ozorio — antes × depois</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f5f0e8; color: #332b24; margin: 24px; }
+  h1 { font-size: 22px; } h2 { font-size: 16px; margin: 32px 0 8px; text-transform: capitalize; }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .par figure { margin: 0; background: #fff; border-radius: 12px; padding: 8px; box-shadow: 0 1px 3px rgb(51 43 36 / .1); }
+  .par img { width: 100%; border-radius: 8px; display: block; }
+  figcaption { font-size: 12px; color: #6b5849; padding: 6px 4px 2px; }
+  .vp { color: #8a7361; font-size: 13px; margin-left: 8px; }
+</style>
+</head>
+<body>
+<h1>Redesign visual — antes × depois <span class="vp">(troque de viewport no seletor)</span></h1>
+<label>Viewport:
+  <select id="vp" onchange="render()">
+    <option value="desktop">desktop 1440</option>
+    <option value="mobile">mobile 390</option>
+  </select>
+</label>
+<div id="conteudo"></div>
+<script>
+const TELAS = ["login","agenda","resumo","financeiro","servicos","fotos","conteudo","pacotes",
+  "depoimentos","bloqueios","clientes","campanhas","mensagens","usuarias","config"];
+function render() {
+  const vp = document.getElementById("vp").value;
+  document.getElementById("conteudo").innerHTML = TELAS.map(t => `
+    <h2>${t}</h2>
+    <div class="par">
+      <figure><img loading="lazy" src="visual-antes/${t}--${vp}.png" alt="${t} antes"><figcaption>antes</figcaption></figure>
+      <figure><img loading="lazy" src="visual-depois/${t}--${vp}.png" alt="${t} depois"><figcaption>depois</figcaption></figure>
+    </div>`).join("");
+}
+render();
+</script>
+</body>
+</html>

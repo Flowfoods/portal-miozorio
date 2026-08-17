@@ -80,7 +80,7 @@ export default function DesignSystemPage({
               <p className="font-corpo text-rotulo font-medium" style={{ color: tinta }}>
                 mi-{nome}
               </p>
-              <p className="font-corpo text-micro text-mi-marrom-500">
+              <p className="font-corpo text-micro text-mi-marrom-700">
                 {sup} · tinta {tinta}
               </p>
             </div>

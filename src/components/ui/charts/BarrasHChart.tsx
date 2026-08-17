@@ -22,7 +22,7 @@ export default function BarrasHChart({
           <div className="mb-1 flex items-baseline justify-between gap-3 font-corpo text-rotulo">
             <span className="truncate text-mi-marrom-800">
               {d.label}
-              {d.extra && <span className="ml-1.5 text-micro text-mi-marrom-500">{d.extra}</span>}
+              {d.extra && <span className="ml-1.5 text-micro text-mi-marrom-700">{d.extra}</span>}
             </span>
             <span className="shrink-0 font-medium tabular-nums text-mi-marrom-900">
               {formato(d.valor)}

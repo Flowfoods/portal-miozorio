@@ -31,7 +31,7 @@ export default function FinanceControls({
           className={`min-h-[44px] rounded-[10px] px-4 leading-9 ${
             regime === r
               ? "bg-mi-superficie-elevada text-mi-marrom-escuro shadow-suave"
-              : "text-mi-marrom"
+              : "text-mi-marrom-800"
           }`}
         >
           {r === "caixa" ? "Caixa" : "Competência"}

@@ -120,7 +120,7 @@ function Card({
       </p>
       <p className={`mt-1 font-corpo text-kpi-sm tabular-nums ${valorCor}`}>{valor}</p>
       <p
-        className={`font-corpo text-rotulo capitalize ${hero ? "text-mi-branco/75" : "text-mi-marrom-500"}`}
+        className={`font-corpo text-rotulo capitalize ${hero ? "text-mi-branco/75" : "text-mi-marrom-700"}`}
       >
         {sub}
       </p>

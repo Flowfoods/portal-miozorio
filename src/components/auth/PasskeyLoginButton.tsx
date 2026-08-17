@@ -73,7 +73,7 @@ export default function PasskeyLoginButton({
         type="button"
         onClick={entrar}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-mi border border-mi-marrom px-4 py-3 font-corpo text-mi-marrom transition-colors hover:bg-mi-marrom-escuro hover:text-white disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-mi border border-mi-marrom px-4 py-3 font-corpo text-mi-marrom-700 transition-colors hover:bg-mi-marrom-escuro hover:text-white disabled:opacity-60"
       >
         {busy ? "Aguarde…" : "Entrar com Face ID / biometria"}
       </button>
