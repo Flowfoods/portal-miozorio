@@ -51,18 +51,33 @@ function redirecionarCanonico(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(url, 308);
 }
 
-export default function middleware(req: NextRequest, event: NextFetchEvent) {
+export default async function middleware(
+  req: NextRequest,
+  event: NextFetchEvent,
+) {
   const canonico = redirecionarCanonico(req);
   if (canonico) return canonico;
-  if (req.nextUrl.pathname.startsWith("/admin")) {
-    return guardaAdmin(req as NextRequestWithAuth, event);
-  }
+
   // B5 — o caminho pedido viaja num header para o servidor montar o link de
-  // login com `callbackUrl`: depois de entrar, a cliente volta para a página
-  // que ela queria, não para a home.
+  // login com `callbackUrl`: depois de entrar, a pessoa volta para a página que
+  // ela queria, não para a home. Vale para TODAS as rotas, inclusive /admin —
+  // o layout do painel usa esse mesmo header para saber se a tela é pública.
   const headers = new Headers(req.headers);
   headers.set(HEADER_CAMINHO, `${req.nextUrl.pathname}${req.nextUrl.search}`);
-  return NextResponse.next({ request: { headers } });
+  const seguir = () => NextResponse.next({ request: { headers } });
+
+  if (req.nextUrl.pathname.startsWith("/admin")) {
+    const resposta = (await guardaAdmin(req as NextRequestWithAuth, event)) as
+      | NextResponse
+      | undefined;
+    // O `withAuth` liberou (não mandou para lugar nenhum)? Seguimos com o
+    // header do caminho. Se ele redirecionou/reescreveu, a resposta dele manda.
+    const desviou =
+      !!resposta?.headers.get("location") ||
+      !!resposta?.headers.get("x-middleware-rewrite");
+    return resposta && desviou ? resposta : seguir();
+  }
+  return seguir();
 }
 
 export const config = {

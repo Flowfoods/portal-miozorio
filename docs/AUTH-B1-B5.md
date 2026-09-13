@@ -181,3 +181,55 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 5. **Primeiro acesso** — a tela de login ainda diz "no primeiro acesso, sua
    senha é o seu próprio telefone". É a dica que mais ajuda a cliente leiga e a
    que mais entrega informação para fora. Manter?
+
+---
+
+## Verificação (13/09/2026)
+
+Rodado num ambiente completo: PostgreSQL 16 com **todas as migrations
+aplicadas do zero**, build de produção (`output: standalone`), Evolution API
+falsa gravando o que a Mi receberia, e um Chromium de verdade dirigindo as
+telas.
+
+**Automatizado:** `tsc --noEmit` 0 erros · `next lint` 0 · **360 testes** em 35
+arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
+`tests/recuperacao-ciclo.test.ts` (o ciclo do código ponta a ponta) e
+`tests/login-cliente.test.ts` (login, limites e sessão).
+
+**Checklist funcional no navegador — 30 de 30 ✅**
+
+| #   | Cenário                                                    | Evidência                                                                                                                 |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Login em Chrome desktop, Safari iOS e Chrome Android       | os três caem em `/clube/conta`                                                                                            |
+| 2   | Webview do Instagram: entra e a sessão persiste ao navegar | cookie `HttpOnly` + `SameSite=Lax` + `Path=/`                                                                             |
+| 3   | `www` → apex                                               | 308 para `https://miozorio.com.br/...` com caminho e query preservados; apex, `*.traefik.me` e localhost não redirecionam |
+| 4   | Telefone em formato diferente do cadastrado                | `+55 21 …`, `5521…` e `21 99862 6845` entram                                                                              |
+| 5   | Senha errada                                               | "Senha incorreta…" sem travar; telefone desconhecido convida a se cadastrar                                               |
+| 6   | Cliente pede código                                        | a Mi recebe no número dela com código e dados; a cliente vê a orientação, o botão "Chamar a Mi" e o reenvio com cooldown  |
+| 7   | A Mi repassa 40 min depois                                 | código aceito                                                                                                             |
+| 8   | Demora na tela da senha (código já vencido)                | **salva e entra** — a mensagem do print não aparece mais                                                                  |
+| 9   | Código com 70 min                                          | "Seu código venceu às 23:30. Peça um novo 💛" + botão ali mesmo                                                           |
+| 10  | A Mi gera código pela ficha                                | código na tela + link `wa.me` da cliente; o mesmo código vale no site                                                     |
+| 11  | A Mi esquece a própria senha                               | código no WhatsApp dela, troca e entra no painel                                                                          |
+| 12  | Número não cadastrado pede código                          | mensagem neutra, nada enviado, nada gravado                                                                               |
+| 13  | Troca de senha derruba as outras sessões                   | painel e cliente: a sessão antiga volta para o login                                                                      |
+| 14  | 375px nas quatro telas de auth                             | sem rolagem lateral; botão principal com 48–52px de alvo; "mostrar senha" funciona                                        |
+| 15  | Abrir página protegida sem sessão                          | login com `callbackUrl` e volta para a página original                                                                    |
+
+**Repetição do caso real (3.3):** pedir → a Mi repassa depois → "Código
+confirmado 💛" → demora na tela da senha → salvar. Entra direto, e a senha nova
+funciona num segundo navegador.
+
+**Dois problemas que só apareceram aqui e já estão corrigidos:**
+
+1. Sessão derrubada no painel mostrava **tela de erro** em vez de voltar ao
+   login. O middleware roda no Edge e não consegue perguntar ao banco se a
+   senha mudou; a conferência passou para o layout do `/admin`, que redireciona
+   para o login (com `callbackUrl`) em vez de deixar a página estourar.
+2. Depois de salvar a senha nova, a cliente às vezes ficava na mesma tela
+   **mesmo tendo salvado** — a navegação dependia de um efeito no navegador.
+   Agora quem navega é o redirect do servidor, igual ao login.
+
+**O que este ambiente não cobre** (fica para o aceite manual do Rodolfo):
+aparelho real com Face ID/biometria (WebAuthn não roda em CI), o WhatsApp da
+Evolution de produção e o Traefik com os domínios reais.

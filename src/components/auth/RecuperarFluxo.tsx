@@ -94,12 +94,8 @@ export default function RecuperarFluxo({
   // ── Fim do fluxo ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!salvar || !("ok" in salvar) || !salvar.ok) return;
-    if (salvar.perfil === "cliente") {
-      // A cliente já sai logada da server action (cookie de sessão).
-      router.replace(destino);
-      router.refresh();
-      return;
-    }
+    // A cliente não passa por aqui: quem navega é o redirect da server action.
+    if (salvar.perfil !== "admin") return;
     // Painel: a sessão é do NextAuth, então entramos com a senha recém-criada.
     // O import é dinâmico para não arrastar o next-auth para o bundle do site.
     setEntrando(true);
@@ -209,11 +205,21 @@ export default function RecuperarFluxo({
   if (passo === "codigo") {
     return (
       <div className="space-y-4">
-        <p className="rounded-mi bg-mi-bege/60 px-4 py-3 font-corpo text-sm text-mi-texto">
-          {/* Mensagem neutra do motor: igual exista ou não a conta. */}
-          {pedir && "ok" in pedir ? pedir.aviso : null} Assim que receber,
-          digite aqui 💛
-        </p>
+        {/*
+          Duas frases, as duas mostradas SEMPRE (existindo ou não a conta —
+          então não vaza nada): a instrução, que é o que a cliente precisa
+          entender (o código não chega sozinho, quem manda é a Mi), e a
+          mensagem neutra que o próprio motor devolve.
+        */}
+        <div className="rounded-mi bg-mi-bege/60 px-4 py-3 font-corpo text-sm text-mi-texto">
+          <p>
+            Pedimos à Mi que te envie o código pelo WhatsApp. Assim que receber,
+            digite aqui 💛
+          </p>
+          {pedir && "ok" in pedir && (
+            <p className="mt-1 text-mi-texto/80">{pedir.aviso}</p>
+          )}
+        </div>
         <form action={verificarAction} className="space-y-4">
           <input type="hidden" name="identificador" value={identificador} />
           <label className="block">
@@ -261,6 +267,7 @@ export default function RecuperarFluxo({
         fica guardado até você salvar.
       </p>
       <form action={salvarAction} className="space-y-4">
+        <input type="hidden" name="destino" value={destino} />
         <label className="block">
           <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
             Nova senha
