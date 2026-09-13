@@ -23,7 +23,7 @@ export default function HistoriasClientes({
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
             Histórias de clientes
           </h2>
-          <p className="mt-2 font-corpo text-mi-marrom">
+          <p className="mt-2 font-corpo text-mi-marrom-700">
             Momentos reais de quem se cuidou com a Mi 💛
           </p>
         </header>

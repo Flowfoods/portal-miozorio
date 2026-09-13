@@ -267,7 +267,7 @@ export default async function ClubeTabPage({
                 </span>
                 <span
                   className={`shrink-0 font-corpo text-sm font-medium ${
-                    t.pontos >= 0 ? "text-mi-sucesso-tinta" : "text-mi-marrom"
+                    t.pontos >= 0 ? "text-mi-sucesso-tinta" : "text-mi-marrom-700"
                   }`}
                 >
                   {t.pontos >= 0 ? "+" : ""}

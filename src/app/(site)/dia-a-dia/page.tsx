@@ -54,7 +54,7 @@ async function getDiaADia(): Promise<{ cabelo: Servico[]; sobrancelha: Servico[]
 
 function Preco({ s }: { s: Servico }) {
   if (s.pendingPrice || s.priceCents === 0) {
-    return <span className="text-mi-marrom">Valor a combinar</span>;
+    return <span className="text-mi-marrom-700">Valor a combinar</span>;
   }
   return <span className="text-mi-marrom-escuro">{formatBRL(s.priceCents)}</span>;
 }

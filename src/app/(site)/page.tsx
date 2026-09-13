@@ -90,7 +90,7 @@ export default async function Home() {
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
             {content["home.servicos.title"]}
           </h2>
-          <p className="mt-2 font-corpo text-mi-marrom">
+          <p className="mt-2 font-corpo text-mi-marrom-700">
             {content["home.servicos.subtitle"]}
           </p>
         </header>
@@ -139,7 +139,7 @@ export default async function Home() {
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
             {content["home.portfolio.title"]}
           </h2>
-          <p className="mt-2 font-corpo text-mi-marrom">
+          <p className="mt-2 font-corpo text-mi-marrom-700">
             {content["home.portfolio.subtitle"]}
           </p>
         </header>
@@ -219,7 +219,7 @@ export default async function Home() {
           <h2 className="font-titulo text-4xl text-mi-marrom-escuro">
             {content["home.especiais.title"]}
           </h2>
-          <p className="mt-2 font-corpo text-mi-marrom">
+          <p className="mt-2 font-corpo text-mi-marrom-700">
             {content["home.especiais.subtitle"]}
           </p>
         </header>

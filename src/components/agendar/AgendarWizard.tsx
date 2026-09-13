@@ -373,7 +373,7 @@ export default function AgendarWizard() {
                 className={`min-h-[44px] rounded-[10px] px-5 font-corpo text-sm transition-colors ${
                   location === loc
                     ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
-                    : "text-mi-marrom"
+                    : "text-mi-marrom-700"
                 }`}
               >
                 {loc === "studio" ? "No estúdio" : "Em domicílio"}
@@ -738,7 +738,7 @@ function Stepper({ step }: { step: number }) {
             />
             <span
               className={`font-corpo text-xs ${
-                done ? "text-mi-marrom-escuro" : "text-mi-marrom-escuro/70"
+                done ? "text-mi-marrom-escuro" : "text-mi-marrom-escuro"
               }`}
             >
               {label}
@@ -772,7 +772,7 @@ function Field({
     <label className="block">
       <span
         className={`mb-1.5 block font-corpo text-sm ${
-          highlight ? "font-medium text-mi-marrom-escuro" : "text-mi-marrom"
+          highlight ? "font-medium text-mi-marrom-escuro" : "text-mi-marrom-700"
         }`}
       >
         {label}
@@ -788,7 +788,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       // Era 40×20px sem padding — e é justamente o substituto do Voltar do
       // Android neste wizard, que não reflete o passo na URL.
-      className="-ml-2 inline-flex min-h-[44px] items-center px-2 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom"
+      className="-ml-2 inline-flex min-h-[44px] items-center px-2 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom-700"
     >
       ‹ voltar
     </button>
@@ -871,7 +871,7 @@ function SuccessScreen({
   time: string;
 }) {
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="mx-auto flex min-h-[70dvh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
       <span
         aria-hidden
         className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-mi-ok/10 text-mi-ok"

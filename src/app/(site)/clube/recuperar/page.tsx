@@ -28,7 +28,7 @@ export default function RecuperarPage() {
         Lembrou a senha?{" "}
         <Link
           href="/clube/entrar"
-          className="text-mi-marrom underline underline-offset-4"
+          className="text-mi-marrom-700 underline underline-offset-4"
         >
           Entrar
         </Link>

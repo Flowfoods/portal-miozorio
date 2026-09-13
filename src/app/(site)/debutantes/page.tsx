@@ -79,7 +79,7 @@ export default async function DebutantesPage() {
                     key={i}
                     className="flex gap-2 font-corpo text-sm text-mi-texto"
                   >
-                    <span className="text-mi-marrom">•</span>
+                    <span className="text-mi-marrom-700">•</span>
                     {i}
                   </li>
                 ))}

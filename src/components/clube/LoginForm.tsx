@@ -44,13 +44,13 @@ export default function LoginForm() {
       <p className="text-center font-corpo text-sm">
         <a
           href="/clube/recuperar"
-          className="text-mi-marrom underline underline-offset-4"
+          className="text-mi-marrom-700 underline underline-offset-4"
         >
           Esqueci minha senha
         </a>
       </p>
 
-      <div className="flex items-center gap-3 text-xs text-mi-texto/40">
+      <div className="flex items-center gap-3 text-xs text-mi-texto/80">
         <span className="h-px flex-1 bg-mi-cinza" />
         ou
         <span className="h-px flex-1 bg-mi-cinza" />
