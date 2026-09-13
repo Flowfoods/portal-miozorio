@@ -21,26 +21,26 @@ resolve manualmente. É a maior prioridade de valor.
 `src/app/admin/reset-actions.ts`, `src/app/admin/login/page.tsx`,
 `src/app/admin/recuperar/page.tsx`, `src/app/admin/redefinir/[token]/`.
 
-| Item | Estado | Observação |
-|---|---|---|
-| Provider | ✅ | `CredentialsProvider` e-mail+senha contra `admin_users` |
-| Hashing | ✅ | **bcryptjs**, `hashSync(…, 12)` (não é fraco — R4 ok) |
-| Sessão | ✅ | JWT, `maxAge` 12h (admin curto) |
-| Lockout por conta | ✅ | `failedAttempts`+`lockedUntil`, backoff exponencial 5→1min…teto 30min (`lockoutMs`) |
-| Erro genérico (server) | ✅ | `authorize` devolve `null` sem distinguir "não existe" de "senha errada" |
-| Reset por e-mail | ✅ | `/admin/recuperar` → e-mail Resend → `/admin/redefinir/[token]` |
-| Token de reset | ✅ | 32 bytes, **SHA-256 no banco** (cru só no e-mail), TTL 1h, uso único, invalida anteriores, destrava a conta ao concluir |
-| Anti-enumeração no reset | ✅ | resposta sempre neutra + honeypot `site` |
-| MIN_SENHA | ✅ | 12 caracteres (`security.ts`) |
-| Cabeçalhos de segurança | ✅ | `next.config.mjs`: HSTS, `X-Frame-Options: DENY`, CSP, aplicados em `/(.*)` |
-| **Ver/ocultar senha** | ❌ | inputs `type=password` sem toggle |
-| **Aviso de Caps Lock** | ❌ | ausente |
-| **Medidor de força** (reset) | ❌ | `ResetForm` só valida `minLength` |
-| **Feedback com shake/foco** | ❌ | erro é texto simples |
-| **Invalidar sessões ao trocar senha** | ❌ | JWT stateless: reset destrava, mas JWTs antigos valem até 12h (falta `tokenVersion`) |
-| **AuthLog (auditoria)** | ❌ | não há tabela nem escrita de eventos |
-| **Rate limit por IP** | ❌ | só há trava por conta (defesa-em-profundidade faltando) |
-| Passkeys / 2FA / sessões ativas / alerta de novo dispositivo | ❌ | FASES 3–4 |
+| Item                                                         | Estado | Observação                                                                                                              |
+| ------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Provider                                                     | ✅     | `CredentialsProvider` e-mail+senha contra `admin_users`                                                                 |
+| Hashing                                                      | ✅     | **bcryptjs**, `hashSync(…, 12)` (não é fraco — R4 ok)                                                                   |
+| Sessão                                                       | ✅     | JWT, `maxAge` 12h (admin curto)                                                                                         |
+| Lockout por conta                                            | ✅     | `failedAttempts`+`lockedUntil`, backoff exponencial 5→1min…teto 30min (`lockoutMs`)                                     |
+| Erro genérico (server)                                       | ✅     | `authorize` devolve `null` sem distinguir "não existe" de "senha errada"                                                |
+| Reset por e-mail                                             | ✅     | `/admin/recuperar` → e-mail Resend → `/admin/redefinir/[token]`                                                         |
+| Token de reset                                               | ✅     | 32 bytes, **SHA-256 no banco** (cru só no e-mail), TTL 1h, uso único, invalida anteriores, destrava a conta ao concluir |
+| Anti-enumeração no reset                                     | ✅     | resposta sempre neutra + honeypot `site`                                                                                |
+| MIN_SENHA                                                    | ✅     | 12 caracteres (`security.ts`)                                                                                           |
+| Cabeçalhos de segurança                                      | ✅     | `next.config.mjs`: HSTS, `X-Frame-Options: DENY`, CSP, aplicados em `/(.*)`                                             |
+| **Ver/ocultar senha**                                        | ❌     | inputs `type=password` sem toggle                                                                                       |
+| **Aviso de Caps Lock**                                       | ❌     | ausente                                                                                                                 |
+| **Medidor de força** (reset)                                 | ❌     | `ResetForm` só valida `minLength`                                                                                       |
+| **Feedback com shake/foco**                                  | ❌     | erro é texto simples                                                                                                    |
+| **Invalidar sessões ao trocar senha**                        | ❌     | JWT stateless: reset destrava, mas JWTs antigos valem até 12h (falta `tokenVersion`)                                    |
+| **AuthLog (auditoria)**                                      | ❌     | não há tabela nem escrita de eventos                                                                                    |
+| **Rate limit por IP**                                        | ❌     | só há trava por conta (defesa-em-profundidade faltando)                                                                 |
+| Passkeys / 2FA / sessões ativas / alerta de novo dispositivo | ❌     | FASES 3–4                                                                                                               |
 
 ## 2. Cliente — Área do Clube (auth própria)
 
@@ -48,24 +48,24 @@ resolve manualmente. É a maior prioridade de valor.
 `src/components/clube/SenhaForm.tsx`, `src/app/(site)/clube/entrar/`,
 `src/app/(site)/clube/conta/`.
 
-| Item | Estado | Observação |
-|---|---|---|
-| Sessão | ✅ | cookie `mi_clube` **httpOnly**, assinado HMAC-SHA256 (`NEXTAUTH_SECRET`), `secure` em prod, `sameSite=lax`, TTL **30 dias** |
-| Isolamento | ✅ | só guarda `customerId`; toda query filtra por ele — cliente **nunca** passa id por URL/payload |
-| Hashing | ✅ | bcrypt 12 |
-| 1º acesso | ✅ | senha provisória = dígitos do telefone; portal **força a troca** antes de liberar dado; consentimento LGPD na 1ª troca |
-| Lockout por conta | ✅ | `clubFailedLogins`+`clubLockedUntil`, mesmo backoff |
-| Erro genérico | ✅ | "Telefone ou senha incorretos." — não revela existência nem se entrou no clube |
-| Nova senha ≠ telefone | ✅ | bloqueia manter o telefone como senha |
-| **"Esqueci minha senha"** | ❌ | **🚨 CRÍTICO** — não existe rota. Cliente que trocou a senha e esqueceu fica **travada fora** (só a Mi resolve na mão) |
-| **Ver/ocultar senha + Caps Lock** | ❌ | idem admin |
-| WhatsApp OTP / link mágico / passkeys / nudge Face ID | ❌ | FASES 2.2, 3, 4.2 |
+| Item                                                  | Estado | Observação                                                                                                                  |
+| ----------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Sessão                                                | ✅     | cookie `mi_clube` **httpOnly**, assinado HMAC-SHA256 (`NEXTAUTH_SECRET`), `secure` em prod, `sameSite=lax`, TTL **30 dias** |
+| Isolamento                                            | ✅     | só guarda `customerId`; toda query filtra por ele — cliente **nunca** passa id por URL/payload                              |
+| Hashing                                               | ✅     | bcrypt 12                                                                                                                   |
+| 1º acesso                                             | ✅     | senha provisória = dígitos do telefone; portal **força a troca** antes de liberar dado; consentimento LGPD na 1ª troca      |
+| Lockout por conta                                     | ✅     | `clubFailedLogins`+`clubLockedUntil`, mesmo backoff                                                                         |
+| Erro genérico                                         | ✅     | "Telefone ou senha incorretos." — não revela existência nem se entrou no clube                                              |
+| Nova senha ≠ telefone                                 | ✅     | bloqueia manter o telefone como senha                                                                                       |
+| **"Esqueci minha senha"**                             | ❌     | **🚨 CRÍTICO** — não existe rota. Cliente que trocou a senha e esqueceu fica **travada fora** (só a Mi resolve na mão)      |
+| **Ver/ocultar senha + Caps Lock**                     | ❌     | idem admin                                                                                                                  |
+| WhatsApp OTP / link mágico / passkeys / nudge Face ID | ❌     | FASES 2.2, 3, 4.2                                                                                                           |
 
 ## 3. Serviços e infraestrutura
 
 - **E-mail transacional:** ✅ **Resend** já implementado (`src/lib/email.ts`, fetch direto
   sem SDK). Envs: `RESEND_API_KEY`, `EMAIL_FROM` (remetente verificado).
-  ⚠️ *Operacional:* confirmar que ambas estão no ambiente de prod e o domínio está
+  ⚠️ _Operacional:_ confirmar que ambas estão no ambiente de prod e o domínio está
   verificado no Resend (senão o reset do admin envia em silêncio e falha no log).
 - **WhatsApp:** Evolution API + n8n já usados para lembretes (`NotificationLog`) —
   reaproveitáveis para o OTP de recuperação da cliente (FASE 2.2).
@@ -109,8 +109,8 @@ reduced-motion), foco de volta no campo, spinner + trava de duplo submit,
 **1.2 Server-side** — modelo `AuthLog` (migration aditiva `20260705140000`,
 sem PII: IP hasheado SHA-256, telefone mascarado ••••1234, nunca senha/token) +
 `lib/authlog.ts` (best-effort, nunca bloqueia login). Eventos gravados em admin
-(`auth.ts`) e cliente (`cliente-auth.ts`): login_ok/fail, locked, throttled,
-reset_*, password_changed. **Rate-limit por IP** (defesa-em-profundidade além da
+(`auth.ts`) e cliente (`cliente-auth.ts`): login*ok/fail, locked, throttled,
+reset*\*, password_changed. **Rate-limit por IP** (defesa-em-profundidade além da
 trava por conta) via contagem de falhas recentes por `ip_hash`. **Invalidação de
 sessão** do admin por `token_version` no JWT (redefinir a senha sobe a versão e
 derruba os JWTs antigos) + e-mail "sua senha foi alterada". Página de auditoria
@@ -123,8 +123,9 @@ para a Mi em `/admin/config/acessos`.
 
 **2.1 Admin (e-mail)** — o fluxo já existia; nesta fase: TTL do token **1h → 30min**
 (`RESET_TTL_MS`), rejeição de **senha fraca** server-side (`senhaFraca` — lista local
-+ só-dígitos/repetição; HIBP fica p/ depois), cópia do e-mail atualizada. Invalidação
-de sessão + e-mail "senha alterada" já entraram na F1.
+
+- só-dígitos/repetição; HIBP fica p/ depois), cópia do e-mail atualizada. Invalidação
+  de sessão + e-mail "senha alterada" já entraram na F1.
 
 **2.2 Cliente (WhatsApp)** — a maior lacuna, agora fechada. `lib/cliente-recuperacao.ts`:
 código de 6 dígitos, **só SHA-256 no banco**, validade 10min, **máx. 3 tentativas**,
@@ -134,7 +135,8 @@ HMAC (cookie httpOnly, path `/clube`, 10min). Ao concluir, a cliente **já entra
 Envio pelo WhatsApp (Evolution) **+ fallback por e-mail** se houver e-mail. Rate-limit por
 IP também nos pedidos de código. Modelo `ClubPasswordReset` (migration aditiva `20260705180000`).
 UI mobile-first em `/clube/recuperar` (stepper telefone → código → senha, `RecuperarForm`)
-+ link "Esqueci minha senha" de volta no login.
+
+- link "Esqueci minha senha" de volta no login.
 
 **2.3 Workflow n8n** — **decisão:** o código reusa o **envio direto na Evolution**
 (`sendEvolutionText`, a mesma fonte única do resto das notificações do app), env-gated e
@@ -182,6 +184,7 @@ UI em Configurações (`AdminContaForm`). Somado às passkeys (F3) e à troca do
 cliente (F2), a "página de conta" dos dois portais está coberta.
 
 **Deferido de propósito (com racional):**
+
 - **2FA por código (admin) + "lembrar dispositivo":** as **passkeys** (F3) já dão
   autenticação forte, resistente a phishing. 2FA-por-código adicionaria atrito com
   ganho marginal para um estúdio de operadora única, e mexeria no fluxo do NextAuth
@@ -199,9 +202,17 @@ cliente (F2), a "página de conta" dos dois portais está coberta.
 ## FASE 5 — Auditoria, testes e deploy
 
 **Checklist de segurança (`sec-audit-fraud-guard`):**
-- ✅ **Enumeração de contas impossível:** login admin (msg única), login cliente
-  (msg única), reset admin (resposta neutra), recuperação cliente (neutra em todos
-  os passos), passkey (discoverable, não revela).
+
+- ⚠️ **Enumeração de contas — REVISTO em 13/09/2026 (B1/B5).** Continua impossível
+  em tudo que é sensível: login do **painel** (mensagem única), **recuperação de
+  senha** dos dois perfis (resposta idêntica exista ou não a conta, em todos os
+  passos) e passkey (discoverable, não revela). **Exceção consciente:** o login
+  da **cliente** passou a distinguir "telefone não cadastrado" de "senha
+  incorreta" — decisão da Mi, confirmada pelo Rodolfo. O ganho é real (a cliente
+  leiga que erra o número fica sabendo, em vez de ficar num beco sem saída); o
+  custo é que quem testa números descobre quem é do Clube. Mitigação: rate limit
+  por identificador (10 falhas/15 min), por IP e trava por conta. Para reverter,
+  basta unificar as duas mensagens em `loginCliente` (`src/lib/cliente-auth.ts`).
 - ✅ **Nada em claro no banco:** senhas bcrypt(12); tokens de reset e códigos SHA-256;
   passkey guarda só chave pública; IP hasheado; telefone mascarado no log.
 - ✅ **Uso único + expiração:** reset admin (30min, single-use, invalida anteriores),
