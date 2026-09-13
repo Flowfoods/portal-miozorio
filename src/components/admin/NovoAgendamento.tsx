@@ -114,7 +114,9 @@ export default function NovoAgendamento({
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [time, setTime] = useState("");
-  const [freeTime, setFreeTime] = useState(false);
+  // A8 — os horários do padrão agora são só ATALHOS; o campo de hora está
+  // sempre disponível ao lado. Não existe mais "modo horário livre".
+  const foraDoPadrao = time !== "" && slots !== null && !slots.includes(time);
 
   // Cliente: existente (selecionado) ou cadastro rápido.
   const [query, setQuery] = useState("");
@@ -166,6 +168,27 @@ export default function NovoAgendamento({
       }),
     );
   }
+  /**
+   * A8 — trocar estúdio ↔ domicílio precisa recalcular o valor. Antes o preço
+   * ficava no do estúdio e a Mi tinha que lembrar de corrigir item a item.
+   *
+   * Só re-sugere o item cujo valor ainda é o de tabela do local anterior: se
+   * ela editou o preço por alguma particularidade, esse número é dela e não
+   * pode ser sobrescrito por uma troca de botão.
+   */
+  function trocarLocal(novo: "studio" | "home") {
+    setItems((prev) =>
+      prev.map((it) => {
+        const svc = svcById.get(it.serviceId);
+        if (!svc) return it;
+        const tabelaAntes = centsToReais(priceFor(svc, location));
+        if (it.precoReais !== tabelaAntes) return it; // valor editado à mão
+        return { ...it, precoReais: centsToReais(priceFor(svc, novo)) };
+      }),
+    );
+    setLocation(novo);
+  }
+
   function addItem() {
     const s = servicoPadrao(services);
     setItems((prev) => [
@@ -181,9 +204,10 @@ export default function NovoAgendamento({
     setItems((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }
 
-  // Busca de horários do motor pela duração TOTAL (vazio → use horário livre).
+  // Busca de horários do motor pela duração TOTAL. Vazio não bloqueia mais:
+  // o campo de hora livre está sempre ali (A8).
   useEffect(() => {
-    if (!open || !primaryId || !date || freeTime || totalDuration <= 0) return;
+    if (!open || !primaryId || !date || totalDuration <= 0) return;
     let alive = true;
     setSlotsLoading(true);
     setSlots(null);
@@ -198,7 +222,7 @@ export default function NovoAgendamento({
     return () => {
       alive = false;
     };
-  }, [open, primaryId, date, location, freeTime, totalDuration]);
+  }, [open, primaryId, date, location, totalDuration]);
 
   // Busca de clientes (debounce simples).
   const debounce = useRef<ReturnType<typeof setTimeout>>();
@@ -352,7 +376,6 @@ export default function NovoAgendamento({
     ]);
     setLocation("studio");
     setTime("");
-    setFreeTime(false);
     setQuery("");
     setResults([]);
     setPicked(null);
@@ -408,11 +431,14 @@ export default function NovoAgendamento({
               <button
                 key={loc}
                 type="button"
-                onClick={() => setLocation(loc)}
+                onClick={() => trocarLocal(loc)}
                 className={`min-h-[44px] rounded-[10px] px-3 text-sm transition-colors ${
                   location === loc
                     ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
-                    : "text-mi-marrom"
+                    : // 500 sobre mi-cinza dá 3,58:1 e reprova AA em texto
+                      // pequeno — mesmo defeito que o V7 corrigiu no wizard
+                      // público, neste controle gêmeo do admin.
+                      "text-mi-marrom-700"
                 }`}
               >
                 {loc === "studio" ? "No estúdio" : "Em domicílio"}
@@ -720,62 +746,62 @@ export default function NovoAgendamento({
 
         {/* ZONA DIREITA — horários do dia + resumo */}
         <div className="rounded-mi bg-mi-superficie p-3 lg:p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm font-medium text-mi-marrom-escuro">
-              Horário
-            </span>
-            <label className="flex items-center gap-2 text-xs text-mi-marrom-escuro">
-              <input
-                type="checkbox"
-                checked={freeTime}
-                onChange={(e) => {
-                  setFreeTime(e.target.checked);
-                  setTime("");
-                }}
-                className="h-4 w-4 accent-mi-marrom"
-              />
-              horário livre (fora do padrão)
-            </label>
+          {/* A8 — o checkbox "horário livre" era um modo: sem marcar ele, o
+              campo de hora nem existia, e quando o dia não tinha vaga a tela
+              respondia "Marque 'horário livre' acima para encaixar" — mandando
+              a Mi procurar uma caixinha em vez de resolver. Agora os atalhos e
+              o campo convivem: ela clica num horário OU digita o que quiser,
+              sempre. */}
+          <span className="text-sm font-medium text-mi-marrom-escuro">
+            Horário
+          </span>
+
+          <div className="mt-3">
+            {slotsLoading && (
+              <span className="text-sm text-mi-texto/80">carregando…</span>
+            )}
+            {!slotsLoading && slots && slots.length === 0 && (
+              <p className="rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 py-3 text-center text-sm text-mi-texto/80">
+                Nenhum horário livre no seu padrão neste dia — digite abaixo o
+                horário que quiser.
+              </p>
+            )}
+            {slots && slots.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {slots.map((hhmm) => (
+                  <button
+                    key={hhmm}
+                    type="button"
+                    onClick={() => setTime(hhmm)}
+                    className={`min-h-[44px] rounded-mi border text-sm transition-colors ${
+                      time === hhmm
+                        ? "border-mi-marrom bg-mi-marrom-escuro text-white"
+                        : "border-mi-cinza bg-mi-superficie-elevada text-mi-texto hover:border-mi-marrom"
+                    }`}
+                  >
+                    {hhmm}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {freeTime ? (
+          <label className="mt-3 block text-xs text-mi-marrom-escuro">
+            ou digite outro horário
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="input-mi mt-3 w-full sm:max-w-[200px]"
+              className="input-mi mt-1 w-full sm:max-w-[200px]"
             />
-          ) : (
-            <div className="mt-3">
-              {slotsLoading && (
-                <span className="text-sm text-mi-texto/80">carregando…</span>
-              )}
-              {!slotsLoading && slots && slots.length === 0 && (
-                <p className="rounded-mi border border-dashed border-mi-cinza bg-mi-superficie-elevada px-3 py-4 text-center text-sm text-mi-texto/80">
-                  Sem horário no padrão neste dia.
-                  <br />
-                  Marque “horário livre” acima para encaixar.
-                </p>
-              )}
-              {slots && slots.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {slots.map((hhmm) => (
-                    <button
-                      key={hhmm}
-                      type="button"
-                      onClick={() => setTime(hhmm)}
-                      className={`min-h-[44px] rounded-mi border text-sm transition-colors ${
-                        time === hhmm
-                          ? "border-mi-marrom bg-mi-marrom-escuro text-white"
-                          : "border-mi-cinza bg-mi-superficie-elevada text-mi-texto hover:border-mi-marrom"
-                      }`}
-                    >
-                      {hhmm}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          </label>
+
+          {/* Aviso, não bloqueio: a Mi decide a própria agenda. Colisão real
+              com outro atendimento continua barrada no backend (R2). */}
+          {foraDoPadrao && (
+            <p className="mt-2 font-corpo text-xs text-mi-alerta-tinta">
+              Fora do seu horário padrão — dá pra agendar assim mesmo.
+            </p>
           )}
 
           {/* Resumo */}
