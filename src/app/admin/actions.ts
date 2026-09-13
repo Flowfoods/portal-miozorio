@@ -19,6 +19,8 @@ import { dispatchEvent, buildEventMessage } from "@/lib/notify";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
+import { gerarCodigoParaCliente } from "@/lib/recuperacao";
+import type { CodigoRecuperacaoState } from "@/lib/recuperacao-tipos";
 import {
   confirmBooking,
   cancelBooking,
@@ -1012,6 +1014,25 @@ export async function adminEnrollCustomer(customerId: string): Promise<void> {
   if (!member) fail("Cliente não encontrada.");
   revalidatePath(`/admin/clientes/${customerId}`);
   revalidatePath("/admin/clube");
+}
+
+/**
+ * B2 — a Mi gera o código de recuperação da cliente direto na ficha. Mesmo
+ * módulo e mesma tabela do fluxo público; a diferença é que o código aparece na
+ * tela dela (não vai por WhatsApp para ela mesma) e já vem com o link pronto
+ * para mandar na conversa da cliente.
+ */
+export async function adminGerarCodigoRecuperacao(
+  _prev: CodigoRecuperacaoState,
+  formData: FormData,
+): Promise<CodigoRecuperacaoState> {
+  await requireAdmin();
+  const customerId = String(formData.get("customerId") ?? "");
+  const codigo = await gerarCodigoParaCliente(customerId);
+  if (!codigo) {
+    return { error: "Essa cliente ainda não faz parte do Clube." };
+  }
+  return { ok: codigo };
 }
 
 /** Mi marca o mimo da escada como entregue. */

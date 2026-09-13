@@ -1,9 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getClienteSession } from "@/lib/cliente-auth";
-import RecuperarForm from "@/components/clube/RecuperarForm";
+import { getClienteSession, CLUB_MIN_SENHA } from "@/lib/cliente-auth";
+import { waLinkMsg } from "@/lib/format";
+import RecuperarFluxo from "@/components/auth/RecuperarFluxo";
 
 export const dynamic = "force-dynamic";
+
+const MI = process.env.MI_WHATSAPP ?? "+5521970225231";
 
 export default async function RecuperarPage() {
   const s = await getClienteSession();
@@ -18,21 +20,22 @@ export default async function RecuperarPage() {
         Recuperar acesso
       </h1>
       <p className="mt-3 text-center font-corpo text-mi-texto/80">
-        Sem problema — a gente te manda um código no WhatsApp para você criar uma
+        Sem problema — a Mi te manda um código no WhatsApp para você criar uma
         senha nova.
       </p>
       <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
-        <RecuperarForm />
+        <RecuperarFluxo
+          perfil="cliente"
+          waMi={waLinkMsg(
+            MI,
+            "Oi, Mi! Esqueci minha senha do Clube e pedi um código pelo site. Consegue me mandar? 💛",
+          )}
+          destino="/clube/conta"
+          entrarHref="/clube/entrar"
+          cadastrarHref="/clube"
+          minSenha={CLUB_MIN_SENHA}
+        />
       </div>
-      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
-        Lembrou a senha?{" "}
-        <Link
-          href="/clube/entrar"
-          className="text-mi-marrom underline underline-offset-4"
-        >
-          Entrar
-        </Link>
-      </p>
     </main>
   );
 }

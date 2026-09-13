@@ -5,10 +5,10 @@ import AdminSidebar from "./AdminSidebar";
 
 /**
  * Casca do /admin: páginas autenticadas ganham a sidebar à esquerda + conteúdo
- * à direita; páginas pré-auth (login/recuperar/redefinir) ficam centradas, SEM
+ * à direita; páginas pré-auth (login/recuperar) ficam centradas, SEM
  * sidebar (não expõe navegação antes do login). Não toca em auth/middleware.
  */
-const AUTH_PAGES = ["/admin/login", "/admin/recuperar", "/admin/redefinir"];
+const AUTH_PAGES = ["/admin/login", "/admin/recuperar"];
 
 export default function AdminShell({
   children,

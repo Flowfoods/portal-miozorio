@@ -14,12 +14,7 @@ const guardaAdmin = withAuth({
   callbacks: {
     authorized: ({ req, token }) => {
       const { pathname } = req.nextUrl;
-      if (
-        PUBLIC_ADMIN.includes(pathname) ||
-        pathname.startsWith("/admin/redefinir")
-      ) {
-        return true;
-      }
+      if (PUBLIC_ADMIN.includes(pathname)) return true;
       return !!token;
     },
   },

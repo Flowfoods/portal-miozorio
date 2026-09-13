@@ -8,6 +8,7 @@ import { EVENTO_LABEL } from "@/lib/crm-listas";
 import { REGUA_LABEL } from "@/lib/reguas";
 import { lerAnamnese } from "@/lib/anamnesis";
 import SubmitButton from "@/components/admin/SubmitButton";
+import CodigoRecuperacao from "@/components/admin/CodigoRecuperacao";
 import StatusPill from "@/components/ui/StatusPill";
 import { contarIndicacoesFechadas } from "@/lib/clube";
 import {
@@ -484,6 +485,9 @@ export default async function FichaClientePage({
               <p className="break-all rounded-mi bg-mi-bege/60 px-3 py-2 text-xs text-mi-texto/80">
                 Link de indicação: {SITE}/indicar/{customer.referralCode}
               </p>
+
+              {/* B2 — recuperação de senha pela ficha (mesmo módulo do site). */}
+              <CodigoRecuperacao customerId={customer.id} />
 
               {/* Pontos (Anexo 1) */}
               <div className="rounded-mi bg-mi-bege/40 p-3">
