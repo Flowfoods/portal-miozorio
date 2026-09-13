@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { getSaldoExtrato } from "@/lib/clube-pontos";
 import { getSettings } from "@/lib/settings";
 import { contarIndicacoesFechadas } from "@/lib/clube";
@@ -43,8 +43,8 @@ export default async function ClubeTabPage({
 }: {
   searchParams?: { erro?: string; resgate?: string };
 }) {
-  const s = getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   const erroResgate = searchParams?.erro?.slice(0, 160) ?? null;
@@ -76,7 +76,7 @@ export default async function ClubeTabPage({
     }),
     getSettings(),
   ]);
-  if (!customer) redirect("/clube/entrar");
+  if (!customer) redirect(hrefLoginCliente());
 
   const proximo = recompensas.find((r) => r.custoPontos > saldo);
   const faltam = proximo ? proximo.custoPontos - saldo : 0;

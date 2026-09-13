@@ -43,6 +43,24 @@ export interface BusinessSettings {
   clubPointsDepoimento: number;
   clubPointsFoto: number;
   clubPointsReagendamento: number;
+  // B3 — validade do código de recuperação de senha, em minutos. Longa porque
+  // quem repassa o código é a Mi, na mão. Piso de 15 min (RECUP_MIN_MINUTOS).
+  recuperacaoCodigoMin: number;
+}
+
+/** Piso da validade do código: abaixo disso o repasse manual não cabe. */
+export const RECUP_MIN_MINUTOS = 15;
+/** Validade padrão do código de recuperação (minutos). */
+export const RECUP_PADRAO_MINUTOS = 60;
+
+/**
+ * Função pura: normaliza o que veio do banco/formulário para uma validade
+ * usável. Valor ausente/inválido → padrão; abaixo do piso → piso.
+ */
+export function minutosValidadeCodigo(bruto: unknown): number {
+  const n = typeof bruto === "number" ? bruto : Number(bruto);
+  if (!Number.isFinite(n) || n <= 0) return RECUP_PADRAO_MINUTOS;
+  return Math.max(RECUP_MIN_MINUTOS, Math.floor(n));
 }
 
 /** Fallback da escada do Clube (a migration insere a versão oficial no banco). */
@@ -79,6 +97,7 @@ const DEFAULTS: BusinessSettings = {
   clubPointsDepoimento: 0,
   clubPointsFoto: 0,
   clubPointsReagendamento: 0,
+  recuperacaoCodigoMin: 60,
 };
 
 const TTL_MS = 60_000;
@@ -155,6 +174,9 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
       DEFAULTS.clubPointsDepoimento,
     ),
     clubPointsFoto: num("club_points_foto", DEFAULTS.clubPointsFoto),
+    recuperacaoCodigoMin: minutosValidadeCodigo(
+      m.get("recuperacao_codigo_min") ?? DEFAULTS.recuperacaoCodigoMin,
+    ),
     clubPointsReagendamento: num(
       "club_points_reagendamento",
       DEFAULTS.clubPointsReagendamento,

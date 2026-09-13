@@ -5,7 +5,12 @@ import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MIN_SENHA, SENHA_CURTA, senhaFraca } from "@/lib/security";
+import {
+  BCRYPT_ROUNDS,
+  MIN_SENHA,
+  SENHA_CURTA,
+  senhaFraca,
+} from "@/lib/security";
 import { metaFromHeaders, recordAuth } from "@/lib/authlog";
 import { sendPasswordChangedEmail } from "@/lib/email";
 
@@ -39,12 +44,17 @@ export async function trocarSenhaAdminAction(
   await prisma.adminUser.update({
     where: { id: u.id },
     data: {
-      passwordHash: bcrypt.hashSync(nova, 12),
+      passwordHash: bcrypt.hashSync(nova, BCRYPT_ROUNDS),
       // Invalida todas as sessões antigas (Auth F1.2).
       tokenVersion: { increment: 1 },
     },
   });
-  await recordAuth("admin", "password_changed", email, metaFromHeaders(headers()));
+  await recordAuth(
+    "admin",
+    "password_changed",
+    email,
+    metaFromHeaders(headers()),
+  );
   try {
     await sendPasswordChangedEmail(email);
   } catch {

@@ -43,7 +43,22 @@ const nextConfig = {
   experimental: {
     // Foto do painel agora vai pela rota /api/admin/media (BUG D) — este
     // limite cobre as demais actions multipart (foto de cliente, anexo).
-    serverActions: { bodySizeLimit: "25mb" },
+    serverActions: {
+      bodySizeLimit: "25mb",
+      // B1 — o Next recusa uma Server Action cujo `Origin` não bate com o host
+      // encaminhado pelo proxy, e recusa em silêncio: o login da cliente (que É
+      // uma Server Action) não acontecia, com a senha certa. O middleware já
+      // manda tudo para o domínio canônico; esta lista é o cinto de segurança
+      // para o instante do redirect e para o preview do Dokploy.
+      allowedOrigins: [
+        "miozorio.com.br",
+        "www.miozorio.com.br",
+        ...(process.env.AUTH_EXTRA_ORIGINS ?? "")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean),
+      ],
+    },
   },
   // Entrega das fotos (BUG D — F5): AVIF primeiro (melhor compressão),
   // WebP de fallback; degraus alinhados aos derivados que o site realmente usa.

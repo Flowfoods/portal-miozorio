@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getClienteSession } from "@/lib/cliente-auth";
 import LoginForm from "@/components/clube/LoginForm";
+import AuthShell from "@/components/auth/AuthShell";
+import { caminhoSeguro } from "@/lib/auth-rotas";
 
 export const metadata: Metadata = {
   title: "Entrar · Clube Mi Ozorio",
@@ -11,36 +13,34 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function EntrarPage() {
-  const s = getClienteSession();
-  if (s) redirect(s.prov ? "/clube/conta/senha" : "/clube/conta");
+export default async function EntrarPage({
+  searchParams,
+}: {
+  searchParams?: { callbackUrl?: string };
+}) {
+  const s = await getClienteSession();
+  // Já logada: se ela veio de uma página protegida, vai direto para lá.
+  const destino = caminhoSeguro(searchParams?.callbackUrl, "/clube/conta");
+  if (s) redirect(s.prov ? "/clube/conta/senha" : destino);
 
   return (
-    <main className="mx-auto max-w-md px-5 pb-24 pt-14">
-      <p
-        aria-hidden
-        className="select-none text-center font-titulo text-5xl font-medium italic text-mi-marrom/25"
-      >
-        Mi
-      </p>
-      <p className="mt-4 text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
-        Clube Mi Ozorio
-      </p>
-      <h1 className="mt-3 text-center font-titulo text-3xl text-mi-marrom-escuro">
-        Que bom te ver por aqui 💛
-      </h1>
-      <p className="mt-3 text-center font-corpo text-mi-texto/80">
-        Entre para ver seus pontos, seu link de indicação e os prêmios.
-      </p>
-      <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
-        <LoginForm />
-      </div>
-      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
-        Ainda não é cliente?{" "}
-        <Link href="/agendar" className="text-mi-marrom-700 underline underline-offset-4">
-          Agende seu horário
-        </Link>
-      </p>
-    </main>
+    <AuthShell
+      eyebrow="Clube Mi Ozorio"
+      titulo="Que bom te ver por aqui 💛"
+      subtitulo="Entre para ver seus pontos, seu link de indicação e os prêmios."
+      rodape={
+        <p>
+          Ainda não é cliente?{" "}
+          <Link
+            href="/agendar"
+            className="text-mi-marrom-700 underline underline-offset-4"
+          >
+            Agende seu horário
+          </Link>
+        </p>
+      }
+    >
+      <LoginForm callbackUrl={searchParams?.callbackUrl} />
+    </AuthShell>
   );
 }

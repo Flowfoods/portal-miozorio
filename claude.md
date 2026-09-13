@@ -5,25 +5,29 @@
 > Code do Rodolfo. Este arquivo guarda convenções, arquitetura e decisões.
 
 ## O que é
+
 Portal completo (vitrine + agendamento + painel) da **Milene Ozorio Beauty
 Artist** (maquiadora/cabeleireira, Santíssimo/RJ). Projeto FlowFoods.
 **Em produção: https://miozorio.com.br** (painel da Mi em `/admin`).
 v2 (M0–M7) entregou M0–M6; v3 (M8–M14) em andamento — evolução incremental.
 
 ## Skills obrigatórias (carregar antes de codar)
+
 `miespecialista` (negócio: serviços, preços, tom, políticas) e `booking-engine`
 (regras de ouro do motor). Dúvida de negócio → a skill decide; sem cobertura →
 placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 
 ## Stack
+
 - **Next.js 14.2.35** (App Router, `src/`, output **standalone**) + TS estrito
 - **Tailwind 3.4** + tokens da marca (`src/styles/tokens.css`, `tailwind.config.ts`)
 - **Prisma 6** (⚠️ NÃO migrar p/ v7 — removeu `url` do datasource; downgrade já feito)
-  + PostgreSQL 16 + migrations SQL manuais quando preciso (no_overlap/btree_gist)
+  - PostgreSQL 16 + migrations SQL manuais quando preciso (no_overlap/btree_gist)
 - **Luxon** (tz), **Zod**, **NextAuth v4** (admin credentials+bcryptjs), **Vitest**
 - Fontes via `next/font/google`: Cormorant Garamond (títulos) + Jost (corpo)
 
 ## Regras críticas — v2 (R1–R10) + v3 (R11–R20)
+
 - **R1/R14** Noiva e debutante NUNCA agendáveis online — só CTA WhatsApp (travado no backend).
 - **R2** Double-booking impedido **no banco** (`EXCLUDE USING gist`), nunca só no app.
 - **R3/R15** Zero hardcode — tudo em `business_settings`/`services`.
@@ -54,9 +58,16 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   Nunca mostrar botão de pagar sem gateway ativo.
 
 ## Arquitetura (mapa rápido)
+
 - `src/lib/` — motor: `slots.ts` (on-the-fly), `booking-service.ts` (transições auditadas),
   `policies.ts` (puras), `settings.ts` (cache 60s), `availability.ts`, `phone.ts`,
   `auth.ts` (`requireAdmin` em toda server action/rota admin)
+- **Auth (B1–B5, ver `docs/AUTH-B1-B5.md`):** `auth-identidade.ts` normaliza
+  telefone/e-mail/senha (fonte única, cadastro e login); `auth-cookies.ts` define
+  os atributos do cookie e o host canônico; `auth-rotas.ts` valida `callbackUrl`;
+  `recuperacao.ts` é o **módulo único** de recuperação de senha de TODOS os
+  perfis. Regra inviolável: o código de 6 dígitos vai para o WhatsApp da **Mi**,
+  que repassa à pessoa no número cadastrado — nunca direto para quem pediu.
 - `src/app/api/` — público: availability, bookings (+confirm/cancel), services, health, NextAuth
 - `src/app/admin/` — painel (server components + `actions.ts`): Agenda, Serviços (CRUD),
   Bloqueios, Clientes (strikes/perdoar), Usuárias, Configurações
@@ -64,6 +75,7 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   via `ADMIN_EMAIL`/`ADMIN_PASSWORD`
 
 ## Deploy (Dokploy · VPS Hostinger compartilhada c/ Megashopper/Bibi/n8n/Evolution)
+
 - App `portal-miozorio` (applicationId `rQ_sgLhWZyb6ihF0nbs4a`, projeto `miozorio`);
   banco no container interno `miozorio-pgmiozorio-p6ecqh` (postgres:16 pinado, btree_gist).
 - Build = **Dockerfile** multi-stage; entrypoint roda `prisma migrate deploy` + `seed --if-empty`
@@ -77,17 +89,22 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   websocket `/listen-deployment?logPath=...` (header x-api-key).
 
 ## Ambiente local (Windows do Rodolfo)
+
 - `npm run dev` (sem banco local: /agendar e /admin degradam — teste funcional é em prod).
 - Preview MCP: usar shim `C:\Users\RODOLF~1\npmsh.cmd` no `.claude/launch.json`
   (caminho com espaço de "Program Files" quebra spawn sem aspas).
 - CRLF warnings do git são normais; arquivos novos sempre LF.
 
 ## Pendências de negócio (Anexo A da v3 — confirmar com a Mi)
+
 1. Preços/durações do dia a dia (escova, hidratação, sobrancelhas… hoje `pending_price`).
 2. Dias/horários da linha dia a dia (janela própria em dias de semana).
 3. Pacote de fotos (hero, retrato, portfólio, estúdio) + logo vetorial.
 4. Depoimentos reais com autorização de nome.
-5. E-mail de envio (reset de senha M13).
+5. Pendências de auth em `docs/AUTH-B1-B5.md` (validade do código, tempo de
+   sessão). O antigo item "e-mail de envio para o reset M13" saiu da lista:
+   o reset por e-mail deixou de existir (B2 — o código vai pelo WhatsApp da
+   Mi). O Resend segue só para o aviso "sua senha foi alterada".
 6. **Gateway PIX (MP × Efí):** o adaptador do Mercado Pago está pronto e
    DESLIGADO (R22). Falta a decisão + credenciais; Efí = escrever
    `src/lib/pagamento/efi.ts` com a mesma interface.
@@ -95,6 +112,7 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
    reincidência (3 cancelamentos) segue automática e independe da flag.
 
 ## Frente de agendamento (2026-09-13) — A1–A11
+
 Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `docs/agenda/FASE3-VERIFICACAO.md` · deploy: `scripts/deploy-agenda.sh` +
 `docs/agenda/RUNBOOK-DEPLOY.md` · ligar PIX: `docs/agenda/ATIVAR-PIX-MERCADOPAGO.md`.
@@ -111,15 +129,17 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
   (ver `.env.example`). Sem elas, comportamento idêntico ao de antes.
 
 ## Scripts
+
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
-- `npm test` — **360 testes**, sem banco. Roda em qualquer lugar.
+
+- `npm test` — **474 testes**, sem banco. Roda em qualquer lugar.
 - `npm run test:db` — **18 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 360 testes, build) + job `integracao` (postgres:16, aplica as
+(lint, typecheck, 474 testes, build) + job `integracao` (postgres:16, aplica as
 migrations de verdade e roda os 18). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.
@@ -129,9 +149,17 @@ padrão (só relata); `--aplicar` executa. Elege o sobrevivente por mais
 histórico, re-aponta bookings/itens/turmas/fila e **arquiva** os demais (nunca
 apaga). Idempotente.
 
-**Reset de senha do admin (caminho OFICIAL):** `scripts/reset-admin-password.ts`.
-A senha entra **só em runtime** (sem hardcode/default), e-mail normalizado, hash
-bcryptjs/rounds 12 (mesma config do login), zera o lockout. Não loga senha/hash.
+`npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
+(husky pre-commit roda lint+typecheck; suíte completa = `npm test`)
+
+**Reset de senha do admin (caminho normal):** `/admin/recuperar` → código de 6
+dígitos no WhatsApp da Mi → nova senha (mesmo fluxo da cliente). O antigo link
+por e-mail e a rota `/admin/redefinir/[token]` **não existem mais**.
+
+**Reset de emergência (sem acesso a nada):** `scripts/reset-admin-password.ts`.
+A senha entra **só em runtime** (sem hardcode/default), e-mail e senha
+normalizados igual ao login, hash bcryptjs/rounds 12, zera o lockout e sobe o
+`token_version` (derruba as sessões). Não loga senha/hash.
 Uso: `ADMIN_EMAIL="..." NEW_ADMIN_PASSWORD="..." npx tsx scripts/reset-admin-password.ts`
 (rodar onde o `DATABASE_URL` aponta pro banco certo; ⚠️ nunca commitar `.env*`).
 Obs.: o bootstrap do seed só **cria** o admin se não existir — **não** troca a

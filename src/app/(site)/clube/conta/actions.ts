@@ -7,11 +7,17 @@ import {
   setClientePassword,
   logoutCliente,
   getClienteSession,
+  type LoginSugestao,
 } from "@/lib/cliente-auth";
 import { resgatarRecompensa } from "@/lib/clube-pontos";
+import { caminhoSeguro } from "@/lib/auth-rotas";
 
 /** Estado dos forms do portal do cliente (erro inline). */
-export type ClienteFormState = { error: string } | null;
+export type ClienteFormState = {
+  error: string;
+  /** Próximo passo sugerido pelo motor — a UI mostra o link certo (B1/B5). */
+  sugestao?: LoginSugestao;
+} | null;
 
 export async function entrarAction(
   _prev: ClienteFormState,
@@ -21,8 +27,14 @@ export async function entrarAction(
     String(formData.get("phone") ?? ""),
     String(formData.get("password") ?? ""),
   );
-  if (!r.ok) return { error: r.message };
-  redirect(r.mustChange ? "/clube/conta/senha" : "/clube/conta");
+  if (!r.ok) return { error: r.message, sugestao: r.sugestao };
+  // B5 — volta para a página que a cliente tentava abrir. `caminhoSeguro`
+  // recusa URL absoluta: o campo vem do form e não pode virar open redirect.
+  const destino = caminhoSeguro(
+    String(formData.get("callbackUrl") ?? ""),
+    "/clube/conta",
+  );
+  redirect(r.mustChange ? "/clube/conta/senha" : destino);
 }
 
 export async function definirSenhaAction(
@@ -34,7 +46,9 @@ export async function definirSenhaAction(
     formData.get("consent") === "on",
   );
   if (!r.ok) return { error: r.message };
-  redirect("/clube/conta");
+  redirect(
+    caminhoSeguro(String(formData.get("callbackUrl") ?? ""), "/clube/conta"),
+  );
 }
 
 export async function sairAction(): Promise<void> {
@@ -47,7 +61,7 @@ export async function sairAction(): Promise<void> {
  * (o form só traz o rewardId). O débito/saldo é transacional no motor.
  */
 export async function resgatarAction(formData: FormData): Promise<void> {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
   const rewardId = String(formData.get("rewardId") ?? "");
   if (rewardId) {

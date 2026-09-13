@@ -42,12 +42,15 @@ export async function GET(
     foto.testimonial.consentimentoPublicoAt !== null;
 
   if (!publica) {
-    const cliente = getClienteSession();
+    const cliente = await getClienteSession();
     const dona =
-      !!cliente && !cliente.prov && cliente.customerId === foto.testimonial.customerId;
+      !!cliente &&
+      !cliente.prov &&
+      cliente.customerId === foto.testimonial.customerId;
     if (!dona) {
       const admin = await getAdminSession();
-      if (!admin?.user?.email) return new Response("Não encontrado", { status: 404 });
+      if (!admin?.user?.email)
+        return new Response("Não encontrado", { status: 404 });
     }
   }
 

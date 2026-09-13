@@ -42,6 +42,12 @@ const NUMERIC_FIELDS: {
     hint: "30",
     min: 1,
   },
+  {
+    key: "recuperacao_codigo_min",
+    label: "Código de recuperação vale (min)",
+    hint: "60",
+    min: 15,
+  },
 ];
 
 export default async function AdminConfigPage() {
@@ -64,6 +70,7 @@ export default async function AdminConfigPage() {
     strike_limit: s.strikeLimit,
     hold_minutes: s.holdMinutes,
     slot_step_min: s.slotStepMin,
+    recuperacao_codigo_min: s.recuperacaoCodigoMin,
   };
 
   const dayValue = (day: string) =>

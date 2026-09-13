@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { getSettings } from "@/lib/settings";
 import ContaShell from "@/components/clube/ContaShell";
 import Botao from "@/components/ui/Botao";
@@ -27,8 +27,8 @@ const WA_REPETIR = (servico: string) =>
  * "Contar como foi" entra na F3 junto com o fluxo de Momentos.
  */
 export default async function HistoricoPage() {
-  const s = getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   // Isolamento: tudo pelo id da sessão (R18).
@@ -46,9 +46,17 @@ export default async function HistoricoPage() {
         startsAt: true,
         location: true,
         service: {
-          select: { name: true, code: true, bookableOnline: true, active: true },
+          select: {
+            name: true,
+            code: true,
+            bookableOnline: true,
+            active: true,
+          },
         },
-        items: { orderBy: { sort: "asc" }, select: { service: { select: { name: true } } } },
+        items: {
+          orderBy: { sort: "asc" },
+          select: { service: { select: { name: true } } },
+        },
       },
     }),
     // Pontos ganhos por atendimento: crédito idempotente service:<bookingId>.
@@ -58,7 +66,7 @@ export default async function HistoricoPage() {
     }),
     getSettings(),
   ]);
-  if (!customer) redirect("/clube/entrar");
+  if (!customer) redirect(hrefLoginCliente());
 
   // Atendimentos sobre os quais ela já contou (F3): troca o CTA do card.
   const jaContou = new Set(
@@ -156,7 +164,9 @@ export default async function HistoricoPage() {
                         </p>
                         <p className="mt-0.5 font-corpo text-xs text-mi-texto/80">
                           com a Mi ·{" "}
-                          {b.location === "home" ? "em domicílio" : "no estúdio"}
+                          {b.location === "home"
+                            ? "em domicílio"
+                            : "no estúdio"}
                         </p>
                       </div>
                       {typeof pontos === "number" && pontos > 0 && (
@@ -170,7 +180,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href="/clube/conta/momentos"
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Você já contou 💛 Ver
                         </Botao>
@@ -178,7 +188,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={`/clube/conta/momentos/novo?atendimento=${b.id}`}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Contar como foi
                         </Botao>
@@ -187,7 +197,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={`/agendar?servico=${b.service.code}&origem=cuidar`}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Repetir esse cuidado
                         </Botao>
@@ -195,7 +205,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={WA_REPETIR(b.service.name)}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Combinar com a Mi
                         </Botao>

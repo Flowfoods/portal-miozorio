@@ -5,10 +5,10 @@ import AdminSidebar from "./AdminSidebar";
 
 /**
  * Casca do /admin: páginas autenticadas ganham a sidebar à esquerda + conteúdo
- * à direita; páginas pré-auth (login/recuperar/redefinir) ficam centradas, SEM
+ * à direita; páginas pré-auth (login/recuperar) ficam centradas, SEM
  * sidebar (não expõe navegação antes do login). Não toca em auth/middleware.
  */
-const AUTH_PAGES = ["/admin/login", "/admin/recuperar", "/admin/redefinir"];
+const AUTH_PAGES = ["/admin/login", "/admin/recuperar"];
 
 export default function AdminShell({
   children,
@@ -24,11 +24,9 @@ export default function AdminShell({
   );
 
   if (isAuthPage) {
-    return (
-      <main className="mx-auto min-h-[70vh] w-full max-w-5xl px-4 py-10">
-        {children}
-      </main>
-    );
+    // Só o enquadramento: o `<main>` dessas telas vem do AuthShell (B5), e dois
+    // <main> aninhados quebram a navegação por leitor de tela.
+    return <div className="min-h-[70vh] w-full">{children}</div>;
   }
 
   return (

@@ -19,8 +19,14 @@ import {
 import { dispatchEvent, buildEventMessage } from "@/lib/notify";
 import { notificarClienteAjusteTamanho } from "@/lib/notify-cliente";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
-import { getSettings, invalidateSettingsCache } from "@/lib/settings";
-import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
+import {
+  getSettings,
+  invalidateSettingsCache,
+  RECUP_MIN_MINUTOS,
+} from "@/lib/settings";
+import { BCRYPT_ROUNDS, MIN_SENHA, SENHA_CURTA } from "@/lib/security";
+import { gerarCodigoParaCliente } from "@/lib/recuperacao";
+import type { CodigoRecuperacaoState } from "@/lib/recuperacao-tipos";
 import {
   confirmBooking,
   cancelBooking,
@@ -661,7 +667,12 @@ export async function adminSaveSettings(formData: FormData): Promise<void> {
   // Piso por campo: zero em "passo dos horários" trava a geração de horários
   // e derruba o site; zero em "reserva do horário" faz todo agendamento nascer
   // já vencido para a tela e vivo para a trava do banco.
-  const PISO: Record<string, number> = { slot_step_min: 1, hold_minutes: 1 };
+  const PISO: Record<string, number> = {
+    slot_step_min: 1,
+    hold_minutes: 1,
+    // B3 — abaixo de 15 min o repasse manual do código não cabe.
+    recuperacao_codigo_min: RECUP_MIN_MINUTOS,
+  };
   const numeric: Record<string, number> = {};
   for (const key of [
     "buffer_min",
@@ -672,6 +683,7 @@ export async function adminSaveSettings(formData: FormData): Promise<void> {
     "strike_limit",
     "hold_minutes",
     "slot_step_min",
+    "recuperacao_codigo_min",
   ]) {
     const n = Number(formData.get(key));
     const piso = PISO[key] ?? 0;
@@ -761,7 +773,11 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   if (exists) fail("Já existe uma conta com esse e-mail.");
 
   await prisma.adminUser.create({
-    data: { name, email, passwordHash: bcrypt.hashSync(password, 12) },
+    data: {
+      name,
+      email,
+      passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS),
+    },
   });
   revalidatePath("/admin/usuarias");
 }
@@ -829,7 +845,7 @@ export async function adminResetUserPassword(
 
   await prisma.adminUser.update({
     where: { id },
-    data: { passwordHash: bcrypt.hashSync(password, 12) },
+    data: { passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) },
   });
   revalidatePath("/admin/usuarias");
 }
@@ -1112,6 +1128,25 @@ export async function adminEnrollCustomer(customerId: string): Promise<void> {
   if (!member) fail("Cliente não encontrada.");
   revalidatePath(`/admin/clientes/${customerId}`);
   revalidatePath("/admin/clube");
+}
+
+/**
+ * B2 — a Mi gera o código de recuperação da cliente direto na ficha. Mesmo
+ * módulo e mesma tabela do fluxo público; a diferença é que o código aparece na
+ * tela dela (não vai por WhatsApp para ela mesma) e já vem com o link pronto
+ * para mandar na conversa da cliente.
+ */
+export async function adminGerarCodigoRecuperacao(
+  _prev: CodigoRecuperacaoState,
+  formData: FormData,
+): Promise<CodigoRecuperacaoState> {
+  await requireAdmin();
+  const customerId = String(formData.get("customerId") ?? "");
+  const codigo = await gerarCodigoParaCliente(customerId);
+  if (!codigo) {
+    return { error: "Essa cliente ainda não faz parte do Clube." };
+  }
+  return { ok: codigo };
 }
 
 /** Mi marca o mimo da escada como entregue. */

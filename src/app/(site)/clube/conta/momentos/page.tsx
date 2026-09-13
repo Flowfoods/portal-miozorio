@@ -4,7 +4,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import ContaShell from "@/components/clube/ContaShell";
 import Botao from "@/components/ui/Botao";
 import EstadoVazio from "@/components/ui/EstadoVazio";
@@ -23,7 +23,10 @@ const STATUS_CHIP: Record<string, { label: string; classes: string }> = {
     label: "A Mi vai ler com carinho",
     classes: "bg-mi-alerta/10 text-mi-alerta-tinta",
   },
-  aprovado: { label: "No ar 💛", classes: "bg-mi-sucesso/10 text-mi-sucesso-tinta" },
+  aprovado: {
+    label: "No ar 💛",
+    classes: "bg-mi-sucesso/10 text-mi-sucesso-tinta",
+  },
   rejeitado: {
     label: "Não publicado",
     classes: "bg-mi-cinza text-mi-texto/80",
@@ -37,8 +40,8 @@ export default async function MomentosPage({
 }: {
   searchParams: { enviado?: string; editado?: string };
 }) {
-  const s = getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   const momentos = await prisma.testimonial.findMany({

@@ -1,38 +1,46 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getClienteSession } from "@/lib/cliente-auth";
-import RecuperarForm from "@/components/clube/RecuperarForm";
+import { getClienteSession, CLUB_MIN_SENHA } from "@/lib/cliente-auth";
+import { waLinkMsg } from "@/lib/format";
+import { caminhoSeguro } from "@/lib/auth-rotas";
+import AuthShell from "@/components/auth/AuthShell";
+import RecuperarFluxo from "@/components/auth/RecuperarFluxo";
+
+export const metadata: Metadata = {
+  title: "Recuperar acesso · Clube Mi Ozorio",
+  robots: { index: false, follow: false },
+};
 
 export const dynamic = "force-dynamic";
 
-export default function RecuperarPage() {
-  const s = getClienteSession();
-  if (s) redirect(s.prov ? "/clube/conta/senha" : "/clube/conta");
+const MI = process.env.MI_WHATSAPP ?? "+5521970225231";
+
+export default async function RecuperarPage({
+  searchParams,
+}: {
+  searchParams?: { callbackUrl?: string };
+}) {
+  const s = await getClienteSession();
+  const destino = caminhoSeguro(searchParams?.callbackUrl, "/clube/conta");
+  if (s) redirect(s.prov ? "/clube/conta/senha" : destino);
 
   return (
-    <main className="mx-auto max-w-md px-5 pb-24 pt-14">
-      <p className="text-center font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
-        Clube Mi Ozorio
-      </p>
-      <h1 className="mt-3 text-center font-titulo text-3xl text-mi-marrom-escuro">
-        Recuperar acesso
-      </h1>
-      <p className="mt-3 text-center font-corpo text-mi-texto/80">
-        Sem problema — a gente te manda um código no WhatsApp para você criar uma
-        senha nova.
-      </p>
-      <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
-        <RecuperarForm />
-      </div>
-      <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
-        Lembrou a senha?{" "}
-        <Link
-          href="/clube/entrar"
-          className="text-mi-marrom-700 underline underline-offset-4"
-        >
-          Entrar
-        </Link>
-      </p>
-    </main>
+    <AuthShell
+      eyebrow="Clube Mi Ozorio"
+      titulo="Recuperar acesso"
+      subtitulo="Sem problema — a Mi te manda um código no WhatsApp para você criar uma senha nova."
+    >
+      <RecuperarFluxo
+        perfil="cliente"
+        waMi={waLinkMsg(
+          MI,
+          "Oi, Mi! Esqueci minha senha do Clube e pedi um código pelo site. Consegue me mandar? 💛",
+        )}
+        destino={destino}
+        entrarHref="/clube/entrar"
+        cadastrarHref="/clube"
+        minSenha={CLUB_MIN_SENHA}
+      />
+    </AuthShell>
   );
 }

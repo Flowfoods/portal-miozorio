@@ -42,6 +42,60 @@ export const IP_WINDOW_MS = 15 * 60_000;
  */
 export const IP_MAX_FAILS = 20;
 
+// ── Janela do rate-limit por IDENTIFICADOR (B4) ──────────────────────────────
+/** Janela de contagem de falhas de login por identificador (telefone/e-mail). */
+export const IDENT_WINDOW_MS = 15 * 60_000;
+/** Falhas toleradas no mesmo identificador dentro da janela. */
+export const IDENT_MAX_FAILS = 10;
+
+/**
+ * Função pura: dadas as falhas recentes do identificador (mais nova primeiro),
+ * diz se está bloqueado e quantos minutos faltam. O bloqueio cai quando a
+ * N-ésima falha mais recente sai da janela — nunca é bloqueio "para sempre".
+ */
+export function esperaPorIdentificador(
+  falhas: Date[],
+  agora: Date = new Date(),
+  max: number = IDENT_MAX_FAILS,
+  janelaMs: number = IDENT_WINDOW_MS,
+): { bloqueado: boolean; minutos: number } {
+  const dentro = falhas
+    .filter((d) => agora.getTime() - d.getTime() < janelaMs)
+    .sort((a, b) => b.getTime() - a.getTime());
+  if (dentro.length < max) return { bloqueado: false, minutos: 0 };
+  const decisiva = dentro[max - 1]!;
+  const faltaMs = janelaMs - (agora.getTime() - decisiva.getTime());
+  return { bloqueado: true, minutos: Math.max(1, Math.ceil(faltaMs / 60_000)) };
+}
+
+/**
+ * Rate-limit por identificador: 10 falhas em 15 min pausam aquele telefone/
+ * e-mail, independente do IP. Best-effort — se a checagem falhar, libera (a
+ * trava por conta continua protegendo).
+ */
+export async function throttlePorIdentificador(
+  area: AuthArea,
+  identifier: string,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  try {
+    const desde = new Date(Date.now() - IDENT_WINDOW_MS);
+    const falhas = await prisma.authLog.findMany({
+      where: {
+        area,
+        identifier,
+        event: { in: ["login_fail", "locked"] },
+        createdAt: { gte: desde },
+      },
+      orderBy: { createdAt: "desc" },
+      take: IDENT_MAX_FAILS,
+      select: { createdAt: true },
+    });
+    return esperaPorIdentificador(falhas.map((f) => f.createdAt));
+  } catch {
+    return { bloqueado: false, minutos: 0 };
+  }
+}
+
 /** SHA-256 do IP — nunca guardamos o IP cru (LGPD). */
 export function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex");
@@ -58,11 +112,7 @@ export function clientIp(
 
 /** Extrai { ip, userAgent } de um objeto de headers (Fetch Headers ou plain). */
 export function metaFromHeaders(
-  h:
-    | Headers
-    | Record<string, string | string[] | undefined>
-    | undefined
-    | null,
+  h: Headers | Record<string, string | string[] | undefined> | undefined | null,
 ): AuthMeta {
   if (!h) return {};
   const get = (k: string): string | null => {
@@ -112,7 +162,9 @@ export async function recordAuth(
  * `login_fail` e `recover_fail` do mesmo ip_hash. Best-effort — se a checagem
  * falhar, libera (fail-open): trava por conta continua protegendo.
  */
-export async function isIpThrottled(ip: string | null | undefined): Promise<boolean> {
+export async function isIpThrottled(
+  ip: string | null | undefined,
+): Promise<boolean> {
   if (!ip) return false;
   try {
     const desde = new Date(Date.now() - IP_WINDOW_MS);

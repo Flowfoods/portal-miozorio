@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   await track({
     tipo: EV.AGENDAMENTO_CONCLUIDO,
     sessionId: getSid(),
-    clientId: getClienteSession()?.customerId ?? null,
+    clientId: (await getClienteSession())?.customerId ?? null,
     metadata: { servico: parsed.data.serviceId, local: parsed.data.location },
   });
 

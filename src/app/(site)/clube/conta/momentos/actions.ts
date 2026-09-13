@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import {
   enviarMomento,
   editarMomento,
@@ -37,8 +37,8 @@ export async function enviarMomentoAction(
   _prev: ClienteFormState,
   formData: FormData,
 ): Promise<ClienteFormState> {
-  const s = getClienteSession();
-  if (!s || s.prov) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s || s.prov) redirect(hrefLoginCliente());
 
   const r = await enviarMomento({
     customerId: s.customerId,
@@ -58,8 +58,8 @@ export async function editarMomentoAction(
   _prev: ClienteFormState,
   formData: FormData,
 ): Promise<ClienteFormState> {
-  const s = getClienteSession();
-  if (!s || s.prov) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s || s.prov) redirect(hrefLoginCliente());
 
   const r = await editarMomento({
     customerId: s.customerId,
@@ -76,8 +76,8 @@ export async function editarMomentoAction(
 }
 
 export async function excluirMomentoAction(formData: FormData): Promise<void> {
-  const s = getClienteSession();
-  if (!s || s.prov) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s || s.prov) redirect(hrefLoginCliente());
 
   await excluirMomento(s.customerId, String(formData.get("id") ?? ""));
   revalidatePath("/clube/conta/momentos");

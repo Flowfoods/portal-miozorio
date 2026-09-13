@@ -4,9 +4,17 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { prisma } from "./prisma";
-import { lockoutMs } from "./security";
-import { isIpThrottled, metaFromHeaders, recordAuth } from "./authlog";
+import { BCRYPT_ROUNDS, hashFraco, lockoutMs } from "./security";
+import {
+  isIpThrottled,
+  metaFromHeaders,
+  recordAuth,
+  throttlePorIdentificador,
+} from "./authlog";
 import { challengeFromCookieHeader, fromB64url } from "./webauthn";
+import { TTL_SESSAO_ADMIN_S } from "./auth-cookies";
+import { normalizarEmail, normalizarSenha } from "./auth-identidade";
+import { ERRO_THROTTLED, codigoLocked } from "./auth-mensagens";
 
 /**
  * Autenticação do painel /admin (M5): credentials (e-mail + senha bcrypt)
@@ -16,6 +24,12 @@ import { challengeFromCookieHeader, fromB64url } from "./webauthn";
  * auditoria em auth_log e invalidação de sessão por token_version (trocar a
  * senha sobe a versão e derruba todos os JWTs antigos).
  */
+
+/** Cookie `Secure` sempre que o portal roda em https (prod atrás do Traefik). */
+const useSecureCookies = (process.env.NEXTAUTH_URL ?? "").startsWith(
+  "https://",
+);
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -26,14 +40,27 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         const meta = metaFromHeaders(req?.headers);
-        const email = credentials?.email?.trim().toLowerCase();
-        const password = credentials?.password;
+        // B1 — mesma normalização do cadastro (`auth-identidade`): e-mail em
+        // minúsculas e senha com trim só nas pontas (teclado de celular
+        // acrescenta espaço ao aceitar a sugestão do corretor).
+        const email = normalizarEmail(credentials?.email);
+        const passwordBruta = credentials?.password ?? "";
+        const password = normalizarSenha(passwordBruta);
         if (!email || !password) return null;
 
         // Rate-limit por IP (defesa-em-profundidade além da trava por conta).
         if (await isIpThrottled(meta.ip)) {
           await recordAuth("admin", "throttled", email, meta);
-          return null;
+          throw new Error(ERRO_THROTTLED);
+        }
+        // B4 — e por identificador: 10 falhas em 15 min pausam este e-mail,
+        // venham de onde vierem. Com o tempo de espera na tela.
+        const porEmail = await throttlePorIdentificador("admin", email);
+        if (porEmail.bloqueado) {
+          await recordAuth("admin", "throttled", email, meta);
+          throw new Error(
+            codigoLocked(new Date(Date.now() + porEmail.minutos * 60_000)),
+          );
         }
 
         const user = await prisma.adminUser.findUnique({ where: { email } });
@@ -45,10 +72,22 @@ export const authOptions: NextAuthOptions = {
         // M13.2 — conta travada por brute-force: recusa sem nem checar a senha.
         if (user.lockedUntil && user.lockedUntil > new Date()) {
           await recordAuth("admin", "locked", email, meta);
-          return null;
+          throw new Error(codigoLocked(user.lockedUntil));
         }
 
-        if (!bcrypt.compareSync(password, user.passwordHash)) {
+        let senhaOk = bcrypt.compareSync(password, user.passwordHash);
+        // Compatibilidade: senha gravada ANTES do trim (com espaço nas pontas)
+        // continua entrando, e o hash é regravado já normalizado. Nenhuma senha
+        // existente é invalidada nem exige reset.
+        let reidratarHash = false;
+        if (!senhaOk && passwordBruta !== password) {
+          senhaOk = bcrypt.compareSync(passwordBruta, user.passwordHash);
+          reidratarHash = senhaOk;
+        }
+        // Hash com custo menor que o padrão atual sobe de graça no login certo.
+        if (senhaOk && hashFraco(user.passwordHash)) reidratarHash = true;
+
+        if (!senhaOk) {
           // Falhou: incrementa e, passando do limite, trava com backoff.
           const failedAttempts = user.failedAttempts + 1;
           const ms = lockoutMs(failedAttempts);
@@ -56,18 +95,31 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             data: {
               failedAttempts,
-              lockedUntil: ms > 0 ? new Date(Date.now() + ms) : user.lockedUntil,
+              lockedUntil:
+                ms > 0 ? new Date(Date.now() + ms) : user.lockedUntil,
             },
           });
-          await recordAuth("admin", ms > 0 ? "locked" : "login_fail", email, meta);
+          await recordAuth(
+            "admin",
+            ms > 0 ? "locked" : "login_fail",
+            email,
+            meta,
+          );
+          if (ms > 0) throw new Error(codigoLocked(new Date(Date.now() + ms)));
           return null;
         }
 
         // Sucesso: zera o contador (só escreve se havia o que limpar).
-        if (user.failedAttempts > 0 || user.lockedUntil) {
+        if (user.failedAttempts > 0 || user.lockedUntil || reidratarHash) {
           await prisma.adminUser.update({
             where: { id: user.id },
-            data: { failedAttempts: 0, lockedUntil: null },
+            data: {
+              failedAttempts: 0,
+              lockedUntil: null,
+              ...(reidratarHash
+                ? { passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) }
+                : {}),
+            },
           });
         }
 
@@ -111,7 +163,8 @@ export const authOptions: NextAuthOptions = {
         const h = (req?.headers ?? {}) as Record<string, string>;
         const host = h["x-forwarded-host"] ?? h["host"] ?? "localhost:3000";
         const proto =
-          h["x-forwarded-proto"] ?? (host.startsWith("localhost") ? "http" : "https");
+          h["x-forwarded-proto"] ??
+          (host.startsWith("localhost") ? "http" : "https");
         const rpID = host.split(":")[0]!;
         const origin = `${proto}://${host}`;
 
@@ -157,7 +210,25 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  session: { strategy: "jwt", maxAge: 12 * 60 * 60 },
+  // B1 — 7 dias (antes 12h). A Mi opera pelo celular o dia inteiro e caía do
+  // painel no meio do atendimento; 7 dias é o teto para acesso privilegiado, e
+  // o token_version continua derrubando tudo na hora se a senha mudar.
+  session: { strategy: "jwt", maxAge: TTL_SESSAO_ADMIN_S },
+  cookies: {
+    // `SameSite=Lax` explícito (nunca `Strict`): a Mi abre o painel por link do
+    // WhatsApp e com `Strict` o cookie não viaja nessa primeira navegação.
+    sessionToken: {
+      name: useSecureCookies
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+  },
   pages: { signIn: "/admin/login" },
   callbacks: {
     async jwt({ token, user }) {

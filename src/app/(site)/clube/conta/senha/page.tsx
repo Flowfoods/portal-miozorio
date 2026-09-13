@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
+import { caminhoSeguro } from "@/lib/auth-rotas";
+import AuthShell from "@/components/auth/AuthShell";
 import SenhaForm from "@/components/clube/SenhaForm";
 
 export const metadata: Metadata = {
@@ -10,23 +13,40 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function SenhaPage() {
-  const s = getClienteSession();
-  if (!s) redirect("/clube/entrar");
+export default async function SenhaPage({
+  searchParams,
+}: {
+  searchParams?: { callbackUrl?: string };
+}) {
+  const s = await getClienteSession();
+  if (!s) redirect(hrefLoginCliente());
+  const destino = caminhoSeguro(searchParams?.callbackUrl, "/clube/conta");
 
   return (
-    <main className="mx-auto max-w-md px-5 pb-24 pt-14">
-      <h1 className="text-center font-titulo text-3xl text-mi-marrom-escuro">
-        {s.prov ? "Crie sua senha" : "Trocar senha"}
-      </h1>
-      <p className="mt-3 text-center font-corpo text-mi-texto/80">
-        {s.prov
+    <AuthShell
+      eyebrow="Clube Mi Ozorio"
+      monograma={false}
+      titulo={s.prov ? "Crie sua senha" : "Trocar senha"}
+      subtitulo={
+        s.prov
           ? "Por segurança, defina uma senha só sua antes de continuar."
-          : "Escolha uma nova senha para sua conta."}
-      </p>
-      <div className="mt-8 rounded-mi bg-mi-branco p-6 shadow-suave sm:p-8">
-        <SenhaForm provisoria={s.prov} />
-      </div>
-    </main>
+          : "Escolha uma nova senha para sua conta."
+      }
+      rodape={
+        s.prov ? undefined : (
+          <p>
+            Mudou de ideia?{" "}
+            <Link
+              href="/clube/conta"
+              className="text-mi-marrom-700 underline underline-offset-4"
+            >
+              Voltar para a minha conta
+            </Link>
+          </p>
+        )
+      }
+    >
+      <SenhaForm provisoria={s.prov} callbackUrl={destino} />
+    </AuthShell>
   );
 }

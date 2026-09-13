@@ -1,20 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState } from "react-dom";
-import { entrarAction, type ClienteFormState } from "@/app/(site)/clube/conta/actions";
+import {
+  entrarAction,
+  type ClienteFormState,
+} from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
 import PasswordField from "@/components/auth/PasswordField";
 import PasskeyLoginButton from "@/components/auth/PasskeyLoginButton";
 import { PhoneField, FormError } from "./ClubFields";
 
-/** Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone. */
-export default function LoginForm() {
+/**
+ * Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone.
+ * `callbackUrl` chega pela URL quando a cliente tentou abrir uma página da
+ * conta sem sessão — depois de entrar ela volta exatamente para lá (B5).
+ */
+export default function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, action] = useFormState<ClienteFormState, FormData>(
     entrarAction,
     null,
   );
   return (
     <form action={action} className="space-y-4">
+      {callbackUrl && (
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      )}
       <label className="block">
         <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu WhatsApp
@@ -31,10 +42,28 @@ export default function LoginForm() {
           autoComplete="current-password"
         />
         <span className="mt-1 block font-corpo text-xs text-mi-texto/80">
-          No primeiro acesso, sua senha é o seu próprio telefone (só os números).
+          No primeiro acesso, sua senha é o seu próprio telefone (só os
+          números).
         </span>
       </label>
-      <FormError error={state?.error} />
+      <FormError error={state?.error}>
+        {state?.sugestao === "cadastrar" && (
+          <Link
+            href="/clube"
+            className="mt-1 inline-block font-medium underline underline-offset-4"
+          >
+            Entrar para o Clube
+          </Link>
+        )}
+        {state?.sugestao === "recuperar" && (
+          <Link
+            href="/clube/recuperar"
+            className="mt-1 inline-block font-medium underline underline-offset-4"
+          >
+            Pedir um código para a Mi
+          </Link>
+        )}
+      </FormError>
       <SubmitButton
         pendingLabel="Entrando…"
         className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
@@ -42,12 +71,21 @@ export default function LoginForm() {
         Entrar
       </SubmitButton>
       <p className="text-center font-corpo text-sm">
-        <a
+        <Link
           href="/clube/recuperar"
           className="text-mi-marrom-700 underline underline-offset-4"
         >
           Esqueci minha senha
-        </a>
+        </Link>
+      </p>
+      <p className="text-center font-corpo text-sm text-mi-texto/80">
+        Ainda não tem conta?{" "}
+        <Link
+          href="/clube"
+          className="text-mi-marrom-700 underline underline-offset-4"
+        >
+          Cadastrar
+        </Link>
       </p>
 
       <div className="flex items-center gap-3 text-xs text-mi-texto/80">

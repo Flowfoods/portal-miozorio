@@ -200,6 +200,9 @@ model Customer {
   clubFailedLogins       Int       @default(0) @map("club_failed_logins") // anti brute-force
   clubLockedUntil        DateTime? @map("club_locked_until") @db.Timestamptz
   clubConsentAt          DateTime? @map("club_consent_at") @db.Timestamptz // LGPD (1º acesso)
+  // B4 — invalidação de sessão da cliente: o cookie carrega esta versão; trocar
+  // a senha sobe o número e derruba as sessões abertas nos outros aparelhos.
+  clubTokenVersion       Int       @default(0) @map("club_token_version")
   createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
   // ── CRM (estende a ficha; observações privadas seguem em `notes`) ──
   tags             String[]    @default([]) // etiquetas livres da Mi (≠ MediaAsset.tags)
@@ -512,6 +515,41 @@ model ClubPasswordReset {
 
   @@index([customerId])
   @@map("club_password_resets")
+}
+
+/// B2 — recuperação de senha ÚNICA para todos os perfis do portal. O código de
+/// 6 dígitos vai para o WhatsApp da MILENE, que repassa à pessoa no número
+/// cadastrado (nunca enviamos para número não cadastrado). Guarda só o SHA-256
+/// do código. `exchange_hash` é o token temporário emitido ao VERIFICAR o
+/// código: entre verificar e salvar a senha nova a pessoa não digita o código
+/// de novo, e o código só é marcado como usado quando a senha é salva (B3).
+/// Sem FK forte (mesmo padrão do reset do admin) — `subject_id` aponta para
+/// customers.id ou admin_users.id conforme `perfil`.
+model PasswordRecovery {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  perfil            String // cliente | admin
+  subjectId         String    @map("subject_id") @db.Uuid
+  /// Telefone E.164 (cliente) ou e-mail (admin) — para a Mi saber de quem é.
+  identificador     String
+  codeHash          String    @map("code_hash")
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz
+  attempts          Int       @default(0)
+  usedAt            DateTime? @map("used_at") @db.Timestamptz
+  lastSentAt        DateTime  @default(now()) @map("last_sent_at") @db.Timestamptz
+  /// Quando a Mi foi avisada (e o erro, se o WhatsApp falhou) — auditoria B3.
+  notifiedAt        DateTime? @map("notified_at") @db.Timestamptz
+  notifyError       String?   @map("notify_error")
+  exchangeHash      String?   @map("exchange_hash")
+  exchangeExpiresAt DateTime? @map("exchange_expires_at") @db.Timestamptz
+  /// publico (a própria pessoa pediu) | admin (a Mi gerou pela aba Clientes)
+  origem            String    @default("publico")
+  ipHash            String?   @map("ip_hash")
+  userAgent         String?   @map("user_agent")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([perfil, subjectId])
+  @@index([createdAt])
+  @@map("password_recoveries")
 }
 
 /// Auth F3 — Passkey (WebAuthn / Face ID / biometria). Serve os DOIS portais:

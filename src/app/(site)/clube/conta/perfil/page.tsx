@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { listarPasskeysDoSujeito } from "@/lib/passkeys";
 import { formatPhoneBR } from "@/lib/format";
 import ContaShell from "@/components/clube/ContaShell";
@@ -22,15 +22,15 @@ export const dynamic = "force-dynamic";
  * nesta fase — telefone é a identidade do login).
  */
 export default async function PerfilPage() {
-  const s = getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  const s = await getClienteSession();
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   const customer = await prisma.customer.findUnique({
     where: { id: s.customerId },
     select: { name: true, phoneE164: true, email: true, clubJoinedAt: true },
   });
-  if (!customer) redirect("/clube/entrar");
+  if (!customer) redirect(hrefLoginCliente());
 
   const passkeys = (await listarPasskeysDoSujeito("cliente", s.customerId)).map(
     (p) => ({
