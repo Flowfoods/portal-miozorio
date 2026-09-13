@@ -18,6 +18,7 @@ import { ensureClubMember } from "./clube";
 import { getAvailability } from "./availability";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 import { notificarMi } from "./notify-mi";
+import { notificarClienteConfirmacao } from "./notify-cliente";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -695,6 +696,11 @@ export async function confirmBooking(
     );
   }
 
+  // A9 — a CLIENTE é avisada em todo caminho que confirma. Antes só o encaixe
+  // manual avisava (e só se a Mi marcasse a caixinha): confirmar um pendente
+  // na agenda deixava a cliente sem notícia nenhuma.
+  await notificarClienteConfirmacao(id);
+
   return { ok: true, status: "confirmed" };
 }
 
@@ -1064,6 +1070,12 @@ export async function reativarBooking(id: string): Promise<ReativarResult> {
     }
     throw e;
   }
+
+  // A9 — reativar é confirmar: a cliente precisa saber que o horário voltou.
+  // Sufixo próprio no dedupe porque a chave da confirmação original pode já
+  // ter sido gasta (confirmado → cancelado → reativado).
+  await notificarClienteConfirmacao(id, ":reativado");
+
   return { ok: true, status: "confirmed" };
 }
 

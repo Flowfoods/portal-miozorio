@@ -339,10 +339,11 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.booking_confirmation",
     label: "WhatsApp · confirmação de horário",
     default:
-      "Oi, {nome}!\n\nSeu horário de {servico} está confirmado para {data}. Qualquer coisa, é só me chamar por aqui. Até logo!",
+      "Oi, {nome}!\n\nSeu horário de {servico} está confirmado para {data} 💛\n\n{local}\n{valor}\n\nPra render melhor: venha com as referências do que você quer e, se precisar desmarcar, me avise com antecedência.\n\nQualquer coisa é só me chamar por aqui. Até logo!",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora).",
+    ajuda:
+      "Disponível: {nome}, {servico}, {data} (data e hora), {local} (estúdio com endereço ou domicílio) e {valor}.",
   },
   {
     key: "msg.momento_pendente",
