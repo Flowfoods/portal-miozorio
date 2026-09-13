@@ -11,8 +11,9 @@
 
 ## 1. Antes de apertar qualquer botão
 
-- [ ] PR [#104](https://github.com/Flowfoods/portal-miozorio/pull/104) com CI
-      verde e revisado.
+- [ ] PR [#104](https://github.com/Flowfoods/portal-miozorio/pull/104) com os
+      dois jobs do CI verdes e revisado. (O CI passou a existir em 13/09, pela
+      master — antes deste PR não havia check nenhum.)
 - [ ] Merge na `master`.
 
 ## 2. Variáveis de ambiente no Dokploy
@@ -35,13 +36,26 @@ só existem como escape hatch.
 `application.deploy` pela API tRPC, como sempre. O entrypoint roda
 `prisma migrate deploy` + `seed --if-empty` sozinho.
 
-**As duas migrations são aditivas** (R11) e foram aplicadas do zero num
-PostgreSQL 16 limpo durante a verificação:
+⚠️ **Este deploy carrega DUAS frentes.** A master recebeu, antes desta, a
+frente de agendamento A1–A11 (PR #103), que trouxe 6 migrations próprias. Se
+ela ainda não foi para produção, o runbook dela —
+`docs/agenda/RUNBOOK-DEPLOY.md` — vale junto com este; as envs de pagamento
+(`PAGAMENTO_PROVIDER`, `MP_*`) são de lá.
+
+**As duas migrations desta frente são aditivas** (R11). As 8 (as 6 da agenda
+mais estas) foram aplicadas do zero num PostgreSQL 16 limpo durante a
+verificação, já na ordem final:
 
 | Migration                           | O que faz                                                                                                                                                |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `20260913000000_auth_b1_identidade` | cria `customers.club_token_version`; normaliza e-mails existentes **sem colidir** com o UNIQUE; cria índice em `lower(email)` só se não houver duplicado |
-| `20260913010000_recuperacao_unica`  | cria a tabela `password_recoveries`                                                                                                                      |
+| `20260913070000_recuperacao_unica`  | cria a tabela `password_recoveries`                                                                                                                      |
+
+> A segunda nasceu como `20260913010000_` e foi renomeada: colidia com o
+> carimbo da `20260913010000_a7_sinal_regra`, que veio pela master. As duas
+> conviveriam só por sorte alfabética. Renomear foi seguro porque nenhuma
+> delas tinha ido para produção ainda — **não repita isso com migration já
+> aplicada**.
 
 Nada é apagado. `club_password_resets` e `password_reset_tokens` continuam lá.
 **Ninguém é deslogado**: a versão do token começa em 0, que é o valor que os
@@ -82,6 +96,9 @@ Traefik só economiza um salto: no router do `portal-miozorio`, um middleware
 Rollback pelo Dokploy (deploy anterior). As migrations **não** precisam ser
 revertidas: as duas são aditivas e a versão antiga do código simplesmente ignora
 a coluna e a tabela novas.
+
+⚠️ O rollback volta as **duas** frentes de uma vez (auth e agendamento), já
+que as duas entram no mesmo deploy. Não dá para desfazer só uma.
 
 O único ponto sem volta é a rota `/admin/redefinir/<token>`, que deixou de
 existir. Se houver e-mail de reset antigo em voo, o link dá 404 — o caminho é
