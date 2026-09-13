@@ -71,6 +71,12 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(function PasswordField
           {...rest}
           ref={ref}
           type={show ? "text" : "password"}
+          // B1 — o campo entrega EXATAMENTE o que a pessoa digitou: sem
+          // autocapitalize (iOS maiúsculiza a 1ª letra), sem autocorreção e sem
+          // corretor ortográfico. Vale também com a senha visível ("olho").
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           className={`${className ?? "input-mi"} pr-12`}
           onChange={(e) => {
             setValor(e.target.value);

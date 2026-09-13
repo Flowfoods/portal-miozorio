@@ -42,7 +42,7 @@ export async function GET(
     foto.testimonial.consentimentoPublicoAt !== null;
 
   if (!publica) {
-    const cliente = getClienteSession();
+    const cliente = await getClienteSession();
     const dona =
       !!cliente && !cliente.prov && cliente.customerId === foto.testimonial.customerId;
     if (!dona) {

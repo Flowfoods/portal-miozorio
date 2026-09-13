@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function SenhaPage() {
-  const s = getClienteSession();
+export default async function SenhaPage() {
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
 
   return (

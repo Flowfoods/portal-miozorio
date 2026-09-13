@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  * nesta fase — telefone é a identidade do login).
  */
 export default async function PerfilPage() {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha");
 

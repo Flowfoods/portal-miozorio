@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     },
   });
   clearChallenge();
-  iniciarSessaoCliente(cred.subjectId);
+  await iniciarSessaoCliente(cred.subjectId);
   await recordAuth("cliente", "passkey_login", null, metaFromHeaders(headers()));
   return NextResponse.json({ ok: true, redirect: "/clube/conta" });
 }

@@ -249,7 +249,7 @@ export async function redefinirSenhaComVale(
   ]);
 
   limparValeCookie();
-  iniciarSessaoCliente(c.id); // já entra logada
+  await iniciarSessaoCliente(c.id); // já entra logada
   await recordAuth("cliente", "recover_ok", maskPhone(c.phoneE164), meta);
   return { ok: true };
 }

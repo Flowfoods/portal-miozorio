@@ -27,7 +27,7 @@ const WA_REPETIR = (servico: string) =>
  * "Contar como foi" entra na F3 junto com o fluxo de Momentos.
  */
 export default async function HistoricoPage() {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha");
 

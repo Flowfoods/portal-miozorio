@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function EntrarPage() {
-  const s = getClienteSession();
+export default async function EntrarPage() {
+  const s = await getClienteSession();
   if (s) redirect(s.prov ? "/clube/conta/senha" : "/clube/conta");
 
   return (

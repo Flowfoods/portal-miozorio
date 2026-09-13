@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState } from "react-dom";
 import { entrarAction, type ClienteFormState } from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
@@ -34,7 +35,24 @@ export default function LoginForm() {
           No primeiro acesso, sua senha é o seu próprio telefone (só os números).
         </span>
       </label>
-      <FormError error={state?.error} />
+      <FormError error={state?.error}>
+        {state?.sugestao === "cadastrar" && (
+          <Link
+            href="/clube"
+            className="mt-1 inline-block font-medium underline underline-offset-4"
+          >
+            Entrar para o Clube
+          </Link>
+        )}
+        {state?.sugestao === "recuperar" && (
+          <Link
+            href="/clube/recuperar"
+            className="mt-1 inline-block font-medium underline underline-offset-4"
+          >
+            Pedir um código para a Mi
+          </Link>
+        )}
+      </FormError>
       <SubmitButton
         pendingLabel="Entrando…"
         className="w-full rounded-mi bg-mi-marrom-escuro px-6 py-3.5 font-corpo text-mi-branco transition-colors hover:bg-mi-marrom"
@@ -42,12 +60,18 @@ export default function LoginForm() {
         Entrar
       </SubmitButton>
       <p className="text-center font-corpo text-sm">
-        <a
+        <Link
           href="/clube/recuperar"
           className="text-mi-marrom underline underline-offset-4"
         >
           Esqueci minha senha
-        </a>
+        </Link>
+      </p>
+      <p className="text-center font-corpo text-sm text-mi-texto/80">
+        Ainda não tem conta?{" "}
+        <Link href="/clube" className="text-mi-marrom underline underline-offset-4">
+          Cadastrar
+        </Link>
       </p>
 
       <div className="flex items-center gap-3 text-xs text-mi-texto/40">

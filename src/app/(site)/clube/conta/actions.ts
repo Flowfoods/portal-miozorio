@@ -7,11 +7,16 @@ import {
   setClientePassword,
   logoutCliente,
   getClienteSession,
+  type LoginSugestao,
 } from "@/lib/cliente-auth";
 import { resgatarRecompensa } from "@/lib/clube-pontos";
 
 /** Estado dos forms do portal do cliente (erro inline). */
-export type ClienteFormState = { error: string } | null;
+export type ClienteFormState = {
+  error: string;
+  /** Próximo passo sugerido pelo motor — a UI mostra o link certo (B1/B5). */
+  sugestao?: LoginSugestao;
+} | null;
 
 export async function entrarAction(
   _prev: ClienteFormState,
@@ -21,7 +26,7 @@ export async function entrarAction(
     String(formData.get("phone") ?? ""),
     String(formData.get("password") ?? ""),
   );
-  if (!r.ok) return { error: r.message };
+  if (!r.ok) return { error: r.message, sugestao: r.sugestao };
   redirect(r.mustChange ? "/clube/conta/senha" : "/clube/conta");
 }
 
@@ -47,7 +52,7 @@ export async function sairAction(): Promise<void> {
  * (o form só traz o rewardId). O débito/saldo é transacional no motor.
  */
 export async function resgatarAction(formData: FormData): Promise<void> {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
   const rewardId = String(formData.get("rewardId") ?? "");
   if (rewardId) {

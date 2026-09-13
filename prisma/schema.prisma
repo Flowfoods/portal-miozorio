@@ -160,6 +160,9 @@ model Customer {
   clubFailedLogins       Int       @default(0) @map("club_failed_logins") // anti brute-force
   clubLockedUntil        DateTime? @map("club_locked_until") @db.Timestamptz
   clubConsentAt          DateTime? @map("club_consent_at") @db.Timestamptz // LGPD (1º acesso)
+  // B4 — invalidação de sessão da cliente: o cookie carrega esta versão; trocar
+  // a senha sobe o número e derruba as sessões abertas nos outros aparelhos.
+  clubTokenVersion       Int       @default(0) @map("club_token_version")
   createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
   // ── CRM (estende a ficha; observações privadas seguem em `notes`) ──
   tags             String[]    @default([]) // etiquetas livres da Mi (≠ MediaAsset.tags)

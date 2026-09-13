@@ -20,7 +20,7 @@ export async function sujeitoAtual(
     });
     return u ? { subjectId: u.id, userName: u.email } : null;
   }
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) return null;
   // Sessão PROVISÓRIA (senha ainda é o telefone) não cadastra passkey: senão
   // quem entrasse com o telefone de outra pessoa gravava uma credencial

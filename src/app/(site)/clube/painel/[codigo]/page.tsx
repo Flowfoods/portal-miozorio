@@ -47,7 +47,7 @@ export default async function PainelMembroPage({
   });
   if (!membro?.clubJoinedAt) notFound();
 
-  const sessao = getClienteSession();
+  const sessao = await getClienteSession();
   if (!sessao) redirect("/clube/entrar");
   // Código de outra pessoa: 404 em vez de 403 — não confirma que o código
   // existe (mesma disciplina de /momentos/foto/[id]).

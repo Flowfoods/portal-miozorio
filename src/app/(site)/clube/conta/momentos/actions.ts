@@ -37,7 +37,7 @@ export async function enviarMomentoAction(
   _prev: ClienteFormState,
   formData: FormData,
 ): Promise<ClienteFormState> {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
 
   const r = await enviarMomento({
@@ -58,7 +58,7 @@ export async function editarMomentoAction(
   _prev: ClienteFormState,
   formData: FormData,
 ): Promise<ClienteFormState> {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
 
   const r = await editarMomento({
@@ -76,7 +76,7 @@ export async function editarMomentoAction(
 }
 
 export async function excluirMomentoAction(formData: FormData): Promise<void> {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s || s.prov) redirect("/clube/entrar");
 
   await excluirMomento(s.customerId, String(formData.get("id") ?? ""));

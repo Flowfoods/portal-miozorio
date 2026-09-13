@@ -5,8 +5,8 @@ import RecuperarForm from "@/components/clube/RecuperarForm";
 
 export const dynamic = "force-dynamic";
 
-export default function RecuperarPage() {
-  const s = getClienteSession();
+export default async function RecuperarPage() {
+  const s = await getClienteSession();
   if (s) redirect(s.prov ? "/clube/conta/senha" : "/clube/conta");
 
   return (

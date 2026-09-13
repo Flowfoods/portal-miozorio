@@ -21,7 +21,7 @@ export default async function NovoMomentoPage({
 }: {
   searchParams: { atendimento?: string };
 }) {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha");
 

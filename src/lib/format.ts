@@ -15,9 +15,22 @@ export function formatDuration(min: number): string {
   return `${m}min`;
 }
 
-/** Máscara de telefone BR para o input: "(21) 97022-5231". */
+/**
+ * Máscara de telefone BR para o input: "(21) 97022-5231".
+ *
+ * B1 — o DDI sai ANTES do corte em 11 dígitos. Antes, "+55 21 99862-6845"
+ * virava "(55) 21998-6268" (o `slice` cortava os 2 últimos dígitos reais) e a
+ * cliente tentava entrar com um telefone que não existe — senha certa, login
+ * recusado. O autofill do Safari/Chrome preenche em formato internacional, daí
+ * o bug parecer "depender do navegador". Mesma regra do `normalizeE164BR` (R5).
+ */
 export function maskPhoneBR(value: string): string {
-  const d = value.replace(/\D/g, "").slice(0, 11);
+  const bruto = value.replace(/\D/g, "");
+  const semDdi =
+    bruto.startsWith("55") && (bruto.length === 12 || bruto.length === 13)
+      ? bruto.slice(2)
+      : bruto;
+  const d = semDdi.slice(0, 11);
   if (d.length <= 2) return d;
   if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
   if (d.length <= 10)

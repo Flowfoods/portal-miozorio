@@ -1,0 +1,59 @@
+import { normalizeE164BR } from "./phone";
+
+/**
+ * Fonte ÚNICA de normalização de credenciais (B1). Cadastro e login precisam
+ * chegar exatamente ao mesmo valor — antes, cada tela normalizava do seu jeito
+ * e a cliente que digitava o telefone num formato diferente do cadastrado
+ * simplesmente não entrava, com a senha certa.
+ *
+ * Regras:
+ *  - telefone → E.164 (+55DDDNNNNNNNNN), só dígitos (R5);
+ *  - e-mail   → minúsculas + trim;
+ *  - senha    → trim SÓ nas pontas. Nunca mexer no meio, nunca limitar
+ *               caracteres: teclado de celular acrescenta espaço ao aceitar a
+ *               sugestão do corretor e colar senha costuma trazer espaço junto.
+ */
+
+/** Mínimo de caracteres da senha da cliente (portal do Clube). */
+export const SENHA_MIN_CLIENTE = 6;
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** Só as pontas: o meio da senha é sagrado (pode ter espaço de propósito). */
+export function normalizarSenha(raw: string | null | undefined): string {
+  return (raw ?? "").trim();
+}
+
+/** E-mail canônico: minúsculas + trim (o servidor de e-mail não diferencia). */
+export function normalizarEmail(raw: string | null | undefined): string {
+  return (raw ?? "").trim().toLowerCase();
+}
+
+export function emailValido(raw: string): boolean {
+  return EMAIL_RE.test(normalizarEmail(raw));
+}
+
+/** Telefone canônico (E.164) ou null se não for um número brasileiro válido. */
+export function normalizarTelefone(raw: string | null | undefined): string | null {
+  return raw ? normalizeE164BR(raw) : null;
+}
+
+export type Identificador =
+  | { tipo: "telefone"; valor: string }
+  | { tipo: "email"; valor: string };
+
+/**
+ * Descobre se a pessoa digitou telefone ou e-mail e devolve o valor canônico.
+ * Serve os dois portais: a cliente entra por telefone, a Mi por e-mail, e a
+ * recuperação de senha aceita os dois sem a pessoa precisar saber qual é qual.
+ */
+export function identificarLogin(raw: string): Identificador | null {
+  const bruto = (raw ?? "").trim();
+  if (!bruto) return null;
+  if (bruto.includes("@")) {
+    const email = normalizarEmail(bruto);
+    return emailValido(email) ? { tipo: "email", valor: email } : null;
+  }
+  const tel = normalizarTelefone(bruto);
+  return tel ? { tipo: "telefone", valor: tel } : null;
+}

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const sid = ensureSid();
-  const session = getClienteSession();
+  const session = await getClienteSession();
   await track({
     tipo,
     sessionId: sid,

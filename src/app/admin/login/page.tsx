@@ -6,10 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import PasswordField from "@/components/auth/PasswordField";
 import PasskeyLoginButton from "@/components/auth/PasskeyLoginButton";
-
-// Mensagem ÚNICA (anti-enumeração): nunca diferencia "e-mail não existe" de
-// "senha errada". Tom da Mi.
-const ERRO_GENERICO = "E-mail ou senha incorretos. Tente novamente 🤎";
+import { mensagemLoginAdmin } from "@/lib/auth-mensagens";
 
 function LoginForm() {
   const router = useRouter();
@@ -36,7 +33,10 @@ function LoginForm() {
       router.push(search.get("callbackUrl") ?? "/admin");
       router.refresh();
     } else {
-      setError(ERRO_GENERICO);
+      // B1/B5 — o motor devolve um código ("MUITAS_TENTATIVAS",
+      // "CONTA_PAUSADA:12"); aqui ele vira frase. Erro de credencial continua
+      // com a mensagem única (não revela se o e-mail existe).
+      setError(mensagemLoginAdmin(res?.error));
       setShakeKey((k) => k + 1);
       setPassword("");
       senhaRef.current?.focus();

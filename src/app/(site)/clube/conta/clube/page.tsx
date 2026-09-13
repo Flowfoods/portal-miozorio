@@ -43,7 +43,7 @@ export default async function ClubeTabPage({
 }: {
   searchParams?: { erro?: string; resgate?: string };
 }) {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha");
 

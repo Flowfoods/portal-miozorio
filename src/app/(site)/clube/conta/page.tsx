@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
  * "como foi (e como continua) minha experiência com a Mi?"
  */
 export default async function InicioPage() {
-  const s = getClienteSession();
+  const s = await getClienteSession();
   if (!s) redirect("/clube/entrar");
   if (s.prov) redirect("/clube/conta/senha"); // troca obrigatória antes de tudo
 
