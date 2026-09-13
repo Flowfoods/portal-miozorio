@@ -15,7 +15,9 @@ marcar verde sem evidência é pior do que deixar em aberto.
 | `tsc --noEmit` | ✅ limpo | exit 0 |
 | `next lint` | ✅ sem avisos | exit 0 |
 | `next build` | ✅ exit 0 | produção compila |
-| Checklist funcional (3.2) | ⬜ **não executado** | exige banco + Evolution |
+| `npm run test:db` | ✅ **18/18** contra Postgres 16 real | suíte de integração |
+| Migrations aplicadas | ✅ as 6, num banco limpo | `prisma migrate deploy` |
+| Checklist funcional (3.2) | ⬜ **não executado** | exige Evolution conectada |
 | Caso Carla (3.3) | ⬜ **não executado** | idem |
 
 > `prettier --check` acusa 13 arquivos — **já acusava no master antes desta
@@ -38,16 +40,24 @@ marcar verde sem evidência é pior do que deixar em aberto.
 | `tests/fase3-regras.test.ts` | 8 | R1 no backend, arquivado fora de circulação, tamanho/foto obrigatórios, LGPD |
 | `tests/pagamento.test.ts` | 12 | A7: gateway ausente = nada muda; assinatura do webhook, incluindo `data.id` adulterado |
 
-### Itens de 3.1 que exigem banco e ficaram fora
+### Suíte de integração — o que era "não dá para testar" e passou a dar
 
-Estes precisam de Postgres com a `EXCLUDE USING gist` ativa — mockar o Prisma
-testaria o mock, não a trava, e daria uma falsa sensação de cobertura:
+Estes itens tinham ficado de fora por exigirem Postgres com a `EXCLUDE USING
+gist` ativa. Um Postgres 16 local resolveu: agora são 18 testes em
+`tests/integration/`, rodando com `npm run test:db` e no CI.
 
-- `expirado → confirmado` via reativação **com o slot já ocupado** (a garantia é
-  a constraint, não o código).
-- Ajuste de tamanho que estende a duração e colide com o próximo atendimento.
-- Duplo submit real gerando um único registro de serviço.
-- Soft delete escondendo da listagem e preservando agendamentos.
+| Arquivo | Testes | Cobre |
+|---|---|---|
+| `no-overlap.itest.ts` | 8 | **R2**: sobreposição total e parcial recusada, `pending` segura o horário, encostar sem cruzar passa, cancelado/concluído liberam |
+| `agenda-fluxos.itest.ts` | 10 | **A5**: reativação recusada com o slot ocupado, sem deixar o booking pela metade · **A3**: ajuste que estende a duração e colide · **A1**: arquivado some da listagem e o histórico fica |
+
+**A R2 tinha ZERO cobertura automatizada** até aqui — é a regra mais crítica do
+sistema e mora numa constraint, não no código. Dois testes também provam
+empiricamente o **R21**: a constraint é parcial, e um status fora do recorte
+(`completed`, usado como prova) realmente **não** é protegido.
+
+O que segue exigindo ambiente com Evolution: duplo submit real pela interface e
+o checklist funcional abaixo.
 
 ## 3.2 / 3.3 — Roteiro para rodar em staging
 
@@ -127,6 +137,24 @@ Idempotência em dois níveis: `X-Idempotency-Key` por booking no provedor (a
 cliente recarregar a tela não abre um PIX novo) e `updateMany` condicional em
 `registrarSinalPago` (webhook repetido não confirma nem notifica duas vezes).
 
+## CI — o buraco que não existia antes
+
+O repositório **não tinha CI nenhuma** (`.github/workflows/` não existia): os
+testes, o typecheck e o build só rodavam se quem commitava lembrasse. O husky
+cobre lint+typecheck no pre-commit local, mas um `--no-verify` ou um commit pela
+interface do GitHub passava direto, e nada re-executava a suíte no PR.
+
+`.github/workflows/ci.yml` roda em todo PR e push para `master`:
+
+| Job | O que faz |
+|---|---|
+| `verificacao` | `npm ci` → `prisma generate` → lint → typecheck → **360 testes** → build de produção |
+| `integracao` | sobe **postgres:16** (mesma versão de produção), aplica as **migrations de verdade** e roda os **18 testes de integração** |
+
+O job de integração vale por si mesmo mesmo antes dos testes: **uma migration
+com erro de SQL só aparecia no boot do container em produção.** Agora aparece no
+PR.
+
 ## Migrations criadas (aplicar é gate do Rodolfo)
 
 | Migration | O que faz | Risco |
@@ -139,6 +167,12 @@ cliente recarregar a tela não abre um PIX novo) e `updateMany` condicional em
 | `20260913060000_a7_pagamento_sinal` | `deposit_provider` + `deposit_payment_id` + índices | Aditiva |
 
 Todas aditivas (R11). Nenhuma apaga dado, nenhuma altera coluna existente.
+
+**As 6 foram aplicadas num Postgres 16 limpo nesta sessão** — não são mais SQL
+não executado. Verificado depois: a `no_overlap` continua parcial e intacta, o
+enum `CancelledBy` existe com os 3 valores, `service_variants` nasceu com o
+CHECK de valores válidos, e a migration do A7 semeou `deposit_percent=20`,
+`deposit_hold_hours=24` e `deposit_cutoff_hours=2`.
 
 ## Passos manuais depois do deploy
 

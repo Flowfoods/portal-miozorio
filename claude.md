@@ -111,7 +111,17 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 
 ## Scripts
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
-(husky pre-commit roda lint+typecheck; `npm test` = **360 testes**, 39 arquivos)
+(husky pre-commit roda lint+typecheck)
+- `npm test` — **360 testes**, sem banco. Roda em qualquer lugar.
+- `npm run test:db` — **18 testes de integração** contra Postgres de verdade
+  (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
+  numa constraint e não no código: mockar o Prisma testaria o mock.
+
+**CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
+(lint, typecheck, 360 testes, build) + job `integracao` (postgres:16, aplica as
+migrations de verdade e roda os 18). O repo não tinha CI até 13/09/2026 — um
+`--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
+container em produção.
 
 **Limpeza de serviços duplicados:** `scripts/dedup-servicos.ts` — DRY-RUN por
 padrão (só relata); `--aplicar` executa. Elege o sobrevivente por mais

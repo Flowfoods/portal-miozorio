@@ -1,0 +1,100 @@
+name: CI
+
+# O repo não tinha CI nenhuma: os testes, o typecheck e o build só rodavam se
+# quem commitava lembrasse de rodar. O husky cobre lint+typecheck no pre-commit
+# local, mas nada re-executava a suíte no PR — um `git push --no-verify` ou um
+# commit pela interface do GitHub passava direto.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# PR novo cancela a execução anterior do mesmo branch — não adianta gastar
+# runner terminando o check de um commit que já foi substituído.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificacao:
+    name: Lint, typecheck, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # O Prisma exige a env para gerar o client e o Next a lê no build. É um
+      # valor de fachada: este job não fala com banco nenhum.
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/naousado"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # mesma major do Dockerfile
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar o Prisma Client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes (sem banco)
+        run: npm test
+
+      - name: Build de produção
+        run: npm run build
+
+  integracao:
+    name: Testes de integração (Postgres real)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # A trava anti-double-booking (R2) é uma constraint EXCLUDE USING gist: ela
+    # mora no banco, não no código. Mockar o Prisma testaria o mock. Este job
+    # existe para que a regra mais crítica do sistema tenha cobertura de verdade.
+    services:
+      postgres:
+        image: postgres:16 # mesma versão pinada em produção
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: miozorio_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/miozorio_test"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar o Prisma Client
+        run: npx prisma generate
+
+      # Aplica as migrations de verdade. Vale por si: uma migration com erro de
+      # SQL só aparecia no boot do container em produção.
+      - name: Aplicar migrations
+        run: npx prisma migrate deploy
+
+      - name: Testes de integração
+        run: npm run test:db
