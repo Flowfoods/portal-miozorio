@@ -18,7 +18,10 @@ import { ensureClubMember } from "./clube";
 import { getAvailability } from "./availability";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 import { notificarMi } from "./notify-mi";
-import { notificarClienteConfirmacao } from "./notify-cliente";
+import {
+  notificarClienteConfirmacao,
+  notificarClienteConcluido,
+} from "./notify-cliente";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -812,6 +815,12 @@ export async function markCompleted(
   } catch (e) {
     console.error("financeiro: falha ao reconhecer receita do booking", e);
   }
+
+  // A10 — conta pra cliente o que ela ganhou. Os pontos já eram creditados em
+  // silêncio: ela ganhava e não ficava sabendo, e o Clube não gerava o retorno
+  // que justifica existir. DEPOIS do crédito, para o saldo já incluir o que
+  // entrou agora.
+  await notificarClienteConcluido(id);
 
   return { ok: true, status: "completed" };
 }

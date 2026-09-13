@@ -1,5 +1,8 @@
 import { prisma } from "./prisma";
 import { dispatchEvent } from "./notify";
+import { getSiteContent, aplicarTemplate } from "./content";
+import { sendTransactional } from "./whatsapp/service";
+import { saldoDoCliente } from "./clube-pontos";
 import { formatBRL } from "./format";
 
 /**
@@ -77,5 +80,71 @@ export async function notificarClienteConfirmacao(
     });
   } catch (e) {
     console.error("notificarClienteConfirmacao: falha em", bookingId, e);
+  }
+}
+
+/**
+ * A10 — mensagem logo após o atendimento, com o extrato do Clube.
+ *
+ * O portal já creditava os pontos em silêncio (`creditarPontosServico`): a
+ * cliente ganhava e não ficava sabendo, então o Clube não gerava o retorno que
+ * justifica existir. `msg.pos_atendimento` (D+1) é outra coisa e continua como
+ * está — pede depoimento no dia seguinte.
+ *
+ * Chamada DEPOIS do crédito, então `pontosAgora` já inclui o que entrou; o
+ * saldo anterior é a subtração. Best-effort e idempotente por booking.
+ */
+export async function notificarClienteConcluido(
+  bookingId: string,
+): Promise<void> {
+  try {
+    const b = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        customerId: true,
+        customer: {
+          select: { name: true, phoneE164: true, clubJoinedAt: true },
+        },
+        service: { select: { clubPoints: true } },
+      },
+    });
+    if (!b) return;
+
+    const content = await getSiteContent();
+    const linkClube = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br"}/clube`;
+    const primeiroNome = b.customer.name.trim().split(/\s+/)[0] ?? b.customer.name;
+    const membro = b.customer.clubJoinedAt != null;
+
+    let texto: string;
+    if (!membro) {
+      texto = aplicarTemplate(
+        content["msg.atendimento_concluido_nao_membro"] ?? "",
+        { nome: primeiroNome, linkClube },
+      );
+    } else {
+      const pontosAgora = await saldoDoCliente(b.customerId);
+      // `creditarPontosServico` só credita se o serviço vale pontos e ela é
+      // membro — as mesmas condições daqui, então a subtração bate.
+      const pontosGanhos = b.service.clubPoints > 0 ? b.service.clubPoints : 0;
+      texto = aplicarTemplate(content["msg.atendimento_concluido"] ?? "", {
+        nome: primeiroNome,
+        pontosAntes: String(pontosAgora - pontosGanhos),
+        pontosGanhos: String(pontosGanhos),
+        pontosAgora: String(pontosAgora),
+        linkClube,
+      });
+    }
+
+    if (!texto.trim()) return;
+
+    await sendTransactional({
+      telefone: b.customer.phoneE164.replace(/\D/g, ""),
+      texto,
+      dedupeKey: `atendimento_concluido:${bookingId}`,
+      templateKey: "atendimento_concluido",
+      clienteId: b.customerId,
+    });
+  } catch (e) {
+    console.error("notificarClienteConcluido: falha em", bookingId, e);
   }
 }

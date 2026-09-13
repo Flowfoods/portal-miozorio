@@ -409,6 +409,26 @@ export const CONTENT_FIELDS: ContentField[] = [
     ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia seguinte, convida a deixar um depoimento na Área da Cliente.",
   },
   {
+    key: "msg.atendimento_concluido",
+    label: "WhatsApp · logo após o atendimento (com pontos do Clube)",
+    default:
+      "{nome}, foi um prazer te atender hoje 💛\n\nVocê ganhou {pontosGanhos} pontos no Clube da Mi neste atendimento.\nSaldo anterior: {pontosAntes} · Agora você tem {pontosAgora} pontos.\n\nNo Clube da Mi cada atendimento vira ponto, e indicar uma amiga também pontua. Quando juntar o suficiente, você troca por mimos e cortesias comigo. Dá pra ver seu saldo e o que dá pra resgatar aqui: {linkClube}\n\nSe você gostou, me ajuda demais deixar uma avaliação no Google 🙏\nE me avisa se eu posso postar a foto do resultado — só publico com a sua autorização.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {pontosAntes}, {pontosGanhos}, {pontosAgora}, {linkClube}. Enviada quando você marca o atendimento como concluído.",
+  },
+  {
+    key: "msg.atendimento_concluido_nao_membro",
+    label: "WhatsApp · logo após o atendimento (cliente fora do Clube)",
+    default:
+      "{nome}, foi um prazer te atender hoje 💛\n\nVocê já pode fazer parte do Clube da Mi: cada atendimento vira ponto, indicar uma amiga também pontua, e os pontos viram mimos e cortesias comigo. É rapidinho entrar: {linkClube}\n\nSe você gostou, me ajuda demais deixar uma avaliação no Google 🙏\nE me avisa se eu posso postar a foto do resultado — só publico com a sua autorização.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {linkClube}. Usada quando a cliente ainda não é membro do Clube.",
+  },
+  {
     key: "msg.reconexao",
     label: "WhatsApp · reconexão (sem visita há mais de 1 ano)",
     default:
