@@ -324,7 +324,7 @@ function Rodape({
         Lembrou a senha?{" "}
         <Link
           href={entrarHref}
-          className="text-mi-marrom underline underline-offset-4"
+          className="text-mi-marrom-700 underline underline-offset-4"
         >
           Entrar
         </Link>
@@ -334,7 +334,7 @@ function Rodape({
           Ainda não tem conta?{" "}
           <Link
             href={cadastrarHref}
-            className="text-mi-marrom underline underline-offset-4"
+            className="text-mi-marrom-700 underline underline-offset-4"
           >
             Cadastrar
           </Link>

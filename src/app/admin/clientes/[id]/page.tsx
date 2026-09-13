@@ -750,7 +750,7 @@ export default async function FichaClientePage({
                     </span>
                   )}
                 </span>
-                <StatusPill status={b.status} />
+                <StatusPill status={b.status} cancelledBy={b.cancelledBy} />
               </Link>
             );
           })}

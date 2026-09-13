@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
+import { chaveServico } from "@/lib/servico-nome";
 import { ensureClubMember } from "@/lib/clube";
 import { criarCliente } from "@/lib/cliente";
 import {
@@ -16,6 +17,7 @@ import {
   marcarVoucherEntregue,
 } from "@/lib/clube-pontos";
 import { dispatchEvent, buildEventMessage } from "@/lib/notify";
+import { notificarClienteAjusteTamanho } from "@/lib/notify-cliente";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
 import {
   getSettings,
@@ -28,6 +30,8 @@ import type { CodigoRecuperacaoState } from "@/lib/recuperacao-tipos";
 import {
   confirmBooking,
   cancelBooking,
+  reativarBooking,
+  validarTamanho,
   markNoShow,
   markCompleted,
   createManualBooking,
@@ -70,6 +74,45 @@ export async function adminCancelBooking(id: string): Promise<void> {
   const r = await cancelBooking(id, "business");
   refreshAgenda();
   if (!r.ok) fail(r.message);
+}
+
+/**
+ * A5 — traz de volta um agendamento expirado ou cancelado. Antes, uma vez
+ * encerrado, não havia caminho de volta: a Mi via o horário livre, a cliente na
+ * mão, e o painel só oferecia "fazer outro encaixe".
+ */
+export async function adminReativarBooking(id: string): Promise<void> {
+  await requireAdmin();
+  const r = await reativarBooking(id);
+  refreshAgenda();
+  if (!r.ok) fail(r.message);
+}
+
+/**
+ * A3 — a Mi confere a foto e valida o tamanho. `variantId` vazio = aprova o que
+ * a cliente escolheu; preenchido = ajusta, recalcula preço/duração e avisa ela
+ * do valor novo (senão a cliente só descobre na hora do atendimento).
+ */
+export async function adminValidarTamanho(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const novaVariante = String(formData.get("variantId") ?? "").trim() || null;
+  const motivo = String(formData.get("motivo") ?? "").trim() || undefined;
+
+  const antes = await prisma.booking.findUnique({
+    where: { id },
+    select: { variantId: true, priceCents: true },
+  });
+
+  const r = await validarTamanho(id, novaVariante, motivo);
+  refreshAgenda();
+  if (!r.ok) fail(r.message);
+
+  const mudou =
+    antes != null &&
+    (antes.variantId !== (novaVariante ?? antes.variantId) ||
+      antes.priceCents !== r.priceCents);
+  if (mudou) await notificarClienteAjusteTamanho(id);
 }
 
 export async function adminMarkNoShow(id: string): Promise<void> {
@@ -412,6 +455,10 @@ export async function adminUpdateService(formData: FormData): Promise<void> {
   const lockedOffline =
     service.category === "noiva" || service.category === "debutante";
 
+  const pendingPrice = formData.get("pendingPrice") === "on";
+  const requiresDeposit = formData.get("requiresDeposit") === "on";
+  assertSinalCoerente(pendingPrice, requiresDeposit);
+
   await prisma.service.update({
     where: { id },
     data: {
@@ -424,15 +471,29 @@ export async function adminUpdateService(formData: FormData): Promise<void> {
         Math.trunc(Number(formData.get("clubPoints")) || 0),
       ),
       active: formData.get("active") === "on",
-      pendingPrice: formData.get("pendingPrice") === "on",
+      pendingPrice,
       bookableOnline: lockedOffline
         ? false
         : formData.get("bookableOnline") === "on",
-      requiresDeposit: formData.get("requiresDeposit") === "on",
+      requiresDeposit,
     },
   });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+}
+
+/**
+ * A7 — "preço a confirmar" + "exige sinal" é combinação impossível: o sinal é
+ * uma porcentagem do valor, e não existe valor ainda. Antes o cadastro aceitava
+ * as duas juntas e o serviço ficava travado — a cliente reservava e nunca
+ * conseguia fechar.
+ */
+function assertSinalCoerente(pendingPrice: boolean, requiresDeposit: boolean) {
+  if (pendingPrice && requiresDeposit) {
+    fail(
+      "Um serviço com preço a confirmar não pode exigir sinal — o sinal é uma % do valor. Defina o preço ou desmarque o sinal.",
+    );
+  }
 }
 
 /** "Maquiagem p/ Festa" → "maquiagem-p-festa" (único: sufixo -2, -3…). */
@@ -472,6 +533,22 @@ export async function adminCreateService(formData: FormData): Promise<void> {
     fail("Categoria inválida.");
   }
 
+  // A6 — trava de duplicado no BACKEND. O cadastro não checava nome nenhum: só
+  // o `code` era unificado, com sufixo -2, -3. Cada clique repetido no botão
+  // (que não travava) virava um registro novo — foi assim que "Buço · 10min"
+  // acabou três vezes no banco de produção. A checagem aqui protege também o
+  // duplo submit, que nenhum estado de loading no navegador cobre sozinho.
+  const chave = chaveServico(name);
+  const irmaos = await prisma.service.findMany({
+    where: { category },
+    select: { name: true },
+  });
+  if (irmaos.some((s) => chaveServico(s.name) === chave)) {
+    fail(
+      `Já existe um serviço chamado "${name}" em ${category}. Edite o que já existe em vez de criar outro.`,
+    );
+  }
+
   const priceCents = reaisToCents(formData.get("price"));
   const priceHomeCents = reaisToCents(formData.get("priceHome"));
   const durationMin = Number(formData.get("durationMin"));
@@ -487,6 +564,9 @@ export async function adminCreateService(formData: FormData): Promise<void> {
   // R1: noiva/debutante nascem (e permanecem) não-agendáveis online.
   const lockedOffline = category === "noiva" || category === "debutante";
 
+  const requiresDeposit = formData.get("requiresDeposit") === "on";
+  assertSinalCoerente(pendingPrice, requiresDeposit);
+
   await prisma.service.create({
     data: {
       code: await uniqueServiceCode(name),
@@ -500,7 +580,7 @@ export async function adminCreateService(formData: FormData): Promise<void> {
         ? false
         : formData.get("bookableOnline") === "on",
       pendingPrice,
-      requiresDeposit: formData.get("requiresDeposit") === "on",
+      requiresDeposit,
       isCourse: category === "curso",
       clubPoints: Math.max(
         0,
@@ -511,6 +591,9 @@ export async function adminCreateService(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+  // A6 — o caminho feliz precisa falar. Antes só o erro falava (throw →
+  // error.tsx) e o sucesso era uma tela que piscava.
+  redirect(`/admin/servicos?ok=${encodeURIComponent(`Serviço "${name}" criado`)}`);
 }
 
 export async function adminDeleteService(id: string): Promise<void> {
@@ -526,19 +609,36 @@ export async function adminDeleteService(id: string): Promise<void> {
   });
   if (!service) fail("Serviço não encontrado.");
 
+  // A1 — o botão agora existe em TODO card; o que muda é o que ele faz.
+  // Antes a action recusava quando havia histórico, e o botão nem aparecia:
+  // um serviço que a Mi parou de oferecer ficava preso no painel e continuava
+  // sendo oferecido para a cliente.
   const refs =
     service._count.bookings +
     service._count.eventSessions +
     service._count.waitlist;
+
   if (refs > 0) {
-    fail(
-      "Esse serviço já tem atendimentos no histórico — desative em vez de excluir.",
-    );
+    // Com histórico: arquiva. Some do admin, do encaixe e do site; os
+    // atendimentos antigos seguem visíveis na ficha da cliente e no financeiro.
+    await prisma.service.update({
+      where: { id },
+      data: { archivedAt: new Date(), active: false },
+    });
+  } else {
+    await prisma.service.delete({ where: { id } });
   }
 
-  await prisma.service.delete({ where: { id } });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+  revalidatePath("/dia-a-dia");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(
+      refs > 0
+        ? `Serviço "${service.name}" arquivado — o histórico foi preservado`
+        : `Serviço "${service.name}" excluído`,
+    )}`,
+  );
 }
 
 // ── Configurações do negócio (R3) ───────────────────────────────────────────
@@ -1566,4 +1666,69 @@ export async function adminSetContent(formData: FormData): Promise<void> {
   }
   invalidateContentCache();
   revalidatePath("/", "layout"); // textos aparecem em todas as páginas
+}
+
+// ── A3: variações por tamanho ───────────────────────────────────────────────
+
+/**
+ * Cadastra uma variação ("cabelo curto", "cabelo longo"…). A EXISTÊNCIA de
+ * variações ativas é o que liga o fluxo de tamanho — não há flag separada, e
+ * por isso um serviço sem variação se comporta exatamente como antes.
+ */
+export async function adminAddVariante(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const serviceId = String(formData.get("serviceId") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (nome.length < 2) fail("Dê um nome ao tamanho (ex.: cabelo curto).");
+
+  const priceCents = reaisToCents(formData.get("price"));
+  if (priceCents == null) fail("Informe o preço desse tamanho.");
+  const priceHomeCents = reaisToCents(formData.get("priceHome"));
+
+  const duracaoBruta = Number(formData.get("durationMin"));
+  const durationMin =
+    Number.isInteger(duracaoBruta) && duracaoBruta > 0 ? duracaoBruta : null;
+
+  const servico = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: { id: true, variants: { select: { nome: true, sort: true } } },
+  });
+  if (!servico) fail("Serviço não encontrado.");
+  if (servico.variants.some((v) => chaveServico(v.nome) === chaveServico(nome))) {
+    fail(`Já existe um tamanho chamado "${nome}" nesse serviço.`);
+  }
+
+  await prisma.serviceVariant.create({
+    data: {
+      serviceId,
+      nome,
+      priceCents,
+      priceHomeCents,
+      durationMin,
+      sort: servico.variants.length,
+    },
+  });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(`Tamanho "${nome}" adicionado`)}`,
+  );
+}
+
+/**
+ * Desativa uma variação. NÃO apaga: agendamentos antigos apontam para ela e
+ * precisam continuar mostrando qual tamanho foi feito.
+ */
+export async function adminRemoverVariante(id: string): Promise<void> {
+  await requireAdmin();
+  const v = await prisma.serviceVariant.update({
+    where: { id },
+    data: { active: false },
+    select: { nome: true },
+  });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(`Tamanho "${v.nome}" desativado`)}`,
+  );
 }

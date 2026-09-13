@@ -54,10 +54,14 @@ export async function buildEventMessage(
           timeStyle: "short",
         })
       : "";
+    // A9 — local e valor entram na confirmação: a cliente não deveria precisar
+    // perguntar "é no estúdio?" e "quanto fica mesmo?" depois de confirmar.
     return aplicarTemplate(content["msg.booking_confirmation"] ?? "", {
       nome,
       servico: String(d.servico ?? ""),
       data,
+      local: String(d.local ?? ""),
+      valor: String(d.valor ?? ""),
     });
   }
   // Momentos (F3 — Área da Cliente)

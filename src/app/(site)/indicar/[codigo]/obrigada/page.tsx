@@ -29,7 +29,7 @@ export default function ObrigadaPage() {
         </a>
         <Link
           href="/agendar"
-          className="inline-flex min-h-[48px] items-center justify-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom transition-colors hover:bg-mi-branco"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom-700 transition-colors hover:bg-mi-branco"
         >
           Ver horários disponíveis
         </Link>

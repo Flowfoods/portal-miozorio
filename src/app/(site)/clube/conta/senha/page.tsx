@@ -38,7 +38,7 @@ export default async function SenhaPage({
             Mudou de ideia?{" "}
             <Link
               href="/clube/conta"
-              className="text-mi-marrom underline underline-offset-4"
+              className="text-mi-marrom-700 underline underline-offset-4"
             >
               Voltar para a minha conta
             </Link>

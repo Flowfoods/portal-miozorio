@@ -339,10 +339,11 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.booking_confirmation",
     label: "WhatsApp · confirmação de horário",
     default:
-      "Oi, {nome}!\n\nSeu horário de {servico} está confirmado para {data}. Qualquer coisa, é só me chamar por aqui. Até logo!",
+      "Oi, {nome}!\n\nSeu horário de {servico} está confirmado para {data} 💛\n\n{local}\n{valor}\n\nPra render melhor: venha com as referências do que você quer e, se precisar desmarcar, me avise com antecedência.\n\nQualquer coisa é só me chamar por aqui. Até logo!",
     multiline: true,
     grupo: "Mensagens de WhatsApp",
-    ajuda: "Disponível: {nome}, {servico}, {data} (data e hora).",
+    ajuda:
+      "Disponível: {nome}, {servico}, {data} (data e hora), {local} (estúdio com endereço ou domicílio) e {valor}.",
   },
   {
     key: "msg.momento_pendente",
@@ -406,6 +407,36 @@ export const CONTENT_FIELDS: ContentField[] = [
     multiline: true,
     grupo: "Mensagens de WhatsApp",
     ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia seguinte, convida a deixar um depoimento na Área da Cliente.",
+  },
+  {
+    key: "msg.tamanho_ajustado",
+    label: "WhatsApp · você ajustou o tamanho (valor mudou)",
+    default:
+      "Oi, {nome}!\n\nVi a sua foto e ajustei o tamanho para {tamanho} — assim eu reservo o tempo certinho para o seu cabelo.\n\nO valor fica em {valor}. Está tudo certo para você? Qualquer coisa é só me chamar por aqui 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {tamanho}, {valor}. Enviada quando você ajusta o tamanho escolhido pela cliente.",
+  },
+  {
+    key: "msg.atendimento_concluido",
+    label: "WhatsApp · logo após o atendimento (com pontos do Clube)",
+    default:
+      "{nome}, foi um prazer te atender hoje 💛\n\nVocê ganhou {pontosGanhos} pontos no Clube da Mi neste atendimento.\nSaldo anterior: {pontosAntes} · Agora você tem {pontosAgora} pontos.\n\nNo Clube da Mi cada atendimento vira ponto, e indicar uma amiga também pontua. Quando juntar o suficiente, você troca por mimos e cortesias comigo. Dá pra ver seu saldo e o que dá pra resgatar aqui: {linkClube}\n\nSe você gostou, me ajuda demais deixar uma avaliação no Google 🙏\nE me avisa se eu posso postar a foto do resultado — só publico com a sua autorização.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {pontosAntes}, {pontosGanhos}, {pontosAgora}, {linkClube}. Enviada quando você marca o atendimento como concluído.",
+  },
+  {
+    key: "msg.atendimento_concluido_nao_membro",
+    label: "WhatsApp · logo após o atendimento (cliente fora do Clube)",
+    default:
+      "{nome}, foi um prazer te atender hoje 💛\n\nVocê já pode fazer parte do Clube da Mi: cada atendimento vira ponto, indicar uma amiga também pontua, e os pontos viram mimos e cortesias comigo. É rapidinho entrar: {linkClube}\n\nSe você gostou, me ajuda demais deixar uma avaliação no Google 🙏\nE me avisa se eu posso postar a foto do resultado — só publico com a sua autorização.",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {linkClube}. Usada quando a cliente ainda não é membro do Clube.",
   },
   {
     key: "msg.reconexao",

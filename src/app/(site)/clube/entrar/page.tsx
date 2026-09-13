@@ -33,7 +33,7 @@ export default async function EntrarPage({
           Ainda não é cliente?{" "}
           <Link
             href="/agendar"
-            className="text-mi-marrom underline underline-offset-4"
+            className="text-mi-marrom-700 underline underline-offset-4"
           >
             Agende seu horário
           </Link>

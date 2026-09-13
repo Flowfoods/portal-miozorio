@@ -15,6 +15,13 @@ export const availabilityQuery = z.object({
   durationMin: z.coerce.number().int().min(1).max(720).optional(),
 });
 
+/**
+ * Teto do base64 da foto (~4MB de imagem). O navegador reduz para 1600px JPEG
+ * antes de enviar, então uma foto real fica muito abaixo disto; o teto existe
+ * para o POST forjado.
+ */
+const FOTO_BASE64_MAX = 5_600_000;
+
 export const createBookingBody = z.object({
   serviceId: z.string().regex(UUID_RE),
   date: z.string().regex(DATE_RE),
@@ -33,6 +40,13 @@ export const createBookingBody = z.object({
   // Origem do agendamento público. "area_cliente" = veio da retenção da Área
   // da Cliente (habilita o bônus de reagendamento na conclusão — F5).
   source: z.enum(["web", "area_cliente"]).default("web"),
+  // A3 — tamanho escolhido e foto para a Mi conferir.
+  variantId: z.string().regex(UUID_RE).optional(),
+  // A foto vem NO corpo do agendamento, em base64, e não por um endpoint de
+  // upload público: assim ela herda as proteções que já existem aqui (honeypot,
+  // teto de reservas em aberto por telefone) em vez de abrir uma porta nova de
+  // escrita anônima. O navegador já reduz antes de enviar.
+  fotoBase64: z.string().max(FOTO_BASE64_MAX).optional(),
   // Honeypot: campo invisível no formulário. Humano nunca preenche — mesmo
   // padrão já usado em joinClub. Preenchido = bot.
   site: z.string().optional(),

@@ -105,7 +105,7 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(
             onClick={() => setShow((s) => !s)}
             aria-label={show ? "Ocultar senha" : "Mostrar senha"}
             aria-pressed={show}
-            className="absolute right-0 top-0 flex h-full w-12 items-center justify-center text-mi-marrom/70 transition-colors hover:text-mi-marrom"
+            className="absolute right-0 top-0 flex h-full w-12 items-center justify-center text-mi-marrom-700 transition-colors hover:text-mi-marrom-900"
           >
             {show ? (
               // olho cortado (ocultar)

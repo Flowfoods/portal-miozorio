@@ -46,6 +46,16 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 - **R13** Zero jargão na UI da Mi ("horário", nunca "slot"/"booking"/"lead").
 - **R17** Toda transição de status via `booking-service` → `booking_events` (admin grava `actor: 'admin'`).
 - **R19** Mobile-first real: validar telas novas em 390px antes do DoD (a Mi opera pelo celular).
+- **R21 ⚠️ NUNCA adicionar valor ao enum `BookingStatus`.** A trava
+  anti-double-booking e o índice de disponibilidade são PARCIAIS:
+  `WHERE status IN ('pending','confirmed')`. Um status novo cai **fora** dos
+  dois — o horário deixa de ser protegido contra sobreposição e some das
+  consultas de disponibilidade, em silêncio. Estado novo vira **coluna/flag**
+  com o booking seguindo em `pending` (ver `variantId`+`sizeApprovedAt` e
+  `cancelledBy`), e o rótulo da tela é derivado.
+- **R22** Sinal: o portal só cobra se houver gateway configurado. Sem
+  `PAGAMENTO_PROVIDER`, `gatewayAtivo()` devolve null e o fluxo é o do WhatsApp.
+  Nunca mostrar botão de pagar sem gateway ativo.
 
 ## Arquitetura (mapa rápido)
 
@@ -91,11 +101,53 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 2. Dias/horários da linha dia a dia (janela própria em dias de semana).
 3. Pacote de fotos (hero, retrato, portfólio, estúdio) + logo vetorial.
 4. Depoimentos reais com autorização de nome.
-5. Gateway PIX (MP vs Efí) para o futuro F7.
-6. Pendências de auth em `docs/AUTH-B1-B5.md` (validade do código, contato de
-   emergência, tempo de sessão, quanto a mensagem de login pode revelar).
+5. Pendências de auth em `docs/AUTH-B1-B5.md` (validade do código, tempo de
+   sessão). O antigo item "e-mail de envio para o reset M13" saiu da lista:
+   o reset por e-mail deixou de existir (B2 — o código vai pelo WhatsApp da
+   Mi). O Resend segue só para o aviso "sua senha foi alterada".
+6. **Gateway PIX (MP × Efí):** o adaptador do Mercado Pago está pronto e
+   DESLIGADO (R22). Falta a decisão + credenciais; Efí = escrever
+   `src/lib/pagamento/efi.ts` com a mesma interface.
+7. **Quais serviços exigem sinal** — a migration desligou todos; a regra de
+   reincidência (3 cancelamentos) segue automática e independe da flag.
+
+## Frente de agendamento (2026-09-13) — A1–A11
+
+Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
+`docs/agenda/FASE3-VERIFICACAO.md` · deploy: `docs/agenda/RUNBOOK-DEPLOY.md`.
+
+- **Notificações:** `notify-mi.ts` (para a Mi) e `notify-cliente.ts` (para a
+  cliente) — ambas best-effort, idempotentes por dedupeKey, pelo outbox.
+  WhatsApp que não sai NUNCA derruba a criação de um agendamento.
+- **Pagamento:** porta em `lib/pagamento/tipos.ts`, adaptador MP em
+  `mercadopago.ts`. Trocar de provedor = arquivo novo + env (R22).
+- **Serviços:** `archivedAt` (some de tudo, histórico preservado) ≠ `active`
+  (liga/desliga, fica no admin). Nome duplicado barrado no backend por
+  `chaveServico()`.
+- **Crons novos:** `/api/cron/conciliar-sinais` (10 min; no-op sem gateway).
+- **Envs novas:** `PAGAMENTO_PROVIDER`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`
+  (ver `.env.example`). Sem elas, comportamento idêntico ao de antes.
 
 ## Scripts
+
+`npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
+(husky pre-commit roda lint+typecheck)
+
+- `npm test` — **474 testes**, sem banco. Roda em qualquer lugar.
+- `npm run test:db` — **18 testes de integração** contra Postgres de verdade
+  (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
+  numa constraint e não no código: mockar o Prisma testaria o mock.
+
+**CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
+(lint, typecheck, 474 testes, build) + job `integracao` (postgres:16, aplica as
+migrations de verdade e roda os 18). O repo não tinha CI até 13/09/2026 — um
+`--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
+container em produção.
+
+**Limpeza de serviços duplicados:** `scripts/dedup-servicos.ts` — DRY-RUN por
+padrão (só relata); `--aplicar` executa. Elege o sobrevivente por mais
+histórico, re-aponta bookings/itens/turmas/fila e **arquiva** os demais (nunca
+apaga). Idempotente.
 
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck; suíte completa = `npm test`)

@@ -73,7 +73,7 @@ export default function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       <p className="text-center font-corpo text-sm">
         <Link
           href="/clube/recuperar"
-          className="text-mi-marrom underline underline-offset-4"
+          className="text-mi-marrom-700 underline underline-offset-4"
         >
           Esqueci minha senha
         </Link>
@@ -82,13 +82,13 @@ export default function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         Ainda não tem conta?{" "}
         <Link
           href="/clube"
-          className="text-mi-marrom underline underline-offset-4"
+          className="text-mi-marrom-700 underline underline-offset-4"
         >
           Cadastrar
         </Link>
       </p>
 
-      <div className="flex items-center gap-3 text-xs text-mi-texto/40">
+      <div className="flex items-center gap-3 text-xs text-mi-texto/80">
         <span className="h-px flex-1 bg-mi-cinza" />
         ou
         <span className="h-px flex-1 bg-mi-cinza" />

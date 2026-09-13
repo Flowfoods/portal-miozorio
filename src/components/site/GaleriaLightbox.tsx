@@ -66,7 +66,7 @@ export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
       >
         {atual && (
           <figure>
-            <div className="relative max-h-[76vh] w-full overflow-hidden rounded-[10px] bg-mi-bege">
+            <div className="relative max-h-[76dvh] w-full overflow-hidden rounded-[10px] bg-mi-bege">
               <Image
                 src={atual.url}
                 alt={atual.alt}
@@ -74,7 +74,7 @@ export default function GaleriaLightbox({ fotos }: { fotos: Foto[] }) {
                 height={atual.height ?? 1500}
                 quality={90}
                 sizes="92vw"
-                className="h-auto max-h-[76vh] w-full object-contain"
+                className="h-auto max-h-[76dvh] w-full object-contain"
                 {...(atual.blurData
                   ? { placeholder: "blur" as const, blurDataURL: atual.blurData }
                   : {})}

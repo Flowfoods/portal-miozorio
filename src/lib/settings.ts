@@ -21,6 +21,14 @@ export interface BusinessSettings {
   cancelWindowDays: number;
   strikeLimit: number;
   holdMinutes: number;
+  // ── Sinal (A7). O portal não tem gateway: o sinal é combinado no WhatsApp,
+  //    então estes três só definem quanto tempo o horário fica guardado.
+  /** % do valor do atendimento cobrada como sinal (skill: 20% no social). */
+  depositPercent: number;
+  /** Teto do prazo para combinar o sinal, em horas. */
+  depositHoldHours: number;
+  /** O prazo nunca passa desta antecedência do atendimento, em horas. */
+  depositCutoffHours: number;
   slotStepMin: number;
   timezone: string;
   depositPolicy: { default: string; on_strikes: boolean };
@@ -75,6 +83,9 @@ const DEFAULTS: BusinessSettings = {
   cancelWindowDays: 3,
   strikeLimit: 3,
   holdMinutes: 8,
+  depositPercent: 20,
+  depositHoldHours: 24,
+  depositCutoffHours: 2,
   slotStepMin: 30,
   timezone: "America/Sao_Paulo",
   depositPolicy: { default: "none", on_strikes: true },
@@ -126,6 +137,12 @@ export async function getSettings(force = false): Promise<BusinessSettings> {
     cancelWindowDays: num("cancel_window_days", DEFAULTS.cancelWindowDays),
     strikeLimit: num("strike_limit", DEFAULTS.strikeLimit),
     holdMinutes: num("hold_minutes", DEFAULTS.holdMinutes),
+    depositPercent: num("deposit_percent", DEFAULTS.depositPercent),
+    depositHoldHours: num("deposit_hold_hours", DEFAULTS.depositHoldHours),
+    depositCutoffHours: num(
+      "deposit_cutoff_hours",
+      DEFAULTS.depositCutoffHours,
+    ),
     slotStepMin: num("slot_step_min", DEFAULTS.slotStepMin),
     timezone: str("timezone", DEFAULTS.timezone),
     depositPolicy:
