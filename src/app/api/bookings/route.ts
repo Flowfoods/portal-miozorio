@@ -4,6 +4,8 @@ import { createBooking } from "@/lib/booking-service";
 import { processPrivatePhoto, deletePrivatePhoto } from "@/lib/media";
 import { EV, getSid, track } from "@/lib/tracking";
 import { getClienteSession } from "@/lib/cliente-auth";
+import { opcoesCookie } from "@/lib/auth-cookies";
+import { COOKIE_POSSE, emitirPosse, empilharPosse } from "@/lib/posse-booking";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
     metadata: { servico: parsed.data.serviceId, local: parsed.data.location },
   });
 
-  return NextResponse.json(
+  const resposta = NextResponse.json(
     {
       id: result.id,
       holdExpiresAt: result.holdExpiresAt,
@@ -91,4 +93,22 @@ export async function POST(req: NextRequest) {
     },
     { status: 201 },
   );
+
+  // Comprovante de posse: só quem criou a reserva confirma a reserva. Vale até
+  // o fim do hold — depois disso `confirmBooking` recusa por conta própria, e
+  // um comprovante vivo mais tempo que a reserva não protegeria nada.
+  const posse = emitirPosse(
+    result.id,
+    new Date(result.holdExpiresAt).getTime(),
+  );
+  if (posse) {
+    const validade =
+      new Date(result.holdExpiresAt).getTime() - Date.now() + 60_000;
+    resposta.cookies.set(
+      COOKIE_POSSE,
+      empilharPosse(req.cookies.get(COOKIE_POSSE)?.value, posse),
+      opcoesCookie(Math.max(validade, 60_000)),
+    );
+  }
+  return resposta;
 }

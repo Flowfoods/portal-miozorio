@@ -29,13 +29,38 @@
   de integração novos travam o resultado. ⚠️ **Ainda exige o OK do Rodolfo**
   como toda mudança de schema em produção.
 
-- **Posse na confirmação (`POST /api/bookings/[id]/confirm`).** A rota não checa
-  quem chama. O dano é contido por desenho — ela fixa o ator em `system`, então
-  hold vencido é recusado, e a janela é de poucos minutos com um UUID v4 que só
-  a própria cliente recebeu. A correção (cookie httpOnly curto emitido na
-  criação) mexe no caminho que gera receita, e o risco de quebrar o
-  agendamento é maior do que o de um atacante que precisaria adivinhar o UUID.
-  Fazer junto com um QA logado de ponta a ponta.
+- ~~**Posse na confirmação (`POST /api/bookings/[id]/confirm`).**~~ —
+  **resolvido em 13/09/2026** (`src/lib/posse-booking.ts`). Na criação o
+  servidor assina um comprovante (HMAC sobre `bookingId:exp`) e devolve num
+  cookie httpOnly; a confirmação exige esse comprovante. Nada é guardado no
+  banco — a assinatura basta. A expiração entra no que é assinado, senão
+  qualquer um a esticaria editando o cookie.
+
+  A dívida dizia, com razão, que **o risco de quebrar o agendamento é maior que
+  o do atacante**. As duas decisões saem daí:
+
+  1. **A recusa não é beco sem saída.** O 403 devolve `sem_posse`, e o wizard
+     mostra "Seu horário está guardado 💛" em vez de um erro seco — a reserva
+     segue em `pending` e a Mi fecha pelo WhatsApp (ela já foi avisada na
+     criação). O pior caso da mudança é uma cliente indo pelo caminho manual,
+     nunca perdendo o horário. Um erro seco aqui repetiria exatamente o caso
+     que motivou toda a frente de agendamento.
+  2. **Falha ABERTO sem `NEXTAUTH_SECRET`** — o oposto do webhook de pagamento,
+     e de propósito. Webhook sem verificação deixa qualquer um marcar uma
+     reserva como *paga*; posse sem verificação deixa alguém que adivinhou um
+     UUID v4 confirmar uma reserva que a cliente já queria confirmar, sem
+     escapar do sinal nem do hold. Falhar fechado derrubaria todas as
+     confirmações por uma env ausente. O racional está no topo do módulo para
+     ser revisado de propósito, não descoberto por acidente.
+
+  Sem env nova: a chave é derivada do `NEXTAUTH_SECRET` com rótulo de separação
+  de domínio. A lição do `MI_WHATSAPP` foi que env nova é env que alguém
+  esquece de configurar.
+
+  12 testes cobrem assinatura, expiração, adulteração, troca de segredo, lixo no
+  cookie, o empilhamento (agendar de novo não apaga a posse anterior) e o teto
+  de 5. ⚠️ **Falta o QA logado ponta a ponta** que a dívida pedia — isso só dá
+  para fazer com o app no ar.
 
 - **Rate limit por IP em `POST /api/bookings`.** Entrou honeypot e teto de
   reservas em aberto por telefone, que cobrem o abuso realista. O limite por IP

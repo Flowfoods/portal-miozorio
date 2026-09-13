@@ -416,6 +416,18 @@ export default function AgendarWizard() {
         error?: string;
         code?: string;
       };
+      // Sem o comprovante de posse (cookie bloqueado, outra aba, outro
+      // aparelho) a reserva NÃO se perde: ela segue guardada e a Mi fecha pelo
+      // WhatsApp — ela já foi avisada na criação. Mostrar isso como erro seco
+      // repetiria o caso que motivou toda esta frente: a cliente lê "não
+      // consegui confirmar" e conclui que não agendou.
+      if (e.code === "sem_posse" && booking) {
+        setAguardandoSinal({
+          prazo: booking.holdExpiresAt,
+          depositCents: null,
+        });
+        return;
+      }
       setFormError(e.error ?? "Não consegui confirmar.");
     } catch {
       setFormError("Tivemos um probleminha de conexão. Tenta de novo?");
