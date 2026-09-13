@@ -673,6 +673,14 @@ export async function confirmBooking(
         fromStatus: "pending",
         toStatus: "confirmed",
         actor,
+        // A5 — a Mi pode confirmar pulando o sinal (o PIX costuma chegar direto
+        // pra ela). Fica registrado que foi dispensa, não sinal recebido.
+        reason:
+          actor === "business" &&
+          !booking.depositPaidAt &&
+          (booking.customer.requiresDeposit || booking.service.requiresDeposit)
+            ? "sinal_dispensado_pela_mi"
+            : undefined,
       },
     });
   });
@@ -845,7 +853,11 @@ export async function cancelBooking(
   await prisma.$transaction(async (tx) => {
     await tx.booking.update({
       where: { id },
-      data: { status: result.finalStatus, holdExpiresAt: null },
+      data: {
+        status: result.finalStatus,
+        cancelledBy: actor === "client" ? "CLIENT" : "ADMIN",
+        holdExpiresAt: null,
+      },
     });
     await tx.bookingEvent.create({
       data: {
@@ -919,7 +931,12 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
             status: "pending",
             holdExpiresAt: { lt: new Date() },
           },
-          data: { status: "cancelled_by_business", holdExpiresAt: null },
+          data: {
+            status: "cancelled_by_business",
+            // A5 — é o cron, não a Mi. Sem esta marca a tela acusava ela.
+            cancelledBy: "SYSTEM",
+            holdExpiresAt: null,
+          },
         });
         if (r.count === 0) return false;
         await tx.bookingEvent.create({
@@ -948,6 +965,105 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
   }
 
   return { expiradas };
+}
+
+export type ReativarResult =
+  | { ok: true; status: "confirmed" }
+  | {
+      ok: false;
+      code: "not_found" | "not_reactivatable" | "slot_taken" | "no_past";
+      message: string;
+    };
+
+/**
+ * A5 — traz de volta um agendamento expirado ou cancelado.
+ *
+ * Não existia caminho de volta: uma vez encerrado (pelo cron ou por
+ * cancelamento), `confirmBooking` recusava com `not_pending` e a Mi perdia o
+ * atendimento mesmo com o horário livre e a cliente na mão. Era o fim da linha
+ * do caso Carla.
+ *
+ * A trava do banco (`EXCLUDE USING gist`, R2) continua soberana: se alguém
+ * pegou o horário no meio tempo, a reativação falha nomeando quem está lá.
+ */
+export async function reativarBooking(id: string): Promise<ReativarResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      customerId: true,
+    },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  const reativavel =
+    booking.status === "cancelled_by_business" ||
+    booking.status === "cancelled_by_client";
+  if (!reativavel) {
+    return {
+      ok: false,
+      code: "not_reactivatable",
+      message:
+        booking.status === "confirmed"
+          ? "Esse agendamento já está confirmado."
+          : "Só dá para reativar um agendamento cancelado ou expirado.",
+    };
+  }
+  if (booking.startsAt <= new Date()) {
+    return {
+      ok: false,
+      code: "no_past",
+      message: "Esse horário já passou. Faça um encaixe novo.",
+    };
+  }
+
+  // Checagem amigável ANTES de tentar, só para dar o nome de quem ocupa. A
+  // garantia de verdade é a constraint, no catch.
+  const clash = await findOverlappingBooking(booking.startsAt, booking.endsAt);
+  if (clash && clash.id !== id) {
+    const who = clash.customer.name.split(" ")[0];
+    return {
+      ok: false,
+      code: "slot_taken",
+      message: `Esse horário já está ocupado com ${who}.`,
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id },
+        data: {
+          status: "confirmed",
+          cancelledBy: null,
+          holdExpiresAt: null,
+        },
+      });
+      await tx.bookingEvent.create({
+        data: {
+          bookingId: id,
+          fromStatus: booking.status,
+          toStatus: "confirmed",
+          actor: "admin",
+          reason: "reativado_pela_mi",
+        },
+      });
+    });
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      return {
+        ok: false,
+        code: "slot_taken",
+        message: "Esse horário acabou de ser ocupado.",
+      };
+    }
+    throw e;
+  }
+  return { ok: true, status: "confirmed" };
 }
 
 export async function getBookingStatus(id: string) {

@@ -82,7 +82,7 @@ export default function AgendaPeriodo({
                         · {b.customer.name.split(" ")[0]} · {b.service.name} ·{" "}
                         {formatBRL(b.priceCents)}
                       </span>
-                      <StatusPill status={b.status} className="shrink-0" />
+                      <StatusPill status={b.status} cancelledBy={b.cancelledBy} className="shrink-0" />
                     </Link>
                   </li>
                 ))}

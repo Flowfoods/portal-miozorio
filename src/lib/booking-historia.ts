@@ -58,6 +58,12 @@ export function historiaDoAgendamento(
       return "Atendimento concluído";
 
     case "confirmed":
+      if (ev.reason === "reativado_pela_mi") {
+        return "Você reativou este horário";
+      }
+      if (ev.reason === "sinal_dispensado_pela_mi") {
+        return "Você confirmou sem exigir o sinal";
+      }
       return autor === "cliente" ? "A cliente confirmou" : "Você confirmou";
 
     case "pending":

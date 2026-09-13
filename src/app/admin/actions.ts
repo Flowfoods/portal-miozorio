@@ -22,6 +22,7 @@ import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import {
   confirmBooking,
   cancelBooking,
+  reativarBooking,
   markNoShow,
   markCompleted,
   createManualBooking,
@@ -62,6 +63,18 @@ export async function adminConfirmBooking(id: string): Promise<void> {
 export async function adminCancelBooking(id: string): Promise<void> {
   await requireAdmin();
   const r = await cancelBooking(id, "business");
+  refreshAgenda();
+  if (!r.ok) fail(r.message);
+}
+
+/**
+ * A5 — traz de volta um agendamento expirado ou cancelado. Antes, uma vez
+ * encerrado, não havia caminho de volta: a Mi via o horário livre, a cliente na
+ * mão, e o painel só oferecia "fazer outro encaixe".
+ */
+export async function adminReativarBooking(id: string): Promise<void> {
+  await requireAdmin();
+  const r = await reativarBooking(id);
   refreshAgenda();
   if (!r.ok) fail(r.message);
 }

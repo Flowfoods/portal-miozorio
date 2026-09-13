@@ -25,6 +25,15 @@ enum BookingStatus {
   no_show
 }
 
+/// A5 — QUEM encerrou. Sem isto, `cancelled_by_business` servia tanto para a Mi
+/// cancelar quanto para o cron expirar uma reserva abandonada, e a tela acusava
+/// a Mi de cancelamentos que ela nunca fez.
+enum CancelledBy {
+  SYSTEM
+  CLIENT
+  ADMIN
+}
+
 /// Etapas do funil de noiva/debutante (CRM). Nunca agendável online (R14) —
 /// avanço manual pela Mi no kanban do CRM, cada etapa com follow-up de jornada.
 enum FunilEtapa {
@@ -299,6 +308,8 @@ model Booking {
   startsAt       DateTime      @map("starts_at") @db.Timestamptz
   endsAt         DateTime      @map("ends_at") @db.Timestamptz // inclui buffer
   status         BookingStatus @default(pending)
+  /// Preenchido só quando o status é de cancelamento (A5). SYSTEM = hold vencido.
+  cancelledBy    CancelledBy?  @map("cancelled_by")
   location       String        @default("studio") // studio | home
   priceCents     Int           @map("price_cents") // snapshot do valor cobrado
   holdExpiresAt  DateTime?     @map("hold_expires_at") @db.Timestamptz // só em pending

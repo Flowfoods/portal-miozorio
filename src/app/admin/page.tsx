@@ -18,6 +18,7 @@ import { buildPeriod, formatPeriodoExtenso } from "@/lib/periods";
 import {
   adminConfirmBooking,
   adminCancelBooking,
+  adminReativarBooking,
   adminMarkNoShow,
   adminMarkCompleted,
   adminDeleteBookingPhoto,
@@ -66,6 +67,11 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
   const starts = DateTime.fromJSDate(b.startsAt).setZone(tz);
   const ends = DateTime.fromJSDate(b.endsAt).setZone(tz);
   const actionable = b.status === "pending" || b.status === "confirmed";
+  // A5 — cancelado/expirado com o horário ainda no futuro pode voltar.
+  const reativavel =
+    (b.status === "cancelled_by_business" ||
+      b.status === "cancelled_by_client") &&
+    b.startsAt > new Date();
   // Primeiro nome na confirmação: "Cancelar o horário da Ana?" evita o clique
   // no cartão errado muito melhor que "Tem certeza?".
   const primeiroNome = b.customer.name.trim().split(/\s+/)[0] || "essa cliente";
@@ -131,7 +137,7 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             </div>
           )}
         </div>
-        <StatusPill status={b.status} />
+        <StatusPill status={b.status} cancelledBy={b.cancelledBy} />
       </div>
       {historia && (
         <p className="mt-1 font-corpo text-xs text-mi-texto/80">{historia}</p>
@@ -152,11 +158,11 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
               </button>
             </form>
           )}
-          {/* "Não veio" e "Cancelar" são irreversíveis — não existe ação que
-              desfaça no_show/cancelled — e ficavam a 32px, sem confirmação,
-              colados nos botões do dia a dia. O ConfirmForm já existia com a
-              docstring "dedo escorrega fácil no celular", mas guardava só a
-              exclusão de uma foto. */}
+          {/* Ficavam a 32px, sem confirmação, colados nos botões do dia a dia.
+              O ConfirmForm já existia com a docstring "dedo escorrega fácil no
+              celular", mas guardava só a exclusão de uma foto.
+              "Não veio" segue irreversível (conta strike). "Cancelar" deixou de
+              ser, com o Reativar do A5 — e a confirmação diz isso. */}
           <ConfirmForm
             action={adminMarkNoShow.bind(null, b.id)}
             message={`Marcar que ${primeiroNome} não veio? Isso conta um strike para ela e não dá para desfazer.`}
@@ -165,9 +171,11 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
               Não veio
             </button>
           </ConfirmForm>
+          {/* A5: deixou de ser irreversível — existe "Reativar" agora. Manter
+              o aviso antigo faria a Mi evitar o botão por medo. */}
           <ConfirmForm
             action={adminCancelBooking.bind(null, b.id)}
-            message={`Cancelar o horário de ${primeiroNome}? Não dá para desfazer.`}
+            message={`Cancelar o horário de ${primeiroNome}? Se precisar, dá para reativar depois — desde que o horário siga livre.`}
           >
             <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm text-mi-erro-tinta">
               Cancelar
@@ -177,6 +185,21 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
             bookingId={b.id}
             defaultDate={starts.toISODate() ?? ""}
           />
+        </div>
+      )}
+      {/* A5 — o caminho de volta. Só aparece enquanto o horário ainda é futuro;
+          a colisão real é revalidada no backend (a trava do banco é soberana). */}
+      {reativavel && (
+        <div className="mt-3">
+          <form action={adminReativarBooking.bind(null, b.id)}>
+            <button className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-3 py-1.5 text-sm text-white">
+              Reativar e confirmar
+            </button>
+          </form>
+          <p className="mt-1 font-corpo text-xs text-mi-texto/80">
+            Traz {primeiroNome} de volta para esse horário, se ele ainda estiver
+            livre.
+          </p>
         </div>
       )}
     </article>
