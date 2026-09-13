@@ -74,20 +74,33 @@ export function hostCanonico(): string | null {
   }
 }
 
+/**
+ * Nome do host, sem porta e em minúsculas. `miozorio.com.br:443` e
+ * `miozorio.com.br` são o MESMO host — comparar com a porta faria a igualdade
+ * nunca bater e o 308 se redirecionar para si mesmo, em laço, no site inteiro.
+ */
+function nomeDoHost(host: string): string {
+  return (host.split(":")[0] ?? host).toLowerCase();
+}
+
 /** Hosts que nunca são redirecionados (dev e preview interno). */
 export function hostIsento(host: string): boolean {
-  const semPorta = host.split(":")[0] ?? host;
+  const nome = nomeDoHost(host);
   return (
-    semPorta === "localhost" ||
-    semPorta === "127.0.0.1" ||
-    semPorta.endsWith(".traefik.me") ||
-    semPorta.endsWith(".localhost")
+    nome === "localhost" ||
+    nome === "127.0.0.1" ||
+    nome.endsWith(".traefik.me") ||
+    nome.endsWith(".localhost")
   );
 }
 
 /**
  * Decide o redirect para o domínio canônico. Puro (testável): recebe o host do
  * request e devolve o host de destino, ou null se já está certo/é isento.
+ *
+ * A comparação ignora a porta dos DOIS lados. O que importa é o nome do host:
+ * é ele que define onde o cookie de sessão vale e o que o Next confere no
+ * `Origin` das Server Actions.
  */
 export function destinoCanonico(
   hostAtual: string | null | undefined,
@@ -95,6 +108,6 @@ export function destinoCanonico(
 ): string | null {
   if (!hostAtual || !canonico) return null;
   if (hostIsento(hostAtual)) return null;
-  if (hostAtual.toLowerCase() === canonico.toLowerCase()) return null;
+  if (nomeDoHost(hostAtual) === nomeDoHost(canonico)) return null;
   return canonico;
 }
