@@ -38,6 +38,23 @@ export function normalizarTelefone(raw: string | null | undefined): string | nul
   return raw ? normalizeE164BR(raw) : null;
 }
 
+/**
+ * A senha escolhida é o próprio telefone? Compara com e SEM o DDI: o telefone
+ * fica em E.164 (+5521998626845), mas ninguém digita "55" na frente da senha —
+ * e "21998626845" é exatamente a senha provisória do primeiro acesso. Comparar
+ * só a forma completa deixava passar justamente a versão adivinhável.
+ */
+export function ehOProprioTelefone(
+  senha: string,
+  telefoneE164: string,
+): boolean {
+  const d = (s: string) => s.replace(/\D/g, "");
+  const senhaDigitos = d(senha);
+  if (!senhaDigitos || senhaDigitos !== senha.trim()) return false;
+  const tel = d(telefoneE164);
+  return senhaDigitos === tel || senhaDigitos === tel.replace(/^55/, "");
+}
+
 export type Identificador =
   | { tipo: "telefone"; valor: string }
   | { tipo: "email"; valor: string };

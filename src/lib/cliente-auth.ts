@@ -13,6 +13,7 @@ import {
 } from "./authlog";
 import {
   SENHA_MIN_CLIENTE,
+  ehOProprioTelefone,
   normalizarSenha,
   normalizarTelefone,
 } from "./auth-identidade";
@@ -335,8 +336,9 @@ export async function setClientePassword(
   if (c.clubPasswordProvisoria && !consent) {
     return { ok: false, message: "Para continuar, aceite a política de privacidade." };
   }
-  // Não deixar a nova senha ser o próprio telefone (continuaria adivinhável).
-  if (digits(newPassword) && digits(newPassword) === digits(c.phoneE164)) {
+  // Não deixar a nova senha ser o próprio telefone (continuaria adivinhável) —
+  // com ou sem o DDI: "21998626845" é a senha provisória do primeiro acesso.
+  if (ehOProprioTelefone(newPassword, c.phoneE164)) {
     return { ok: false, message: "Escolha uma senha diferente do seu telefone." };
   }
 

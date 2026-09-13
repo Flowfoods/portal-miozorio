@@ -11,7 +11,11 @@ import {
 import { formatPhoneBR, waLinkMsg } from "./format";
 import { sendTransactional } from "./whatsapp/service";
 import { BCRYPT_ROUNDS, MIN_SENHA, senhaFraca } from "./security";
-import { identificarLogin, normalizarSenha } from "./auth-identidade";
+import {
+  ehOProprioTelefone,
+  identificarLogin,
+  normalizarSenha,
+} from "./auth-identidade";
 import { opcoesCookie } from "./auth-cookies";
 import { CLUB_MIN_SENHA, iniciarSessaoCliente } from "./cliente-auth";
 import { hashIp, maskPhone, metaFromHeaders, recordAuth } from "./authlog";
@@ -555,7 +559,7 @@ async function trocarSenhaCliente(
   }
   const c = await prisma.customer.findUnique({ where: { id: customerId } });
   if (!c) return "Conta não encontrada.";
-  if (digitos(nova) && digitos(nova) === digitos(c.phoneE164)) {
+  if (ehOProprioTelefone(nova, c.phoneE164)) {
     return "Escolha uma senha diferente do seu telefone.";
   }
   await prisma.customer.update({
