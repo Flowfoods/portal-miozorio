@@ -25,6 +25,15 @@ enum BookingStatus {
   no_show
 }
 
+/// A5 — QUEM encerrou. Sem isto, `cancelled_by_business` servia tanto para a Mi
+/// cancelar quanto para o cron expirar uma reserva abandonada, e a tela acusava
+/// a Mi de cancelamentos que ela nunca fez.
+enum CancelledBy {
+  SYSTEM
+  CLIENT
+  ADMIN
+}
+
 /// Etapas do funil de noiva/debutante (CRM). Nunca agendável online (R14) —
 /// avanço manual pela Mi no kanban do CRM, cada etapa com follow-up de jornada.
 enum FunilEtapa {
@@ -105,7 +114,13 @@ model Service {
   pendingPrice    Boolean  @default(false) @map("pending_price") // sobrancelha a confirmar
   isCourse        Boolean  @default(false) @map("is_course") // usa event_sessions
   clubPoints      Int      @default(0) @map("club_points") // pontos do Clube por atendimento (configurável pela Mi)
-  active          Boolean  @default(true)
+  active          Boolean  @default(true) // liga/desliga temporário (some do site, fica no admin)
+  /// A1 — arquivado: some de TUDO (site, admin, encaixe), histórico preservado.
+  /// Diferente de `active`, é definitivo. Null = serviço vivo.
+  archivedAt      DateTime? @map("archived_at") @db.Timestamptz
+  /// A2 — foto de exemplo (o "cardápio"). Reusa media_assets: herda WebP, blur
+  /// e dimensões. Null = cai no MonogramPlaceholder.
+  mediaAssetId    String?   @map("media_asset_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   bookings      Booking[]
@@ -113,8 +128,33 @@ model Service {
   waitlist      Waitlist[]
   availability  ServiceAvailability[]
   bookingItems  BookingItem[]
+  mediaAsset    MediaAsset?           @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  variants      ServiceVariant[]
 
+  @@index([mediaAssetId])
   @@map("services")
+}
+
+/// A3 — variação por tamanho (escova curto/médio/longo, por exemplo). Serviço
+/// SEM linhas aqui se comporta exatamente como antes — a retrocompatibilidade é
+/// por construção, não por flag.
+model ServiceVariant {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId      String   @map("service_id") @db.Uuid
+  nome           String // "cabelo curto", "cabelo longo"…
+  priceCents     Int      @map("price_cents")
+  priceHomeCents Int?     @map("price_home_cents")
+  /// Null = usa a duração do serviço. Preenchido = sobrepõe (cabelo longo demora mais).
+  durationMin    Int?     @map("duration_min")
+  sort           Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([serviceId, sort])
+  @@map("service_variants")
 }
 
 /// M9 — disponibilidade própria de um serviço (linha Dia a Dia: cabelo/sobrancelha
@@ -299,21 +339,35 @@ model Booking {
   startsAt       DateTime      @map("starts_at") @db.Timestamptz
   endsAt         DateTime      @map("ends_at") @db.Timestamptz // inclui buffer
   status         BookingStatus @default(pending)
+  /// Preenchido só quando o status é de cancelamento (A5). SYSTEM = hold vencido.
+  cancelledBy    CancelledBy?  @map("cancelled_by")
   location       String        @default("studio") // studio | home
   priceCents     Int           @map("price_cents") // snapshot do valor cobrado
   holdExpiresAt  DateTime?     @map("hold_expires_at") @db.Timestamptz // só em pending
   depositCents   Int?          @map("deposit_cents")
   depositPaidAt  DateTime?     @map("deposit_paid_at") @db.Timestamptz
+  /// A7 — quem cobrou e qual cobrança. Null enquanto não houver gateway
+  /// configurado (o sinal é combinado no WhatsApp da Mi).
+  depositProvider  String?  @map("deposit_provider")
+  depositPaymentId String?  @unique @map("deposit_payment_id")
   anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
   source         String        @default("web") // web | whatsapp | manual
   // Foto de referência da cliente (LGPD): chave em storage PRIVADO (nunca URL
   // pública); servida só via /admin/media. Consentimento explícito obrigatório.
   photoKey       String?       @map("photo_key")
   photoConsentAt DateTime?     @map("photo_consent_at") @db.Timestamptz
+  // ── A3 — tamanho escolhido e validação da Mi ──────────────────────────────
+  // "Aguardando validação" é variantId != null && sizeApprovedAt == null. NÃO é
+  // um status: um BookingStatus novo cairia fora do WHERE da constraint
+  // no_overlap e abriria furo de double-booking (ver a migration).
+  variantId        String?   @map("variant_id") @db.Uuid
+  sizeApprovedAt   DateTime? @map("size_approved_at") @db.Timestamptz
+  sizeAdjustReason String?   @map("size_adjust_reason")
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 
   customer      Customer          @relation(fields: [customerId], references: [id])
   service       Service           @relation(fields: [serviceId], references: [id])
+  variant       ServiceVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
   professional  Professional?     @relation(fields: [professionalId], references: [id])
   eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
   events        BookingEvent[]
@@ -515,6 +569,8 @@ model MediaAsset {
   width     Int? // dimensões do master — proporção sem layout shift
   height    Int?
   blurData  String?  @map("blur_data") // data URL p/ placeholder="blur"
+
+  services Service[] // A2 — serviços que usam esta foto como exemplo
 
   @@index([category, published])
   @@map("media_assets")

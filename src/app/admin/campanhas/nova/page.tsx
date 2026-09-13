@@ -9,7 +9,7 @@ export default async function NovaCampanhaPage() {
   await requireAdmin();
   const [servicos, segs, templates] = await Promise.all([
     prisma.service.findMany({
-      where: { active: true },
+      where: { active: true, archivedAt: null },
       orderBy: { name: "asc" },
       select: { code: true, name: true },
     }),

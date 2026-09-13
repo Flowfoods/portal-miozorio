@@ -44,6 +44,11 @@ const businessSettings: Record<string, Prisma.InputJsonValue> = {
   slot_step_min: 30,
   timezone: "America/Sao_Paulo",
   deposit_policy: { default: "none", on_strikes: true },
+  // A7 — prazos do sinal. Só valem quando algum sinal é exigido (reincidência
+  // ou flag manual da Mi); o portal não cobra, só guarda o horário.
+  deposit_percent: 20,
+  deposit_hold_hours: 24,
+  deposit_cutoff_hours: 2,
 };
 
 type SeedService = {

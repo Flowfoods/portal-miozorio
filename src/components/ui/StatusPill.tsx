@@ -1,5 +1,5 @@
-import type { BookingStatus } from "@prisma/client";
-import { STATUS_LABEL, STATUS_STYLE } from "@/components/admin/bookingStatus";
+import type { BookingStatus, CancelledBy } from "@prisma/client";
+import { statusLabel, statusStyle } from "@/components/admin/bookingStatus";
 
 /**
  * Pílula de status com cor E ícone (a cor nunca comunica sozinha — V4/a11y).
@@ -37,14 +37,19 @@ const ICONE: Record<BookingStatus, JSX.Element> = {
 
 export default function StatusPill({
   status,
+  cancelledBy,
   className = "",
 }: {
   status: BookingStatus;
+  /** A5 — desempata "Cancelado (Mi)" × "Expirado (sistema)". */
+  cancelledBy?: CancelledBy | null;
   className?: string;
 }) {
+  const expirado =
+    status === "cancelled_by_business" && cancelledBy === "SYSTEM";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-corpo text-xs font-medium ${STATUS_STYLE[status]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-corpo text-xs font-medium ${statusStyle(status, cancelledBy)} ${className}`}
     >
       <svg
         width="13"
@@ -58,9 +63,18 @@ export default function StatusPill({
         aria-hidden="true"
         className="shrink-0"
       >
-        {ICONE[status]}
+        {expirado ? (
+          // Ampulheta: expirou sozinho, ninguém cancelou. O X de cancelamento
+          // dizia a coisa errada.
+          <>
+            <path d="M4.5 2.5h7M4.5 13.5h7" />
+            <path d="M5.5 2.5v2.2L8 8l-2.5 3.3v2.2M10.5 2.5v2.2L8 8l2.5 3.3v2.2" />
+          </>
+        ) : (
+          ICONE[status]
+        )}
       </svg>
-      {STATUS_LABEL[status]}
+      {statusLabel(status, cancelledBy)}
     </span>
   );
 }

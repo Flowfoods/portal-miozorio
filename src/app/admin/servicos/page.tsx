@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/prisma";
+import Toast from "@/components/admin/Toast";
+import SubmitButton from "@/components/admin/SubmitButton";
+import ConfirmForm from "@/components/admin/ConfirmForm";
+import FotoServico from "@/components/admin/FotoServico";
 import {
   adminUpdateService,
   adminCreateService,
   adminDeleteService,
   adminAddServiceAvailability,
   adminRemoveServiceAvailability,
+  adminAddVariante,
+  adminRemoverVariante,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -32,16 +38,24 @@ const centsToReais = (cents: number) =>
   (cents / 100).toFixed(2).replace(".", ",");
 
 export default async function AdminServicosPage() {
+  // A1 — arquivado some da lista da Mi (o histórico continua no banco).
   const services = await prisma.service.findMany({
+    where: { archivedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
       availability: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
+      // A2 — foto de exemplo do serviço (o "cardápio" que a cliente vê).
+      mediaAsset: { select: { url: true, alt: true, blurData: true } },
+      // A3 — tamanhos cadastrados. A existência de variação ativa é o que liga
+      // o fluxo de tamanho no /agendar (não há flag separada).
+      variants: { where: { active: true }, orderBy: { sort: "asc" } },
     },
   });
 
   return (
     <>
+      <Toast />
       <h1 className="mb-2 text-3xl">Serviços</h1>
       <p className="mb-6 text-sm text-mi-texto/80">
         Preços em reais (ex.: 250,00). Duração e intervalo em minutos. Noiva e
@@ -141,9 +155,12 @@ export default async function AdminServicosPage() {
               <input type="checkbox" name="requiresDeposit" />
               Exige sinal
             </label>
-            <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
+            <SubmitButton
+              pendingLabel="Criando…"
+              className="ml-auto min-h-[44px] rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white disabled:bg-mi-marrom-suave"
+            >
               Criar serviço
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </details>
@@ -264,9 +281,12 @@ export default async function AdminServicosPage() {
                   />
                   Exige sinal
                 </label>
-                <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
+                <SubmitButton
+                  pendingLabel="Salvando…"
+                  className="ml-auto min-h-[44px] rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white disabled:bg-mi-marrom-suave"
+                >
                   Salvar
-                </button>
+                </SubmitButton>
               </div>
             </form>
 
@@ -341,16 +361,123 @@ export default async function AdminServicosPage() {
               </form>
             </details>
 
-            {deletable && (
+            {/* A3 — tamanhos (escova curto/médio/longo…). Sem nenhum, o
+                serviço funciona exatamente como antes. */}
+            <details className="mt-3 border-t border-mi-cinza/60 pt-3">
+              <summary className="cursor-pointer text-xs font-medium text-mi-marrom-escuro">
+                Variação por tamanho{" "}
+                {s.variants.length > 0
+                  ? `(${s.variants.length})`
+                  : "— não usa"}
+              </summary>
+              <p className="mt-1 text-xs text-mi-texto/80">
+                Com tamanhos cadastrados, a cliente escolhe o dela e manda uma
+                foto para você conferir antes de fechar o valor.
+              </p>
+
+              {s.variants.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {s.variants.map((v) => (
+                    <li
+                      key={v.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-mi bg-mi-superficie px-3 py-2 text-xs"
+                    >
+                      <span className="text-mi-marrom-escuro">
+                        <strong>{v.nome}</strong> · {centsToReais(v.priceCents)}
+                        {v.priceHomeCents != null
+                          ? ` (domicílio ${centsToReais(v.priceHomeCents)})`
+                          : ""}
+                        {v.durationMin ? ` · ${v.durationMin} min` : ""}
+                      </span>
+                      <ConfirmForm
+                        action={adminRemoverVariante.bind(null, v.id)}
+                        message={`Desativar o tamanho "${v.nome}"? Ele some para a cliente; os atendimentos que já usaram continuam no histórico.`}
+                      >
+                        <button className="min-h-[44px] text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
+                          desativar
+                        </button>
+                      </ConfirmForm>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <form
-                action={adminDeleteService.bind(null, s.id)}
-                className="mt-2 text-right"
+                action={adminAddVariante}
+                className="mt-2 flex flex-wrap items-end gap-2"
               >
-                <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
-                  Excluir serviço (sem histórico)
-                </button>
+                <input type="hidden" name="serviceId" value={s.id} />
+                <label className="text-xs">
+                  Tamanho
+                  <input
+                    name="nome"
+                    placeholder="cabelo curto"
+                    required
+                    className="input-mi mt-1 w-36 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Estúdio (R$)
+                  <input
+                    name="price"
+                    inputMode="decimal"
+                    placeholder="80,00"
+                    required
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Domicílio (R$)
+                  <input
+                    name="priceHome"
+                    inputMode="decimal"
+                    placeholder="opcional"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Duração (min)
+                  <input
+                    name="durationMin"
+                    type="number"
+                    min={5}
+                    step={5}
+                    placeholder="igual"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <SubmitButton
+                  pendingLabel="Adicionando…"
+                  className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-2 text-sm disabled:opacity-60"
+                >
+                  Adicionar tamanho
+                </SubmitButton>
               </form>
-            )}
+            </details>
+
+            <FotoServico
+              serviceId={s.id}
+              nome={s.name}
+              foto={s.mediaAsset}
+            />
+
+            {/* A1 — existe em TODO card. O que muda é o efeito: sem histórico
+                some de vez; com histórico vira arquivo (some de tudo, os
+                atendimentos antigos continuam na ficha da cliente). A
+                confirmação diz qual dos dois vai acontecer. */}
+            <ConfirmForm
+              action={adminDeleteService.bind(null, s.id)}
+              className="mt-2 text-right"
+              message={
+                deletable
+                  ? `Excluir "${s.name}"? Esta ação não pode ser desfeita.`
+                  : `Arquivar "${s.name}"? Ele some do painel, do encaixe e do site. Os ${s._count.bookings} atendimento(s) já feitos continuam no histórico.`
+              }
+            >
+              <button className="min-h-[44px] text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
+                {deletable ? "Excluir serviço" : "Arquivar serviço"}
+              </button>
+            </ConfirmForm>
             </div>
           );
         })}

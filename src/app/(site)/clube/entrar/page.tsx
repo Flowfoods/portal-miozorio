@@ -37,7 +37,7 @@ export default function EntrarPage() {
       </div>
       <p className="mt-6 text-center font-corpo text-sm text-mi-texto/80">
         Ainda não é cliente?{" "}
-        <Link href="/agendar" className="text-mi-marrom underline underline-offset-4">
+        <Link href="/agendar" className="text-mi-marrom-700 underline underline-offset-4">
           Agende seu horário
         </Link>
       </p>

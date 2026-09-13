@@ -54,7 +54,7 @@ export default async function NoivasPage() {
         <div className="grid gap-8 sm:grid-cols-3">
           {jornada.map((j, i) => (
             <div key={j.o} className="relative">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-mi-marrom/40 bg-mi-branco font-titulo text-xl text-mi-marrom shadow-suave">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-mi-marrom/40 bg-mi-branco font-titulo text-xl text-mi-marrom-700 shadow-suave">
                 {String(i + 1).padStart(2, "0")}
               </span>
               {i < jornada.length - 1 && (
@@ -109,7 +109,7 @@ export default async function NoivasPage() {
                     key={i}
                     className="flex gap-2 font-corpo text-sm text-mi-texto"
                   >
-                    <span className="text-mi-marrom">•</span>
+                    <span className="text-mi-marrom-700">•</span>
                     {i}
                   </li>
                 ))}

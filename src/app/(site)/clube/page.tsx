@@ -62,7 +62,7 @@ export default async function ClubePage() {
           </a>
           <a
             href="/clube/entrar"
-            className="inline-flex min-h-[48px] items-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom transition-colors hover:bg-mi-branco"
+            className="inline-flex min-h-[48px] items-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom-700 transition-colors hover:bg-mi-branco"
           >
             Já sou cliente — entrar
           </a>

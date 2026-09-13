@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import {
   formatBRL,
   formatDuration,
@@ -14,6 +15,7 @@ import WeekStrip, { type DiaStrip } from "@/components/ui/WeekStrip";
 import Botao from "@/components/ui/Botao";
 import BarraResumo from "./BarraResumo";
 import { trackClient } from "@/lib/track-client";
+import { otimizar } from "@/lib/imagem-client";
 
 interface ApiService {
   id: string;
@@ -27,6 +29,16 @@ interface ApiService {
   isCourse: boolean;
   /** Dias próprios (Luxon 1=seg..7=dom); null = regra padrão. M9.5. */
   availableWeekdays: number[] | null;
+  /** A2 — foto de exemplo do serviço; null = monograma. */
+  foto: { url: string; alt: string; blurData: string | null } | null;
+  /** A3 — tamanhos. Lista vazia = serviço normal, fluxo idêntico ao de sempre. */
+  variantes: {
+    id: string;
+    nome: string;
+    priceCents: number;
+    priceHomeCents: number | null;
+    durationMin: number | null;
+  }[];
 }
 
 type Location = "studio" | "home";
@@ -86,6 +98,17 @@ export default function AgendarWizard() {
     holdExpiresAt: string;
   } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  // A3 — tamanho escolhido e foto do cabelo. Só entram em cena quando o
+  // serviço tem variação; serviço normal nem vê estes campos.
+  const [varianteId, setVarianteId] = useState<string | null>(null);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string>("");
+  // A7 — reserva feita, sinal a combinar com a Mi. Não é erro: o horário já
+  // está guardado. `null` = não se aplica.
+  const [aguardandoSinal, setAguardandoSinal] = useState<{
+    prazo: string;
+    depositCents: number | null;
+  } | null>(null);
 
   const search = useSearchParams();
   const preselectCode = search.get("servico");
@@ -143,8 +166,12 @@ export default function AgendarWizard() {
     preselectDone.current = true;
   }, [services, preselectCode]);
 
-  const priceForLocation = (s: ApiService): number | null =>
-    location === "home" ? s.priceHomeCents : s.priceCents;
+  const priceForLocation = (s: ApiService): number | null => {
+    // A3 — com tamanho escolhido, o preço é o da variação.
+    const v = s.variantes.find((x) => x.id === varianteId);
+    if (v) return location === "home" ? v.priceHomeCents : v.priceCents;
+    return location === "home" ? s.priceHomeCents : s.priceCents;
+  };
 
   // Tabs de categoria derivadas dos serviços do banco (R3).
   const categorias = useMemo(() => {
@@ -243,27 +270,50 @@ export default function AgendarWizard() {
       .finally(() => setSlotsLoading(false));
   }, [service, date, location]);
 
+  // A3 — com variação, tamanho e foto são obrigatórios: é a foto que permite a
+  // Mi conferir antes de fechar o valor. Serviço sem variação não muda nada.
+  const precisaTamanho = (service?.variantes.length ?? 0) > 0;
+  const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
+
   const canSubmit =
     form.name.trim().length >= 2 &&
     form.phone.replace(/\D/g, "").length >= 10 &&
     form.occasion.length > 0 &&
-    form.lgpd;
+    form.lgpd &&
+    tamanhoOk;
 
   /** O que ainda falta, na voz da Mi — dito no clique, não escondido. */
   const faltaPreencher =
-    form.name.trim().length < 2
-      ? "Me conta seu nome? 💛"
-      : form.phone.replace(/\D/g, "").length < 10
-        ? "Confere o WhatsApp? Use DDD + número."
-        : form.occasion.length === 0
-          ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
-          : "Falta aceitar a política de privacidade.";
+    precisaTamanho && varianteId === null
+      ? "Escolhe o tamanho do seu cabelo? 💛"
+      : precisaTamanho && fotoFile === null
+        ? "Falta a foto do cabelo pra eu conferir o tamanho 💛"
+        : form.name.trim().length < 2
+          ? "Me conta seu nome? 💛"
+          : form.phone.replace(/\D/g, "").length < 10
+            ? "Confere o WhatsApp? Use DDD + número."
+            : form.occasion.length === 0
+              ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
+              : "Falta aceitar a política de privacidade.";
 
   async function submitBooking() {
     if (!service || !date || !time) return;
     setSubmitting(true);
     setFormError(null);
     try {
+      // A3 — reduz no navegador antes de enviar (mesma função que o painel
+      // usa) e manda em base64 no corpo do agendamento. Sem endpoint de upload
+      // público: a foto herda as proteções que já existem nesta rota.
+      let fotoBase64: string | undefined;
+      if (fotoFile) {
+        const otimizada = await otimizar(fotoFile);
+        fotoBase64 = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(new Error("leitura"));
+          fr.readAsDataURL(otimizada);
+        });
+      }
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -284,6 +334,8 @@ export default function AgendarWizard() {
           },
           lgpdConsent: form.lgpd,
           site: form.site,
+          ...(varianteId ? { variantId: varianteId } : {}),
+          ...(fotoBase64 ? { fotoBase64 } : {}),
           ...(daAreaCliente ? { source: "area_cliente" } : {}),
         }),
       });
@@ -312,8 +364,23 @@ export default function AgendarWizard() {
         );
         return;
       }
-      const data = (await res.json()) as { id: string; holdExpiresAt: string };
+      const data = (await res.json()) as {
+        id: string;
+        holdExpiresAt: string;
+        aguardandoSinal?: boolean;
+        depositCents?: number | null;
+      };
       setBooking(data);
+      // A7: com sinal a reserva já está guardada e quem fecha é a Mi pelo
+      // WhatsApp. Chamar /confirm aqui só rendia 402 — a cliente lia a recusa
+      // como "não agendou" e ia atrás da Mi no Instagram.
+      if (data.aguardandoSinal) {
+        setAguardandoSinal({
+          prazo: data.holdExpiresAt,
+          depositCents: data.depositCents ?? null,
+        });
+        return;
+      }
       setStep(5);
     } catch {
       setFormError("Tivemos um probleminha de conexão. Tenta de novo, tá?");
@@ -350,6 +417,20 @@ export default function AgendarWizard() {
     return <SuccessScreen service={service} date={date} time={time} />;
   }
 
+  if (aguardandoSinal && service && date && time) {
+    return (
+      <AguardandoSinalScreen
+        bookingId={booking?.id ?? ""}
+        service={service}
+        date={date}
+        time={time}
+        prazo={aguardandoSinal.prazo}
+        depositCents={aguardandoSinal.depositCents}
+        onPago={() => setConfirmed(true)}
+      />
+    );
+  }
+
   const mostraBarra = step >= 2 && step <= 4 && service !== null;
 
   return (
@@ -373,7 +454,7 @@ export default function AgendarWizard() {
                 className={`min-h-[44px] rounded-[10px] px-5 font-corpo text-sm transition-colors ${
                   location === loc
                     ? "bg-mi-branco text-mi-marrom-escuro shadow-suave"
-                    : "text-mi-marrom"
+                    : "text-mi-marrom-700"
                 }`}
               >
                 {loc === "studio" ? "No estúdio" : "Em domicílio"}
@@ -417,11 +498,43 @@ export default function AgendarWizard() {
                     setService(s);
                     setDate(null);
                     setSlots(null);
+                    // A3 — tamanho e foto são do serviço anterior; trocar de
+                    // serviço sem limpar mandaria uma variação de outro
+                    // catálogo, que o backend recusa.
+                    setVarianteId(null);
+                    setFotoFile(null);
+                    setFotoPreview("");
                     setStep(2);
                   }}
-                  className="flex w-full items-center justify-between gap-4 rounded-mi border border-mi-cinza bg-mi-branco p-4 text-left shadow-suave transition-colors hover:border-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex w-full items-center gap-4 rounded-mi border border-mi-cinza bg-mi-branco p-3 text-left shadow-suave transition-colors hover:border-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <span>
+                  {/* A2 — a foto que a Mi subiu no painel. Sem foto, o
+                      monograma: nunca um retângulo vazio nem "sem imagem". */}
+                  <span className="relative block h-20 w-16 shrink-0 overflow-hidden rounded-[10px] bg-mi-bege">
+                    {s.foto ? (
+                      <Image
+                        src={s.foto.url}
+                        alt={s.foto.alt}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        {...(s.foto.blurData
+                          ? {
+                              placeholder: "blur" as const,
+                              blurDataURL: s.foto.blurData,
+                            }
+                          : {})}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="flex h-full w-full items-center justify-center font-titulo text-2xl font-medium italic text-mi-marrom-400"
+                      >
+                        Mi
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
                     <span className="block font-titulo text-lg text-mi-marrom-escuro">
                       {s.name}
                     </span>
@@ -532,6 +645,62 @@ export default function AgendarWizard() {
           <h2 className="mt-3 font-titulo text-3xl text-mi-marrom-escuro">
             Seus dados
           </h2>
+
+          {/* A3 — tamanho + foto. Só aparece se o serviço tiver variação; um
+              serviço normal nem sabe que isto existe. */}
+          {service.variantes.length > 0 && (
+            <div className="mt-6 rounded-mi border border-mi-cinza bg-mi-branco p-4">
+              <p className="font-titulo text-xl text-mi-marrom-escuro">
+                Qual o tamanho do seu cabelo?
+              </p>
+              <p className="mt-1 font-corpo text-sm text-mi-texto">
+                Escolha o que mais parece com o seu e mande uma foto — assim eu
+                reservo o tempo certinho e confirmo o valor antes do dia 💛
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {service.variantes.map((v) => (
+                  <Chip
+                    key={v.id}
+                    ativo={varianteId === v.id}
+                    onClick={() => setVarianteId(v.id)}
+                  >
+                    {v.nome} ·{" "}
+                    {formatBRL(
+                      location === "home" && v.priceHomeCents != null
+                        ? v.priceHomeCents
+                        : v.priceCents,
+                    )}
+                  </Chip>
+                ))}
+              </div>
+
+              <label className="mt-4 block font-corpo text-sm text-mi-marrom-escuro">
+                Foto do seu cabelo
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="mt-1 block w-full font-corpo text-sm text-mi-texto file:mr-3 file:min-h-[44px] file:rounded-mi file:border file:border-mi-cinza file:bg-mi-bege file:px-4 file:font-corpo file:text-sm file:text-mi-marrom-escuro"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    setFotoFile(f);
+                    setFotoPreview(f ? URL.createObjectURL(f) : "");
+                  }}
+                />
+              </label>
+              {fotoPreview && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fotoPreview}
+                  alt="Foto que você escolheu"
+                  className="mt-2 h-28 w-24 rounded-mi object-cover"
+                />
+              )}
+              <p className="mt-2 font-corpo text-xs text-mi-texto/80">
+                A foto fica guardada em privado, só a Mi vê.
+              </p>
+            </div>
+          )}
 
           <div className="mt-6 space-y-4">
             <Field label="Seu nome">
@@ -738,7 +907,7 @@ function Stepper({ step }: { step: number }) {
             />
             <span
               className={`font-corpo text-xs ${
-                done ? "text-mi-marrom-escuro" : "text-mi-marrom-escuro/70"
+                done ? "text-mi-marrom-escuro" : "text-mi-marrom-escuro"
               }`}
             >
               {label}
@@ -772,7 +941,7 @@ function Field({
     <label className="block">
       <span
         className={`mb-1.5 block font-corpo text-sm ${
-          highlight ? "font-medium text-mi-marrom-escuro" : "text-mi-marrom"
+          highlight ? "font-medium text-mi-marrom-escuro" : "text-mi-marrom-700"
         }`}
       >
         {label}
@@ -788,7 +957,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       // Era 40×20px sem padding — e é justamente o substituto do Voltar do
       // Android neste wizard, que não reflete o passo na URL.
-      className="-ml-2 inline-flex min-h-[44px] items-center px-2 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom"
+      className="-ml-2 inline-flex min-h-[44px] items-center px-2 font-corpo text-sm text-mi-marrom-escuro transition-colors hover:text-mi-marrom-700"
     >
       ‹ voltar
     </button>
@@ -861,6 +1030,195 @@ function HoldCountdown({
   );
 }
 
+/**
+ * A7 — reserva feita, sinal a combinar. O portal não tem gateway: o PIX do
+ * sinal vai direto para a Mi, então esta tela entrega o horário guardado, o
+ * prazo real e o caminho do WhatsApp. Antes disto a cliente via a recusa 402
+ * como erro de formulário e ia embora achando que não tinha agendado.
+ */
+function AguardandoSinalScreen({
+  bookingId,
+  service,
+  date,
+  time,
+  prazo,
+  depositCents,
+  onPago,
+}: {
+  bookingId: string;
+  service: ApiService;
+  date: string;
+  time: string;
+  prazo: string;
+  depositCents: number | null;
+  onPago: () => void;
+}) {
+  // A7 (conclusão) — o PIX. Só aparece se o portal tiver gateway configurado;
+  // a rota devolve 501 quando não tem, e a tela segue no caminho do WhatsApp,
+  // que é como a Mi trabalha hoje. Nenhum botão que não leva a lugar nenhum.
+  const [pix, setPix] = useState<{
+    copiaECola: string;
+    qrCodeBase64: string | null;
+  } | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const [semGateway, setSemGateway] = useState(false);
+  const [erroPix, setErroPix] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  async function gerarPix() {
+    setGerando(true);
+    setErroPix(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/sinal`, {
+        method: "POST",
+      });
+      if (res.status === 501) {
+        setSemGateway(true);
+        return;
+      }
+      const d = (await res.json().catch(() => ({}))) as {
+        copiaECola?: string;
+        qrCodeBase64?: string | null;
+        error?: string;
+      };
+      if (!res.ok || !d.copiaECola) {
+        setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
+        return;
+      }
+      setPix({ copiaECola: d.copiaECola, qrCodeBase64: d.qrCodeBase64 ?? null });
+    } catch {
+      setErroPix("Tivemos um probleminha de conexão. Tenta de novo?");
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  // Enquanto o PIX está na tela, pergunta ao portal se já caiu. O webhook é o
+  // caminho normal; este poll é o que faz a tela REAGIR sem a cliente ter que
+  // recarregar depois de pagar.
+  useEffect(() => {
+    if (!pix || !bookingId) return;
+    const t = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/bookings/${bookingId}/sinal`);
+        if (!r.ok) return;
+        const d = (await r.json()) as { pago?: boolean; confirmado?: boolean };
+        if (d.pago || d.confirmado) {
+          clearInterval(t);
+          onPago();
+        }
+      } catch {
+        // Rede instável não pode virar erro na cara da cliente: o webhook e o
+        // cron de conciliação fecham o caso de qualquer jeito.
+      }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [pix, bookingId, onPago]);
+
+  const prazoFmt = new Date(prazo).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const wa = `https://wa.me/5521970225231?text=${encodeURIComponent(
+    `Oi Mi! Reservei ${service.name} para ${formatDateLong(date)} às ${time} e quero combinar o sinal 💛`,
+  )}`;
+  return (
+    <div className="mx-auto flex min-h-[70dvh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
+      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
+        Reserva feita
+      </p>
+      <h1 className="mt-5 font-titulo text-4xl text-mi-marrom-escuro">
+        Seu horário está guardado 💛
+      </h1>
+      <p className="mt-4 font-corpo text-mi-texto">
+        <strong>{service.name}</strong> ·{" "}
+        <span className="capitalize">{formatDateLong(date)}</span> às{" "}
+        <strong>{time}</strong>.
+      </p>
+      <div className="mt-6 w-full rounded-mi border border-mi-cinza bg-mi-branco p-5 text-left shadow-suave">
+        <p className="font-corpo text-sm text-mi-texto">
+          Para fechar, falta combinar o sinal
+          {depositCents != null && depositCents > 0 ? (
+            <>
+              {" "}
+              de <strong>{formatBRL(depositCents)}</strong>
+            </>
+          ) : null}
+          {semGateway
+            ? ". A Mi te chama no WhatsApp para acertar — e você também pode chamar ela agora, se preferir."
+            : ". Você pode pagar por PIX aqui mesmo, ou combinar com a Mi no WhatsApp."}
+        </p>
+        <p className="mt-3 font-corpo text-sm text-mi-marrom-700">
+          Guardo esse horário até <strong>{prazoFmt}</strong>. Depois disso ele
+          volta para a agenda.
+        </p>
+
+        {pix && (
+          <div className="mt-4 border-t border-mi-cinza pt-4">
+            {pix.qrCodeBase64 && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={pix.qrCodeBase64}
+                alt="QR Code do PIX do sinal"
+                className="mx-auto h-48 w-48"
+              />
+            )}
+            <p className="mt-3 font-corpo text-xs text-mi-texto/80">
+              Abra o app do banco, escolha PIX e use o QR ou o código abaixo.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard
+                  ?.writeText(pix.copiaECola)
+                  .then(() => setCopiado(true))
+                  .catch(() => setCopiado(false));
+              }}
+              className="mt-2 min-h-[44px] w-full break-all rounded-mi border border-mi-cinza bg-mi-bege px-3 py-2 text-left font-mono text-xs text-mi-texto"
+            >
+              {pix.copiaECola}
+            </button>
+            <p
+              role="status"
+              aria-live="polite"
+              className="mt-1 font-corpo text-xs text-mi-marrom-700"
+            >
+              {copiado
+                ? "Código copiado ✓ — assim que o pagamento cair, esta tela confirma sozinha."
+                : "Toque no código para copiar."}
+            </p>
+          </div>
+        )}
+
+        {erroPix && (
+          <p role="alert" className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+            {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
+          </p>
+        )}
+      </div>
+
+      {!pix && !semGateway && (
+        <Botao onClick={gerarPix} disabled={gerando} className="mt-6 w-full">
+          {gerando ? "Gerando PIX…" : "Pagar sinal por PIX"}
+        </Botao>
+      )}
+      <Botao
+        href={wa}
+        variante={pix || semGateway ? "whatsapp" : "secundario"}
+        className="mt-3 w-full"
+      >
+        Falar com a Mi no WhatsApp
+      </Botao>
+      <Botao href="/" variante="secundario" className="mt-3 w-full">
+        Voltar ao início
+      </Botao>
+    </div>
+  );
+}
+
 function SuccessScreen({
   service,
   date,
@@ -871,7 +1229,7 @@ function SuccessScreen({
   time: string;
 }) {
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="mx-auto flex min-h-[70dvh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
       <span
         aria-hidden
         className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-mi-ok/10 text-mi-ok"

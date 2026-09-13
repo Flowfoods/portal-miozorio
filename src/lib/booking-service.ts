@@ -7,6 +7,7 @@ import {
   evaluateCancellation,
   evaluateNoShow,
   duracaoOcupadaMin,
+  avaliarSinal,
 } from "./policies";
 import {
   creditarPontosServico,
@@ -15,7 +16,18 @@ import {
 } from "./clube-pontos";
 import { ensureClubMember } from "./clube";
 import { getAvailability } from "./availability";
+import {
+  precoEfetivo,
+  duracaoEfetiva,
+  exigeTamanho,
+  type VarianteBase,
+} from "./variantes";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
+import { notificarMi } from "./notify-mi";
+import {
+  notificarClienteConfirmacao,
+  notificarClienteConcluido,
+} from "./notify-cliente";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -34,10 +46,27 @@ export interface CreateBookingInput {
   lgpdConsent: boolean;
   /** "web" (default) | "area_cliente" — origem p/ o bônus de reagendamento (F5). */
   source?: "web" | "area_cliente";
+  /** A3 — tamanho escolhido, quando o serviço tem variações. */
+  variantId?: string;
+  /** A3 — foto do cabelo/área, obrigatória quando há variação. Chave privada. */
+  photoKey?: string;
 }
 
 export type CreateBookingResult =
-  | { ok: true; id: string; holdExpiresAt: string }
+  | {
+      ok: true;
+      id: string;
+      holdExpiresAt: string;
+      /**
+       * A reserva nasceu esperando sinal. NÃO é erro: o horário está guardado
+       * e quem fecha é a Mi pelo WhatsApp (não existe gateway no portal — o
+       * PIX vai direto pra ela). A cliente vê "aguardando sinal", nunca a
+       * mensagem de erro que a fazia achar que não tinha agendado.
+       */
+      aguardandoSinal: boolean;
+      /** Valor do sinal em centavos quando `aguardandoSinal` (senão null). */
+      depositCents: number | null;
+    }
   | {
       ok: false;
       code:
@@ -47,7 +76,9 @@ export type CreateBookingResult =
         | "invalid_datetime"
         | "slot_taken"
         | "slot_unavailable"
-        | "no_consent";
+        | "no_consent"
+        | "variante_invalida"
+        | "foto_obrigatoria";
       message: string;
     };
 
@@ -97,8 +128,9 @@ export async function createBooking(
 
   const service = await prisma.service.findUnique({
     where: { id: input.serviceId },
+    include: { variants: { where: { active: true } } },
   });
-  if (!service || !service.active) {
+  if (!service || !service.active || service.archivedAt) {
     return {
       ok: false,
       code: "invalid_service",
@@ -112,6 +144,41 @@ export async function createBooking(
       message: "Esse atendimento é combinado direto com a Mi no WhatsApp",
     };
   }
+
+  // ── A3 — tamanho ───────────────────────────────────────────────────────────
+  // Quem manda é a existência de variações ativas, não uma flag: serviço sem
+  // variação passa por aqui e sai exatamente como antes.
+  const variante: VarianteBase | null = input.variantId
+    ? (service.variants.find((v) => v.id === input.variantId) ?? null)
+    : null;
+
+  if (exigeTamanho(service.variants)) {
+    if (!variante) {
+      return {
+        ok: false,
+        code: "variante_invalida",
+        message: "Escolha o tamanho para eu calcular certinho 💛",
+      };
+    }
+    // A foto é o que permite a Mi conferir se o tamanho bate — sem ela a
+    // validação não existe e o valor vira chute.
+    if (!input.photoKey) {
+      return {
+        ok: false,
+        code: "foto_obrigatoria",
+        message: "Envie uma foto para eu conferir o tamanho 💛",
+      };
+    }
+  } else if (input.variantId) {
+    // POST forjado com variação de outro serviço.
+    return {
+      ok: false,
+      code: "variante_invalida",
+      message: "Esse atendimento não tem opção de tamanho.",
+    };
+  }
+
+  const priceCents = precoEfetivo(service, variante, input.location);
 
   const phone = normalizeE164BR(input.customer.phone);
   if (!phone) {
@@ -148,8 +215,10 @@ export async function createBooking(
       message: "Data ou horário inválido.",
     };
   }
+  // A3 — cabelo longo pode demorar mais: a duração da variação (quando ela
+  // declara uma) manda no tamanho do bloco na agenda.
   const endsAt = startsAt.plus({
-    minutes: service.durationMin + service.bufferMin,
+    minutes: duracaoEfetiva(service, variante) + service.bufferMin,
   });
 
   // O horário precisa estar na disponibilidade REAL, não só ser uma data
@@ -168,15 +237,9 @@ export async function createBooking(
     };
   }
 
-  const priceCents =
-    input.location === "home" && service.priceHomeCents != null
-      ? service.priceHomeCents
-      : service.priceCents;
-
   const professional = await ensureProfessional();
 
   const now = DateTime.now().setZone(tz);
-  const holdExpiresAt = now.plus({ minutes: settings.holdMinutes });
 
   const guardianPhone = input.customer.guardianPhone
     ? normalizeE164BR(input.customer.guardianPhone)
@@ -206,6 +269,27 @@ export async function createBooking(
     },
   });
 
+  // ── Sinal (A7) ────────────────────────────────────────────────────────────
+  // Duas origens: a reincidência (3 cancelamentos — política §3, gravada em
+  // customer.requiresDeposit por policies.ts) e a flag manual do serviço, que
+  // a Mi liga onde quiser. Antes disto o sinal era um beco sem saída: nada no
+  // portal preenchia deposit_paid_at, então confirmBooking devolvia 402 para
+  // sempre e o hold de 8 min matava a reserva antes de qualquer combinação.
+  // Agora a reserva NASCE esperando o sinal, com prazo de verdade, e quem
+  // fecha é a Mi pelo WhatsApp (o PIX vai direto pra ela — o portal não tem
+  // gateway; ver docs/agenda/FASE1-DIAGNOSTICO.md).
+  const { precisaSinal, depositCents, holdExpiresAt } = avaliarSinal({
+    clienteExigeSinal: customer.requiresDeposit,
+    servicoExigeSinal: service.requiresDeposit,
+    priceCents,
+    depositPercent: settings.depositPercent,
+    now,
+    startsAt,
+    holdMinutes: settings.holdMinutes,
+    depositHoldHours: settings.depositHoldHours,
+    depositCutoffHours: settings.depositCutoffHours,
+  });
+
   // Auto-inscrição no clube (toda cliente vira membro). Idempotente; falha aqui
   // nunca impede o agendamento.
   await ensureClubMember(customer.id).catch(() => null);
@@ -223,6 +307,13 @@ export async function createBooking(
           location: input.location,
           priceCents,
           holdExpiresAt: holdExpiresAt.toJSDate(),
+          ...(depositCents != null ? { depositCents } : {}),
+          // A3 — tamanho escolhido + foto para a Mi conferir. sizeApprovedAt
+          // fica null: é isso que significa "aguardando validação".
+          ...(variante ? { variantId: variante.id } : {}),
+          ...(input.photoKey
+            ? { photoKey: input.photoKey, photoConsentAt: new Date() }
+            : {}),
           ...(input.anamnesis !== undefined
             ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
             : {}),
@@ -234,10 +325,24 @@ export async function createBooking(
       });
       return created;
     });
+    // A4 — a Mi fica sabendo NA HORA, inclusive de reserva que ainda depende de
+    // sinal. Best-effort: `notificarMi` nunca lança, então um WhatsApp que não
+    // sai não desfaz o agendamento que a cliente acabou de fazer.
+    await notificarMi(
+      variante
+        ? "aguardando_tamanho"
+        : precisaSinal
+          ? "aguardando_sinal"
+          : "nova_reserva",
+      booking.id,
+    );
+
     return {
       ok: true,
       id: booking.id,
       holdExpiresAt: holdExpiresAt.toISO() ?? "",
+      aguardandoSinal: precisaSinal,
+      depositCents,
     };
   } catch (e) {
     if (isExclusionViolation(e)) {
@@ -319,7 +424,8 @@ export async function createManualBooking(
   const byId = new Map(services.map((s) => [s.id, s]));
   const resolved = items.map((it) => {
     const s = byId.get(it.serviceId);
-    if (!s || !s.active) return null;
+    // A1 — arquivado não entra em encaixe novo, nem por POST forjado.
+    if (!s || !s.active || s.archivedAt) return null;
     const precoTabelaCents =
       input.location === "home" && s.priceHomeCents != null
         ? s.priceHomeCents
@@ -627,9 +733,32 @@ export async function confirmBooking(
         fromStatus: "pending",
         toStatus: "confirmed",
         actor,
+        // A5 — a Mi pode confirmar pulando o sinal (o PIX costuma chegar direto
+        // pra ela). Fica registrado que foi dispensa, não sinal recebido.
+        reason:
+          actor === "business" &&
+          !booking.depositPaidAt &&
+          (booking.customer.requiresDeposit || booking.service.requiresDeposit)
+            ? "sinal_dispensado_pela_mi"
+            : undefined,
       },
     });
   });
+
+  // A4 — a Mi só precisa do aviso quando NÃO foi ela quem confirmou. Se ela
+  // clicou "confirmar" no painel, mandar de volta é ruído.
+  if (actor !== "business") {
+    await notificarMi(
+      booking.depositPaidAt ? "sinal_pago" : "confirmado",
+      id,
+    );
+  }
+
+  // A9 — a CLIENTE é avisada em todo caminho que confirma. Antes só o encaixe
+  // manual avisava (e só se a Mi marcasse a caixinha): confirmar um pendente
+  // na agenda deixava a cliente sem notícia nenhuma.
+  await notificarClienteConfirmacao(id);
+
   return { ok: true, status: "confirmed" };
 }
 
@@ -742,6 +871,12 @@ export async function markCompleted(
     console.error("financeiro: falha ao reconhecer receita do booking", e);
   }
 
+  // A10 — conta pra cliente o que ela ganhou. Os pontos já eram creditados em
+  // silêncio: ela ganhava e não ficava sabendo, e o Clube não gerava o retorno
+  // que justifica existir. DEPOIS do crédito, para o saldo já incluir o que
+  // entrou agora.
+  await notificarClienteConcluido(id);
+
   return { ok: true, status: "completed" };
 }
 
@@ -789,7 +924,11 @@ export async function cancelBooking(
   await prisma.$transaction(async (tx) => {
     await tx.booking.update({
       where: { id },
-      data: { status: result.finalStatus, holdExpiresAt: null },
+      data: {
+        status: result.finalStatus,
+        cancelledBy: actor === "client" ? "CLIENT" : "ADMIN",
+        holdExpiresAt: null,
+      },
     });
     await tx.bookingEvent.create({
       data: {
@@ -813,6 +952,12 @@ export async function cancelBooking(
       });
     }
   });
+
+  // A4 — só quando quem cancelou foi a cliente. Cancelamento feito pela própria
+  // Mi no painel não precisa voltar pra ela como aviso.
+  if (actor === "client") {
+    await notificarMi("cancelado_cliente", id);
+  }
 
   return {
     ok: true,
@@ -857,7 +1002,12 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
             status: "pending",
             holdExpiresAt: { lt: new Date() },
           },
-          data: { status: "cancelled_by_business", holdExpiresAt: null },
+          data: {
+            status: "cancelled_by_business",
+            // A5 — é o cron, não a Mi. Sem esta marca a tela acusava ela.
+            cancelledBy: "SYSTEM",
+            holdExpiresAt: null,
+          },
         });
         if (r.count === 0) return false;
         await tx.bookingEvent.create({
@@ -871,7 +1021,14 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
         });
         return true;
       });
-      if (encerrou) expiradas++;
+      if (encerrou) {
+        expiradas++;
+        // A4 — antes o cron encerrava a reserva em silêncio: a Mi via um
+        // "Cancelado (Mi)" no painel sem nunca ter sido avisada de que existia
+        // um agendamento ali. Fora da transação de propósito — WhatsApp não
+        // entra em transação de banco.
+        await notificarMi("expirado", id);
+      }
     } catch (e) {
       // Uma linha problemática não pode impedir a limpeza das outras.
       console.error("expireStaleHolds: falha em", id, e);
@@ -879,6 +1036,195 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
   }
 
   return { expiradas };
+}
+
+export type ReativarResult =
+  | { ok: true; status: "confirmed" }
+  | {
+      ok: false;
+      code: "not_found" | "not_reactivatable" | "slot_taken" | "no_past";
+      message: string;
+    };
+
+/**
+ * A5 — traz de volta um agendamento expirado ou cancelado.
+ *
+ * Não existia caminho de volta: uma vez encerrado (pelo cron ou por
+ * cancelamento), `confirmBooking` recusava com `not_pending` e a Mi perdia o
+ * atendimento mesmo com o horário livre e a cliente na mão. Era o fim da linha
+ * do caso Carla.
+ *
+ * A trava do banco (`EXCLUDE USING gist`, R2) continua soberana: se alguém
+ * pegou o horário no meio tempo, a reativação falha nomeando quem está lá.
+ */
+export async function reativarBooking(id: string): Promise<ReativarResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      customerId: true,
+    },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  const reativavel =
+    booking.status === "cancelled_by_business" ||
+    booking.status === "cancelled_by_client";
+  if (!reativavel) {
+    return {
+      ok: false,
+      code: "not_reactivatable",
+      message:
+        booking.status === "confirmed"
+          ? "Esse agendamento já está confirmado."
+          : "Só dá para reativar um agendamento cancelado ou expirado.",
+    };
+  }
+  if (booking.startsAt <= new Date()) {
+    return {
+      ok: false,
+      code: "no_past",
+      message: "Esse horário já passou. Faça um encaixe novo.",
+    };
+  }
+
+  // Checagem amigável ANTES de tentar, só para dar o nome de quem ocupa. A
+  // garantia de verdade é a constraint, no catch.
+  const clash = await findOverlappingBooking(booking.startsAt, booking.endsAt);
+  if (clash && clash.id !== id) {
+    const who = clash.customer.name.split(" ")[0];
+    return {
+      ok: false,
+      code: "slot_taken",
+      message: `Esse horário já está ocupado com ${who}.`,
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id },
+        data: {
+          status: "confirmed",
+          cancelledBy: null,
+          holdExpiresAt: null,
+        },
+      });
+      await tx.bookingEvent.create({
+        data: {
+          bookingId: id,
+          fromStatus: booking.status,
+          toStatus: "confirmed",
+          actor: "admin",
+          reason: "reativado_pela_mi",
+        },
+      });
+    });
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      return {
+        ok: false,
+        code: "slot_taken",
+        message: "Esse horário acabou de ser ocupado.",
+      };
+    }
+    throw e;
+  }
+
+  // A9 — reativar é confirmar: a cliente precisa saber que o horário voltou.
+  // Sufixo próprio no dedupe porque a chave da confirmação original pode já
+  // ter sido gasta (confirmado → cancelado → reativado).
+  await notificarClienteConfirmacao(id, ":reativado");
+
+  return { ok: true, status: "confirmed" };
+}
+
+export type ValidarTamanhoResult =
+  | { ok: true; priceCents: number }
+  | {
+      ok: false;
+      code: "not_found" | "sem_variacao" | "variante_invalida" | "slot_taken";
+      message: string;
+    };
+
+/**
+ * A3 — a Mi confere a foto e aprova ou ajusta o tamanho.
+ *
+ * Ajustar recalcula preço E duração: "cabelo longo" pode demorar mais, e o
+ * bloco na agenda precisa acompanhar, senão o próximo horário fica em cima.
+ * Por isso a troca passa pela trava do banco — se o bloco maior colidir com o
+ * atendimento seguinte, a operação falha em vez de criar sobreposição (R2).
+ */
+export async function validarTamanho(
+  bookingId: string,
+  /** Null = aprova o que a cliente escolheu. */
+  novaVarianteId: string | null,
+  motivo?: string,
+): Promise<ValidarTamanhoResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { service: { include: { variants: true } } },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  if (!booking.variantId) {
+    return {
+      ok: false,
+      code: "sem_variacao",
+      message: "Esse atendimento não tem opção de tamanho.",
+    };
+  }
+
+  const alvoId = novaVarianteId ?? booking.variantId;
+  const variante = booking.service.variants.find((v) => v.id === alvoId);
+  if (!variante) {
+    return {
+      ok: false,
+      code: "variante_invalida",
+      message: "Esse tamanho não existe nesse serviço.",
+    };
+  }
+
+  // `location` é String no schema (studio | home) — estreita aqui em vez de
+  // confiar num cast.
+  const local = booking.location === "home" ? "home" : "studio";
+  const priceCents = precoEfetivo(booking.service, variante, local);
+  const endsAt = DateTime.fromJSDate(booking.startsAt).plus({
+    minutes: duracaoEfetiva(booking.service, variante) + booking.service.bufferMin,
+  });
+
+  try {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        variantId: variante.id,
+        priceCents,
+        endsAt: endsAt.toJSDate(),
+        sizeApprovedAt: new Date(),
+        sizeAdjustReason:
+          novaVarianteId && novaVarianteId !== booking.variantId
+            ? (motivo?.trim() || "Ajustado pela Mi ao conferir a foto")
+            : null,
+      },
+    });
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      return {
+        ok: false,
+        code: "slot_taken",
+        message:
+          "Esse tamanho ocupa mais tempo e bate no próximo atendimento. Remarque um dos dois antes.",
+      };
+    }
+    throw e;
+  }
+
+  return { ok: true, priceCents };
 }
 
 export async function getBookingStatus(id: string) {

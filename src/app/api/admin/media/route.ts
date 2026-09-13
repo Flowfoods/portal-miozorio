@@ -105,10 +105,64 @@ export async function POST(req: Request): Promise<NextResponse> {
     return erro(500, "Deu um erro ao salvar a foto — tente de novo.");
   }
 
+  // A2 — quando a foto é de UM serviço, já vincula. Evita o vai-e-volta de
+  // subir em /admin/fotos e depois procurar o serviço para amarrar.
+  const serviceId = String(form.get("serviceId") ?? "").trim();
+  if (serviceId) {
+    try {
+      await prisma.service.update({
+        where: { id: serviceId },
+        data: { mediaAssetId: asset.id },
+      });
+      revalidatePath("/admin/servicos");
+      revalidatePath("/agendar");
+      revalidatePath("/dia-a-dia");
+    } catch {
+      // A foto subiu e está salva; só o vínculo falhou (serviço apagado no meio
+      // do caminho). Não apaga o asset — ele vale sozinho na galeria.
+      return erro(
+        404,
+        "A foto foi salva, mas não achei esse serviço para vincular.",
+      );
+    }
+  }
+
   revalidatePath("/admin/fotos");
   revalidatePath("/");
   revalidatePath("/sobre");
   revalidatePath("/galeria");
 
   return NextResponse.json({ ok: true, id: asset.id, url: asset.url });
+}
+
+/**
+ * A2 — desvincula a foto de um serviço (não apaga o arquivo).
+ *
+ * O asset continua na galeria de propósito: a Mi pode querer a mesma foto em
+ * outro lugar, e apagar arquivo por causa de um clique em "tirar" é destrutivo
+ * demais para uma ação que ela vai usar experimentando.
+ */
+export async function DELETE(req: Request): Promise<NextResponse> {
+  try {
+    await requireAdmin();
+  } catch {
+    return erro(401, "Sessão expirada — entre de novo no painel.");
+  }
+
+  const serviceId = new URL(req.url).searchParams.get("serviceId")?.trim();
+  if (!serviceId) return erro(400, "Serviço não informado.");
+
+  try {
+    await prisma.service.update({
+      where: { id: serviceId },
+      data: { mediaAssetId: null },
+    });
+  } catch {
+    return erro(404, "Serviço não encontrado.");
+  }
+
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+  revalidatePath("/dia-a-dia");
+  return NextResponse.json({ ok: true });
 }

@@ -23,7 +23,7 @@ export default function AgendarError({
     "https://wa.me/5521970225231?text=Oi%20Mi!%20Tive%20um%20probleminha%20pra%20agendar%20pelo%20site";
 
   return (
-    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-5 py-16 text-center">
+    <main className="mx-auto flex min-h-[60dvh] max-w-lg flex-col items-center justify-center px-5 py-16 text-center">
       <h1 className="font-titulo text-3xl text-mi-marrom-escuro">
         Algo não saiu como esperado
       </h1>
@@ -43,7 +43,7 @@ export default function AgendarError({
           href={WA}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-[48px] items-center justify-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom transition-colors hover:bg-mi-branco"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-mi border border-mi-marrom px-8 font-corpo text-mi-marrom-700 transition-colors hover:bg-mi-branco"
         >
           Falar no WhatsApp
         </a>
