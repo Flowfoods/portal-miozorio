@@ -109,12 +109,29 @@ módulo (`src/lib/recuperacao.ts`, tabela `password_recoveries`):
 
 ### 1. Dokploy → variáveis de ambiente
 
-| Variável                 | Valor                         | Precisa?                       |
-| ------------------------ | ----------------------------- | ------------------------------ |
-| `AUTH_CANONICAL_HOST`    | `miozorio.com.br`             | recomendado                    |
-| `MI_WHATSAPP_EMERGENCIA` | segundo número da Mi em E.164 | opcional                       |
-| `AUTH_EXTRA_ORIGINS`     | vazio                         | só se surgir domínio novo      |
-| `AUTH_COOKIE_DOMAIN`     | vazio                         | só se um dia houver subdomínio |
+| Variável                 | Valor                         | Precisa?                                         |
+| ------------------------ | ----------------------------- | ------------------------------------------------ |
+| `MI_WHATSAPP`            | WhatsApp da Mi em E.164       | **sim — sem ela a recuperação não sai do lugar** |
+| `AUTH_CANONICAL_HOST`    | `miozorio.com.br`             | recomendado                                      |
+| `MI_WHATSAPP_EMERGENCIA` | segundo número da Mi em E.164 | opcional                                         |
+| `AUTH_EXTRA_ORIGINS`     | vazio                         | só se surgir domínio novo                        |
+| `AUTH_COOKIE_DOMAIN`     | vazio                         | só se um dia houver subdomínio                   |
+
+⚠️ **`MI_WHATSAPP` passa a ser lida pela primeira vez aqui.** Ela já existia no
+`.env.example`, mas nenhum código no portal a lia — então ninguém nunca notou se
+estava vazia no Dokploy. A partir do B2 ela é o destino do código de
+recuperação: vazia ou malformada, `numerosDaMi()` devolve lista vazia, o pedido
+fica gravado com `notify_error` e a pessoa lê _"a Mi vai te mandar o código"_
+enquanto o código não vai a lugar nenhum. **Confira antes do deploy** — é o
+único jeito de esse modo de falha não chegar calado na cliente.
+
+⚠️ **Cuidado com o nome.** Existem duas envs diferentes, com os nomes
+trocados de posição, e as duas guardam o número da Mi:
+
+| Env           | De quem é       | Formato        | Se faltar                             |
+| ------------- | --------------- | -------------- | ------------------------------------- |
+| `MI_WHATSAPP` | auth (B2)       | E.164 (`+55…`) | **falha silenciosa** — código não sai |
+| `WHATSAPP_MI` | agenda (A1–A11) | URL do `wa.me` | cai num número fixo no código         |
 
 `AUTH_CANONICAL_HOST` vazio faz o portal usar o host de `NEXT_PUBLIC_SITE_URL`.
 Se algum dia o redirect entrar em laço (Traefik reescrevendo o Host), colocar o

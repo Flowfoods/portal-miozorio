@@ -11,22 +11,49 @@
 
 ## 1. Antes de apertar qualquer botão
 
-- [ ] PR [#104](https://github.com/Flowfoods/portal-miozorio/pull/104) com os
+- [x] PR [#104](https://github.com/Flowfoods/portal-miozorio/pull/104) com os
       dois jobs do CI verdes e revisado. (O CI passou a existir em 13/09, pela
       master — antes deste PR não havia check nenhum.)
-- [ ] Merge na `master`.
+- [x] Merge na `master` — feito em 13/09 20:58 (`d8574cf`).
 
 ## 2. Variáveis de ambiente no Dokploy
 
 Colar antes do deploy (o app lê no boot):
 
 ```
+MI_WHATSAPP=+5521970225231
 AUTH_CANONICAL_HOST=miozorio.com.br
 MI_WHATSAPP_EMERGENCIA=+55219XXXXXXXX
 ```
 
 As outras duas (`AUTH_EXTRA_ORIGINS`, `AUTH_COOKIE_DOMAIN`) ficam **vazias** —
 só existem como escape hatch.
+
+### ⚠️ `MI_WHATSAPP` é a que não pode faltar
+
+**Confira o valor dela no Dokploy antes de apertar deploy.** Ela já existia no
+`.env.example`, mas até agora nenhum código do portal a lia — então nunca fez
+diferença se estava vazia. A partir deste deploy ela é **o destino do código de
+recuperação**. Vazia ou malformada:
+
+- `numerosDaMi()` devolve lista vazia;
+- o pedido é gravado com `notify_error: "MI_WHATSAPP não configurado"`;
+- a cliente lê _"a Mi vai te mandar o código"_ e espera um código que não
+  saiu de lugar nenhum.
+
+Ou seja: **falha calada**, do lado de quem está trancada fora. O passo 4 do
+smoke test pega isso — mas conferir a env custa 10 segundos e evita descobrir
+pelo WhatsApp da Mi.
+
+⚠️ **Não confunda o nome.** São duas envs diferentes, com os nomes trocados de
+posição, guardando o mesmo número:
+
+| Env           | De quem é       | Formato        | Se faltar                             |
+| ------------- | --------------- | -------------- | ------------------------------------- |
+| `MI_WHATSAPP` | auth (B2)       | E.164 (`+55…`) | **falha silenciosa** — código não sai |
+| `WHATSAPP_MI` | agenda (A1–A11) | URL do `wa.me` | cai num número fixo no código         |
+
+Como as duas frentes sobem no mesmo deploy, as duas precisam estar certas.
 
 ⚠️ Se algum dia o redirect entrar em laço (Traefik reescrevendo o Host),
 `AUTH_CANONICAL_HOST=off` desliga **sem precisar de deploy**.
