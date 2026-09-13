@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatBRL } from "@/lib/format";
 import { temAlergia } from "@/lib/anamnesis";
+import { aguardandoValidacaoTamanho } from "@/lib/variantes";
 import StatusPill from "@/components/ui/StatusPill";
 import { historiaDoAgendamento } from "@/lib/booking-historia";
 import NovoAgendamento from "@/components/admin/NovoAgendamento";
@@ -21,6 +23,7 @@ import {
   adminReativarBooking,
   adminMarkNoShow,
   adminMarkCompleted,
+  adminValidarTamanho,
   adminDeleteBookingPhoto,
 } from "./actions";
 
@@ -28,16 +31,30 @@ export const dynamic = "force-dynamic";
 
 type BookingWithRels = Awaited<ReturnType<typeof queryDay>>[number];
 
+/**
+ * Include único do cartão de agendamento. Estava copiado em duas queries (a do
+ * dia e a do período) com um comentário "mesmo include do dia" segurando a
+ * consistência na mão — e foi exatamente por aí que a A3 quebrou o build ao
+ * adicionar um campo em só uma delas. Uma fonte, as duas leem.
+ */
+const BOOKING_CARD_INCLUDE = {
+  customer: true,
+  // A3 — tamanhos do serviço para o select de "Ajustar tamanho".
+  service: {
+    include: {
+      variants: { where: { active: true }, orderBy: { sort: "asc" } },
+    },
+  },
+  variant: true,
+  // Último evento: é ele que diz QUEM fez o quê. Sem isto a tela mostrava
+  // "Cancelado (Mi)" para reserva encerrada pelo sistema.
+  events: { orderBy: { createdAt: "desc" }, take: 1 },
+} satisfies Prisma.BookingInclude;
+
 function queryDay(dayStart: Date, dayEnd: Date) {
   return prisma.booking.findMany({
     where: { startsAt: { gte: dayStart, lt: dayEnd } },
-    include: {
-      customer: true,
-      service: true,
-      // Último evento: é ele que diz QUEM fez o quê. Sem isto a tela mostrava
-      // "Cancelado (Mi)" para reserva encerrada pelo sistema.
-      events: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
+    include: BOOKING_CARD_INCLUDE,
     orderBy: { startsAt: "asc" },
   });
 }
@@ -141,6 +158,64 @@ function BookingCard({ b, tz }: { b: BookingWithRels; tz: string }) {
       </div>
       {historia && (
         <p className="mt-1 font-corpo text-xs text-mi-texto/80">{historia}</p>
+      )}
+
+      {/* A3 — a cliente escolheu um tamanho e mandou foto. Enquanto você não
+          confere, o valor é o que ela escolheu. Não é um status novo: o
+          agendamento segue `pending`, protegido pela trava anti-double-booking
+          (um status novo cairia fora do WHERE da constraint). */}
+      {b.variantId && (
+        <div className="mt-3 rounded-mi border border-mi-alerta/40 bg-mi-alerta/5 p-3">
+          <p className="font-corpo text-xs font-medium text-mi-alerta-tinta">
+            {aguardandoValidacaoTamanho(b)
+              ? "📸 Confira o tamanho e aprove"
+              : "✓ Tamanho conferido"}
+            {b.variant ? ` — ${b.variant.nome}` : ""}
+          </p>
+          {b.sizeAdjustReason && (
+            <p className="mt-1 font-corpo text-xs text-mi-texto/80">
+              Ajuste: {b.sizeAdjustReason}
+            </p>
+          )}
+          {aguardandoValidacaoTamanho(b) && (
+            <div className="mt-2 flex flex-wrap items-end gap-2">
+              <form action={adminValidarTamanho}>
+                <input type="hidden" name="id" value={b.id} />
+                <button className="min-h-[44px] rounded-mi bg-mi-marrom-escuro px-3 py-1.5 text-sm text-white">
+                  Aprovar tamanho
+                </button>
+              </form>
+              <form
+                action={adminValidarTamanho}
+                className="flex flex-wrap items-end gap-2"
+              >
+                <input type="hidden" name="id" value={b.id} />
+                <label className="text-xs">
+                  Ajustar para
+                  <select
+                    name="variantId"
+                    defaultValue={b.variantId}
+                    className="input-mi mt-1 !py-2 text-sm"
+                  >
+                    {b.service.variants.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <input
+                  name="motivo"
+                  placeholder="motivo (opcional)"
+                  className="input-mi !py-2 text-sm sm:w-48"
+                />
+                <button className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-1.5 text-sm">
+                  Ajustar
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       )}
       {actionable && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -253,13 +328,7 @@ export default async function AdminAgendaPage({
       queryDay(day.toJSDate(), day.plus({ days: 1 }).toJSDate()),
       prisma.booking.findMany({
         where: { status: "pending", startsAt: { gte: today.toJSDate() } },
-        include: {
-          customer: true,
-          service: true,
-          // Mesmo include do dia: sem os eventos o cartão volta a
-          // atribuir à Mi o que o sistema encerrou.
-          events: { orderBy: { createdAt: "desc" }, take: 1 },
-        },
+        include: BOOKING_CARD_INCLUDE,
         orderBy: { startsAt: "asc" },
         take: 20,
       }),
@@ -307,13 +376,7 @@ export default async function AdminAgendaPage({
   const periodoBookings = periodoAtivo
     ? await prisma.booking.findMany({
         where: { startsAt: { gte: periodoAtivo.from, lte: periodoAtivo.to } },
-        include: {
-          customer: true,
-          service: true,
-          // Mesmo include do dia: sem os eventos o cartão volta a
-          // atribuir à Mi o que o sistema encerrou.
-          events: { orderBy: { createdAt: "desc" }, take: 1 },
-        },
+        include: BOOKING_CARD_INCLUDE,
         orderBy: { startsAt: "asc" },
       })
     : [];

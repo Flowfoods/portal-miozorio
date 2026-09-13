@@ -15,6 +15,7 @@ import WeekStrip, { type DiaStrip } from "@/components/ui/WeekStrip";
 import Botao from "@/components/ui/Botao";
 import BarraResumo from "./BarraResumo";
 import { trackClient } from "@/lib/track-client";
+import { otimizar } from "@/lib/imagem-client";
 
 interface ApiService {
   id: string;
@@ -30,6 +31,14 @@ interface ApiService {
   availableWeekdays: number[] | null;
   /** A2 — foto de exemplo do serviço; null = monograma. */
   foto: { url: string; alt: string; blurData: string | null } | null;
+  /** A3 — tamanhos. Lista vazia = serviço normal, fluxo idêntico ao de sempre. */
+  variantes: {
+    id: string;
+    nome: string;
+    priceCents: number;
+    priceHomeCents: number | null;
+    durationMin: number | null;
+  }[];
 }
 
 type Location = "studio" | "home";
@@ -89,6 +98,11 @@ export default function AgendarWizard() {
     holdExpiresAt: string;
   } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  // A3 — tamanho escolhido e foto do cabelo. Só entram em cena quando o
+  // serviço tem variação; serviço normal nem vê estes campos.
+  const [varianteId, setVarianteId] = useState<string | null>(null);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string>("");
   // A7 — reserva feita, sinal a combinar com a Mi. Não é erro: o horário já
   // está guardado. `null` = não se aplica.
   const [aguardandoSinal, setAguardandoSinal] = useState<{
@@ -152,8 +166,12 @@ export default function AgendarWizard() {
     preselectDone.current = true;
   }, [services, preselectCode]);
 
-  const priceForLocation = (s: ApiService): number | null =>
-    location === "home" ? s.priceHomeCents : s.priceCents;
+  const priceForLocation = (s: ApiService): number | null => {
+    // A3 — com tamanho escolhido, o preço é o da variação.
+    const v = s.variantes.find((x) => x.id === varianteId);
+    if (v) return location === "home" ? v.priceHomeCents : v.priceCents;
+    return location === "home" ? s.priceHomeCents : s.priceCents;
+  };
 
   // Tabs de categoria derivadas dos serviços do banco (R3).
   const categorias = useMemo(() => {
@@ -252,27 +270,50 @@ export default function AgendarWizard() {
       .finally(() => setSlotsLoading(false));
   }, [service, date, location]);
 
+  // A3 — com variação, tamanho e foto são obrigatórios: é a foto que permite a
+  // Mi conferir antes de fechar o valor. Serviço sem variação não muda nada.
+  const precisaTamanho = (service?.variantes.length ?? 0) > 0;
+  const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
+
   const canSubmit =
     form.name.trim().length >= 2 &&
     form.phone.replace(/\D/g, "").length >= 10 &&
     form.occasion.length > 0 &&
-    form.lgpd;
+    form.lgpd &&
+    tamanhoOk;
 
   /** O que ainda falta, na voz da Mi — dito no clique, não escondido. */
   const faltaPreencher =
-    form.name.trim().length < 2
-      ? "Me conta seu nome? 💛"
-      : form.phone.replace(/\D/g, "").length < 10
-        ? "Confere o WhatsApp? Use DDD + número."
-        : form.occasion.length === 0
-          ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
-          : "Falta aceitar a política de privacidade.";
+    precisaTamanho && varianteId === null
+      ? "Escolhe o tamanho do seu cabelo? 💛"
+      : precisaTamanho && fotoFile === null
+        ? "Falta a foto do cabelo pra eu conferir o tamanho 💛"
+        : form.name.trim().length < 2
+          ? "Me conta seu nome? 💛"
+          : form.phone.replace(/\D/g, "").length < 10
+            ? "Confere o WhatsApp? Use DDD + número."
+            : form.occasion.length === 0
+              ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
+              : "Falta aceitar a política de privacidade.";
 
   async function submitBooking() {
     if (!service || !date || !time) return;
     setSubmitting(true);
     setFormError(null);
     try {
+      // A3 — reduz no navegador antes de enviar (mesma função que o painel
+      // usa) e manda em base64 no corpo do agendamento. Sem endpoint de upload
+      // público: a foto herda as proteções que já existem nesta rota.
+      let fotoBase64: string | undefined;
+      if (fotoFile) {
+        const otimizada = await otimizar(fotoFile);
+        fotoBase64 = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(new Error("leitura"));
+          fr.readAsDataURL(otimizada);
+        });
+      }
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -293,6 +334,8 @@ export default function AgendarWizard() {
           },
           lgpdConsent: form.lgpd,
           site: form.site,
+          ...(varianteId ? { variantId: varianteId } : {}),
+          ...(fotoBase64 ? { fotoBase64 } : {}),
           ...(daAreaCliente ? { source: "area_cliente" } : {}),
         }),
       });
@@ -453,6 +496,12 @@ export default function AgendarWizard() {
                     setService(s);
                     setDate(null);
                     setSlots(null);
+                    // A3 — tamanho e foto são do serviço anterior; trocar de
+                    // serviço sem limpar mandaria uma variação de outro
+                    // catálogo, que o backend recusa.
+                    setVarianteId(null);
+                    setFotoFile(null);
+                    setFotoPreview("");
                     setStep(2);
                   }}
                   className="flex w-full items-center gap-4 rounded-mi border border-mi-cinza bg-mi-branco p-3 text-left shadow-suave transition-colors hover:border-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
@@ -594,6 +643,62 @@ export default function AgendarWizard() {
           <h2 className="mt-3 font-titulo text-3xl text-mi-marrom-escuro">
             Seus dados
           </h2>
+
+          {/* A3 — tamanho + foto. Só aparece se o serviço tiver variação; um
+              serviço normal nem sabe que isto existe. */}
+          {service.variantes.length > 0 && (
+            <div className="mt-6 rounded-mi border border-mi-cinza bg-mi-branco p-4">
+              <p className="font-titulo text-xl text-mi-marrom-escuro">
+                Qual o tamanho do seu cabelo?
+              </p>
+              <p className="mt-1 font-corpo text-sm text-mi-texto">
+                Escolha o que mais parece com o seu e mande uma foto — assim eu
+                reservo o tempo certinho e confirmo o valor antes do dia 💛
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {service.variantes.map((v) => (
+                  <Chip
+                    key={v.id}
+                    ativo={varianteId === v.id}
+                    onClick={() => setVarianteId(v.id)}
+                  >
+                    {v.nome} ·{" "}
+                    {formatBRL(
+                      location === "home" && v.priceHomeCents != null
+                        ? v.priceHomeCents
+                        : v.priceCents,
+                    )}
+                  </Chip>
+                ))}
+              </div>
+
+              <label className="mt-4 block font-corpo text-sm text-mi-marrom-escuro">
+                Foto do seu cabelo
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="mt-1 block w-full font-corpo text-sm text-mi-texto file:mr-3 file:min-h-[44px] file:rounded-mi file:border file:border-mi-cinza file:bg-mi-bege file:px-4 file:font-corpo file:text-sm file:text-mi-marrom-escuro"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    setFotoFile(f);
+                    setFotoPreview(f ? URL.createObjectURL(f) : "");
+                  }}
+                />
+              </label>
+              {fotoPreview && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fotoPreview}
+                  alt="Foto que você escolheu"
+                  className="mt-2 h-28 w-24 rounded-mi object-cover"
+                />
+              )}
+              <p className="mt-2 font-corpo text-xs text-mi-texto/80">
+                A foto fica guardada em privado, só a Mi vê.
+              </p>
+            </div>
+          )}
 
           <div className="mt-6 space-y-4">
             <Field label="Seu nome">

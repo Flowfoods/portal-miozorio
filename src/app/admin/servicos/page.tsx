@@ -9,6 +9,8 @@ import {
   adminDeleteService,
   adminAddServiceAvailability,
   adminRemoveServiceAvailability,
+  adminAddVariante,
+  adminRemoverVariante,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +47,9 @@ export default async function AdminServicosPage() {
       availability: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
       // A2 — foto de exemplo do serviço (o "cardápio" que a cliente vê).
       mediaAsset: { select: { url: true, alt: true, blurData: true } },
+      // A3 — tamanhos cadastrados. A existência de variação ativa é o que liga
+      // o fluxo de tamanho no /agendar (não há flag separada).
+      variants: { where: { active: true }, orderBy: { sort: "asc" } },
     },
   });
 
@@ -353,6 +358,100 @@ export default async function AdminServicosPage() {
                 <button className="rounded-mi border border-mi-cinza px-3 py-2 text-sm">
                   Adicionar janela
                 </button>
+              </form>
+            </details>
+
+            {/* A3 — tamanhos (escova curto/médio/longo…). Sem nenhum, o
+                serviço funciona exatamente como antes. */}
+            <details className="mt-3 border-t border-mi-cinza/60 pt-3">
+              <summary className="cursor-pointer text-xs font-medium text-mi-marrom-escuro">
+                Variação por tamanho{" "}
+                {s.variants.length > 0
+                  ? `(${s.variants.length})`
+                  : "— não usa"}
+              </summary>
+              <p className="mt-1 text-xs text-mi-texto/80">
+                Com tamanhos cadastrados, a cliente escolhe o dela e manda uma
+                foto para você conferir antes de fechar o valor.
+              </p>
+
+              {s.variants.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {s.variants.map((v) => (
+                    <li
+                      key={v.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-mi bg-mi-superficie px-3 py-2 text-xs"
+                    >
+                      <span className="text-mi-marrom-escuro">
+                        <strong>{v.nome}</strong> · {centsToReais(v.priceCents)}
+                        {v.priceHomeCents != null
+                          ? ` (domicílio ${centsToReais(v.priceHomeCents)})`
+                          : ""}
+                        {v.durationMin ? ` · ${v.durationMin} min` : ""}
+                      </span>
+                      <ConfirmForm
+                        action={adminRemoverVariante.bind(null, v.id)}
+                        message={`Desativar o tamanho "${v.nome}"? Ele some para a cliente; os atendimentos que já usaram continuam no histórico.`}
+                      >
+                        <button className="min-h-[44px] text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
+                          desativar
+                        </button>
+                      </ConfirmForm>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <form
+                action={adminAddVariante}
+                className="mt-2 flex flex-wrap items-end gap-2"
+              >
+                <input type="hidden" name="serviceId" value={s.id} />
+                <label className="text-xs">
+                  Tamanho
+                  <input
+                    name="nome"
+                    placeholder="cabelo curto"
+                    required
+                    className="input-mi mt-1 w-36 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Estúdio (R$)
+                  <input
+                    name="price"
+                    inputMode="decimal"
+                    placeholder="80,00"
+                    required
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Domicílio (R$)
+                  <input
+                    name="priceHome"
+                    inputMode="decimal"
+                    placeholder="opcional"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <label className="text-xs">
+                  Duração (min)
+                  <input
+                    name="durationMin"
+                    type="number"
+                    min={5}
+                    step={5}
+                    placeholder="igual"
+                    className="input-mi mt-1 w-24 !py-2"
+                  />
+                </label>
+                <SubmitButton
+                  pendingLabel="Adicionando…"
+                  className="min-h-[44px] rounded-mi border border-mi-cinza px-3 py-2 text-sm disabled:opacity-60"
+                >
+                  Adicionar tamanho
+                </SubmitButton>
               </form>
             </details>
 

@@ -16,6 +16,12 @@ import {
 } from "./clube-pontos";
 import { ensureClubMember } from "./clube";
 import { getAvailability } from "./availability";
+import {
+  precoEfetivo,
+  duracaoEfetiva,
+  exigeTamanho,
+  type VarianteBase,
+} from "./variantes";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 import { notificarMi } from "./notify-mi";
 import {
@@ -40,6 +46,10 @@ export interface CreateBookingInput {
   lgpdConsent: boolean;
   /** "web" (default) | "area_cliente" — origem p/ o bônus de reagendamento (F5). */
   source?: "web" | "area_cliente";
+  /** A3 — tamanho escolhido, quando o serviço tem variações. */
+  variantId?: string;
+  /** A3 — foto do cabelo/área, obrigatória quando há variação. Chave privada. */
+  photoKey?: string;
 }
 
 export type CreateBookingResult =
@@ -66,7 +76,9 @@ export type CreateBookingResult =
         | "invalid_datetime"
         | "slot_taken"
         | "slot_unavailable"
-        | "no_consent";
+        | "no_consent"
+        | "variante_invalida"
+        | "foto_obrigatoria";
       message: string;
     };
 
@@ -116,8 +128,9 @@ export async function createBooking(
 
   const service = await prisma.service.findUnique({
     where: { id: input.serviceId },
+    include: { variants: { where: { active: true } } },
   });
-  if (!service || !service.active) {
+  if (!service || !service.active || service.archivedAt) {
     return {
       ok: false,
       code: "invalid_service",
@@ -131,6 +144,41 @@ export async function createBooking(
       message: "Esse atendimento é combinado direto com a Mi no WhatsApp",
     };
   }
+
+  // ── A3 — tamanho ───────────────────────────────────────────────────────────
+  // Quem manda é a existência de variações ativas, não uma flag: serviço sem
+  // variação passa por aqui e sai exatamente como antes.
+  const variante: VarianteBase | null = input.variantId
+    ? (service.variants.find((v) => v.id === input.variantId) ?? null)
+    : null;
+
+  if (exigeTamanho(service.variants)) {
+    if (!variante) {
+      return {
+        ok: false,
+        code: "variante_invalida",
+        message: "Escolha o tamanho para eu calcular certinho 💛",
+      };
+    }
+    // A foto é o que permite a Mi conferir se o tamanho bate — sem ela a
+    // validação não existe e o valor vira chute.
+    if (!input.photoKey) {
+      return {
+        ok: false,
+        code: "foto_obrigatoria",
+        message: "Envie uma foto para eu conferir o tamanho 💛",
+      };
+    }
+  } else if (input.variantId) {
+    // POST forjado com variação de outro serviço.
+    return {
+      ok: false,
+      code: "variante_invalida",
+      message: "Esse atendimento não tem opção de tamanho.",
+    };
+  }
+
+  const priceCents = precoEfetivo(service, variante, input.location);
 
   const phone = normalizeE164BR(input.customer.phone);
   if (!phone) {
@@ -167,8 +215,10 @@ export async function createBooking(
       message: "Data ou horário inválido.",
     };
   }
+  // A3 — cabelo longo pode demorar mais: a duração da variação (quando ela
+  // declara uma) manda no tamanho do bloco na agenda.
   const endsAt = startsAt.plus({
-    minutes: service.durationMin + service.bufferMin,
+    minutes: duracaoEfetiva(service, variante) + service.bufferMin,
   });
 
   // O horário precisa estar na disponibilidade REAL, não só ser uma data
@@ -186,11 +236,6 @@ export async function createBooking(
       message: "Esse horário não está mais disponível.",
     };
   }
-
-  const priceCents =
-    input.location === "home" && service.priceHomeCents != null
-      ? service.priceHomeCents
-      : service.priceCents;
 
   const professional = await ensureProfessional();
 
@@ -263,6 +308,12 @@ export async function createBooking(
           priceCents,
           holdExpiresAt: holdExpiresAt.toJSDate(),
           ...(depositCents != null ? { depositCents } : {}),
+          // A3 — tamanho escolhido + foto para a Mi conferir. sizeApprovedAt
+          // fica null: é isso que significa "aguardando validação".
+          ...(variante ? { variantId: variante.id } : {}),
+          ...(input.photoKey
+            ? { photoKey: input.photoKey, photoConsentAt: new Date() }
+            : {}),
           ...(input.anamnesis !== undefined
             ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
             : {}),
@@ -278,7 +329,11 @@ export async function createBooking(
     // sinal. Best-effort: `notificarMi` nunca lança, então um WhatsApp que não
     // sai não desfaz o agendamento que a cliente acabou de fazer.
     await notificarMi(
-      precisaSinal ? "aguardando_sinal" : "nova_reserva",
+      variante
+        ? "aguardando_tamanho"
+        : precisaSinal
+          ? "aguardando_sinal"
+          : "nova_reserva",
       booking.id,
     );
 
@@ -1086,6 +1141,90 @@ export async function reativarBooking(id: string): Promise<ReativarResult> {
   await notificarClienteConfirmacao(id, ":reativado");
 
   return { ok: true, status: "confirmed" };
+}
+
+export type ValidarTamanhoResult =
+  | { ok: true; priceCents: number }
+  | {
+      ok: false;
+      code: "not_found" | "sem_variacao" | "variante_invalida" | "slot_taken";
+      message: string;
+    };
+
+/**
+ * A3 — a Mi confere a foto e aprova ou ajusta o tamanho.
+ *
+ * Ajustar recalcula preço E duração: "cabelo longo" pode demorar mais, e o
+ * bloco na agenda precisa acompanhar, senão o próximo horário fica em cima.
+ * Por isso a troca passa pela trava do banco — se o bloco maior colidir com o
+ * atendimento seguinte, a operação falha em vez de criar sobreposição (R2).
+ */
+export async function validarTamanho(
+  bookingId: string,
+  /** Null = aprova o que a cliente escolheu. */
+  novaVarianteId: string | null,
+  motivo?: string,
+): Promise<ValidarTamanhoResult> {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { service: { include: { variants: true } } },
+  });
+  if (!booking) {
+    return { ok: false, code: "not_found", message: "Reserva não encontrada." };
+  }
+  if (!booking.variantId) {
+    return {
+      ok: false,
+      code: "sem_variacao",
+      message: "Esse atendimento não tem opção de tamanho.",
+    };
+  }
+
+  const alvoId = novaVarianteId ?? booking.variantId;
+  const variante = booking.service.variants.find((v) => v.id === alvoId);
+  if (!variante) {
+    return {
+      ok: false,
+      code: "variante_invalida",
+      message: "Esse tamanho não existe nesse serviço.",
+    };
+  }
+
+  // `location` é String no schema (studio | home) — estreita aqui em vez de
+  // confiar num cast.
+  const local = booking.location === "home" ? "home" : "studio";
+  const priceCents = precoEfetivo(booking.service, variante, local);
+  const endsAt = DateTime.fromJSDate(booking.startsAt).plus({
+    minutes: duracaoEfetiva(booking.service, variante) + booking.service.bufferMin,
+  });
+
+  try {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        variantId: variante.id,
+        priceCents,
+        endsAt: endsAt.toJSDate(),
+        sizeApprovedAt: new Date(),
+        sizeAdjustReason:
+          novaVarianteId && novaVarianteId !== booking.variantId
+            ? (motivo?.trim() || "Ajustado pela Mi ao conferir a foto")
+            : null,
+      },
+    });
+  } catch (e) {
+    if (isExclusionViolation(e)) {
+      return {
+        ok: false,
+        code: "slot_taken",
+        message:
+          "Esse tamanho ocupa mais tempo e bate no próximo atendimento. Remarque um dos dois antes.",
+      };
+    }
+    throw e;
+  }
+
+  return { ok: true, priceCents };
 }
 
 export async function getBookingStatus(id: string) {

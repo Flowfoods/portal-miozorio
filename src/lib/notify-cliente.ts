@@ -148,3 +148,49 @@ export async function notificarClienteConcluido(
     console.error("notificarClienteConcluido: falha em", bookingId, e);
   }
 }
+
+/**
+ * A3 — a Mi ajustou o tamanho e o valor mudou. A cliente PRECISA saber: sem
+ * isso ela só descobriria o preço novo na hora do atendimento, que é exatamente
+ * o tipo de surpresa que a Mi não quer dar.
+ *
+ * Dedupe por booking + valor: um segundo ajuste (valor diferente) manda de
+ * novo; clicar "aprovar" duas vezes com o mesmo valor, não.
+ */
+export async function notificarClienteAjusteTamanho(
+  bookingId: string,
+): Promise<void> {
+  try {
+    const b = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        priceCents: true,
+        customerId: true,
+        customer: { select: { name: true, phoneE164: true } },
+        service: { select: { pendingPrice: true } },
+        variant: { select: { nome: true } },
+      },
+    });
+    if (!b || !b.variant) return;
+
+    const content = await getSiteContent();
+    const primeiroNome =
+      b.customer.name.trim().split(/\s+/)[0] ?? b.customer.name;
+    const texto = aplicarTemplate(content["msg.tamanho_ajustado"] ?? "", {
+      nome: primeiroNome,
+      tamanho: b.variant.nome,
+      valor: b.service.pendingPrice ? "a combinar" : formatBRL(b.priceCents),
+    });
+    if (!texto.trim()) return;
+
+    await sendTransactional({
+      telefone: b.customer.phoneE164.replace(/\D/g, ""),
+      texto,
+      dedupeKey: `tamanho_ajustado:${bookingId}:${b.priceCents}`,
+      templateKey: "tamanho_ajustado",
+      clienteId: b.customerId,
+    });
+  } catch (e) {
+    console.error("notificarClienteAjusteTamanho: falha em", bookingId, e);
+  }
+}

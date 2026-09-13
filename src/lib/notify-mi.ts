@@ -25,6 +25,7 @@ import { formatBRL } from "./format";
 export type EventoMi =
   | "nova_reserva"
   | "aguardando_sinal"
+  | "aguardando_tamanho"
   | "sinal_pago"
   | "confirmado"
   | "cancelado_cliente"
@@ -33,6 +34,7 @@ export type EventoMi =
 const TITULO: Record<EventoMi, string> = {
   nova_reserva: "✨ Novo agendamento",
   aguardando_sinal: "⏳ Reserva aguardando sinal",
+  aguardando_tamanho: "📸 Confira o tamanho e aprove",
   sinal_pago: "💰 Sinal recebido",
   confirmado: "✅ Agendamento confirmado",
   cancelado_cliente: "❌ A cliente cancelou",
@@ -79,6 +81,13 @@ export function montarMensagemMi(evento: EventoMi, d: DadosMi): string {
         .toFormat("dd/LL 'às' HH:mm")}.`,
     );
   }
+  if (evento === "aguardando_tamanho") {
+    linhas.push(
+      "",
+      `Tamanho escolhido pela cliente: ${d.variante ?? "—"}.`,
+      "Ela mandou uma foto. Confira no painel e aprove ou ajuste o tamanho — o valor acompanha.",
+    );
+  }
   if (evento === "expirado") {
     linhas.push(
       "",
@@ -100,6 +109,8 @@ export interface DadosMi {
   priceCents: number;
   depositCents?: number | null;
   holdExpiresAt?: Date | null;
+  /** A3 — nome do tamanho escolhido, quando houver. */
+  variante?: string | null;
 }
 
 /**
@@ -122,6 +133,7 @@ export async function notificarMi(
         holdExpiresAt: true,
         customer: { select: { name: true, phoneE164: true } },
         service: { select: { name: true } },
+        variant: { select: { nome: true } },
         items: {
           orderBy: { sort: "asc" },
           select: { service: { select: { name: true } } },
@@ -146,6 +158,7 @@ export async function notificarMi(
       priceCents: b.priceCents,
       depositCents: b.depositCents,
       holdExpiresAt: b.holdExpiresAt,
+      variante: b.variant?.nome ?? null,
     });
 
     await sendTransactional({

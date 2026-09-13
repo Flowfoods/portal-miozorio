@@ -409,6 +409,16 @@ export const CONTENT_FIELDS: ContentField[] = [
     ajuda: "Disponível: {nome}, {servico}. Enviado automaticamente no dia seguinte, convida a deixar um depoimento na Área da Cliente.",
   },
   {
+    key: "msg.tamanho_ajustado",
+    label: "WhatsApp · você ajustou o tamanho (valor mudou)",
+    default:
+      "Oi, {nome}!\n\nVi a sua foto e ajustei o tamanho para {tamanho} — assim eu reservo o tempo certinho para o seu cabelo.\n\nO valor fica em {valor}. Está tudo certo para você? Qualquer coisa é só me chamar por aqui 💛",
+    multiline: true,
+    grupo: "Mensagens de WhatsApp",
+    ajuda:
+      "Disponível: {nome}, {tamanho}, {valor}. Enviada quando você ajusta o tamanho escolhido pela cliente.",
+  },
+  {
     key: "msg.atendimento_concluido",
     label: "WhatsApp · logo após o atendimento (com pontos do Clube)",
     default:

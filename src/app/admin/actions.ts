@@ -17,6 +17,7 @@ import {
   marcarVoucherEntregue,
 } from "@/lib/clube-pontos";
 import { dispatchEvent, buildEventMessage } from "@/lib/notify";
+import { notificarClienteAjusteTamanho } from "@/lib/notify-cliente";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
 import { getSettings, invalidateSettingsCache } from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
@@ -24,6 +25,7 @@ import {
   confirmBooking,
   cancelBooking,
   reativarBooking,
+  validarTamanho,
   markNoShow,
   markCompleted,
   createManualBooking,
@@ -78,6 +80,33 @@ export async function adminReativarBooking(id: string): Promise<void> {
   const r = await reativarBooking(id);
   refreshAgenda();
   if (!r.ok) fail(r.message);
+}
+
+/**
+ * A3 — a Mi confere a foto e valida o tamanho. `variantId` vazio = aprova o que
+ * a cliente escolheu; preenchido = ajusta, recalcula preço/duração e avisa ela
+ * do valor novo (senão a cliente só descobre na hora do atendimento).
+ */
+export async function adminValidarTamanho(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const novaVariante = String(formData.get("variantId") ?? "").trim() || null;
+  const motivo = String(formData.get("motivo") ?? "").trim() || undefined;
+
+  const antes = await prisma.booking.findUnique({
+    where: { id },
+    select: { variantId: true, priceCents: true },
+  });
+
+  const r = await validarTamanho(id, novaVariante, motivo);
+  refreshAgenda();
+  if (!r.ok) fail(r.message);
+
+  const mudou =
+    antes != null &&
+    (antes.variantId !== (novaVariante ?? antes.variantId) ||
+      antes.priceCents !== r.priceCents);
+  if (mudou) await notificarClienteAjusteTamanho(id);
 }
 
 export async function adminMarkNoShow(id: string): Promise<void> {
@@ -1602,4 +1631,69 @@ export async function adminSetContent(formData: FormData): Promise<void> {
   }
   invalidateContentCache();
   revalidatePath("/", "layout"); // textos aparecem em todas as páginas
+}
+
+// ── A3: variações por tamanho ───────────────────────────────────────────────
+
+/**
+ * Cadastra uma variação ("cabelo curto", "cabelo longo"…). A EXISTÊNCIA de
+ * variações ativas é o que liga o fluxo de tamanho — não há flag separada, e
+ * por isso um serviço sem variação se comporta exatamente como antes.
+ */
+export async function adminAddVariante(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const serviceId = String(formData.get("serviceId") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (nome.length < 2) fail("Dê um nome ao tamanho (ex.: cabelo curto).");
+
+  const priceCents = reaisToCents(formData.get("price"));
+  if (priceCents == null) fail("Informe o preço desse tamanho.");
+  const priceHomeCents = reaisToCents(formData.get("priceHome"));
+
+  const duracaoBruta = Number(formData.get("durationMin"));
+  const durationMin =
+    Number.isInteger(duracaoBruta) && duracaoBruta > 0 ? duracaoBruta : null;
+
+  const servico = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: { id: true, variants: { select: { nome: true, sort: true } } },
+  });
+  if (!servico) fail("Serviço não encontrado.");
+  if (servico.variants.some((v) => chaveServico(v.nome) === chaveServico(nome))) {
+    fail(`Já existe um tamanho chamado "${nome}" nesse serviço.`);
+  }
+
+  await prisma.serviceVariant.create({
+    data: {
+      serviceId,
+      nome,
+      priceCents,
+      priceHomeCents,
+      durationMin,
+      sort: servico.variants.length,
+    },
+  });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(`Tamanho "${nome}" adicionado`)}`,
+  );
+}
+
+/**
+ * Desativa uma variação. NÃO apaga: agendamentos antigos apontam para ela e
+ * precisam continuar mostrando qual tamanho foi feito.
+ */
+export async function adminRemoverVariante(id: string): Promise<void> {
+  await requireAdmin();
+  const v = await prisma.serviceVariant.update({
+    where: { id },
+    data: { active: false },
+    select: { nome: true },
+  });
+  revalidatePath("/admin/servicos");
+  revalidatePath("/agendar");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(`Tamanho "${v.nome}" desativado`)}`,
+  );
 }

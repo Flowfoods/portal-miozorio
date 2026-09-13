@@ -129,9 +129,32 @@ model Service {
   availability  ServiceAvailability[]
   bookingItems  BookingItem[]
   mediaAsset    MediaAsset?           @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  variants      ServiceVariant[]
 
   @@index([mediaAssetId])
   @@map("services")
+}
+
+/// A3 — variação por tamanho (escova curto/médio/longo, por exemplo). Serviço
+/// SEM linhas aqui se comporta exatamente como antes — a retrocompatibilidade é
+/// por construção, não por flag.
+model ServiceVariant {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId      String   @map("service_id") @db.Uuid
+  nome           String // "cabelo curto", "cabelo longo"…
+  priceCents     Int      @map("price_cents")
+  priceHomeCents Int?     @map("price_home_cents")
+  /// Null = usa a duração do serviço. Preenchido = sobrepõe (cabelo longo demora mais).
+  durationMin    Int?     @map("duration_min")
+  sort           Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([serviceId, sort])
+  @@map("service_variants")
 }
 
 /// M9 — disponibilidade própria de um serviço (linha Dia a Dia: cabelo/sobrancelha
@@ -329,10 +352,18 @@ model Booking {
   // pública); servida só via /admin/media. Consentimento explícito obrigatório.
   photoKey       String?       @map("photo_key")
   photoConsentAt DateTime?     @map("photo_consent_at") @db.Timestamptz
+  // ── A3 — tamanho escolhido e validação da Mi ──────────────────────────────
+  // "Aguardando validação" é variantId != null && sizeApprovedAt == null. NÃO é
+  // um status: um BookingStatus novo cairia fora do WHERE da constraint
+  // no_overlap e abriria furo de double-booking (ver a migration).
+  variantId        String?   @map("variant_id") @db.Uuid
+  sizeApprovedAt   DateTime? @map("size_approved_at") @db.Timestamptz
+  sizeAdjustReason String?   @map("size_adjust_reason")
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 
   customer      Customer          @relation(fields: [customerId], references: [id])
   service       Service           @relation(fields: [serviceId], references: [id])
+  variant       ServiceVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
   professional  Professional?     @relation(fields: [professionalId], references: [id])
   eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
   events        BookingEvent[]
