@@ -158,3 +158,46 @@ describe("R21 — por que 'aguardando tamanho' NÃO virou um status", () => {
     expect(duplicado.id).toBeTruthy();
   });
 });
+
+describe("professional_id NOT NULL — a porta dos fundos da R2", () => {
+  // A trava compara `professional_id WITH =`, e em PostgreSQL NULL nunca
+  // conflita com NULL. Enquanto a coluna aceitasse NULL, duas reservas sem
+  // profissional no mesmo horário passavam as duas — sem erro, sem log.
+  // Fechado por estrutura na migration 20260913080000.
+
+  it("a coluna é NOT NULL no banco, não só no Prisma", async () => {
+    const col = await prisma.$queryRaw<{ nulavel: string }[]>`
+      SELECT is_nullable AS nulavel
+        FROM information_schema.columns
+       WHERE table_name = 'bookings' AND column_name = 'professional_id'
+    `;
+    expect(col[0]?.nulavel).toBe("NO");
+  });
+
+  it("INSERT cru com profissional NULL é recusado pelo banco", async () => {
+    // Vai por SQL cru de propósito: o tipo do Prisma já impede isso em
+    // TypeScript, e o que precisa ser provado é que o BANCO impede — é ele
+    // que protege contra script, migração manual e caminho novo.
+    const inserir = prisma.$executeRawUnsafe(
+      `INSERT INTO bookings
+         (customer_id, service_id, professional_id, starts_at, ends_at,
+          status, location, source, price_cents)
+       VALUES ($1::uuid, $2::uuid, NULL, $3::timestamptz, $4::timestamptz,
+               'pending', 'studio', 'site', 10000)`,
+      customerId,
+      serviceId,
+      SAB_14H.toISOString(),
+      fim(SAB_14H, 75).toISOString(),
+    );
+    // 23502 = not_null_violation.
+    await expect(inserir).rejects.toThrow(/23502|null value|not-null/i);
+  });
+
+  it("com profissional preenchida, a sobreposição volta a ser barrada", async () => {
+    // O par do teste acima: o NULL era a única forma de escapar da trava.
+    await criar(SAB_14H, fim(SAB_14H, 75), "pending");
+    await expect(
+      criar(fim(SAB_14H, 30), fim(SAB_14H, 105), "pending"),
+    ).rejects.toSatisfy(ehExclusionViolation);
+  });
+});

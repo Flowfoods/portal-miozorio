@@ -8,14 +8,26 @@
 
 ## Adiados conscientemente na execução do plano de resolução (15/08/2026)
 
-- **`professional_id NOT NULL` no banco.** A trava anti-double-booking é
+- ~~**`professional_id NOT NULL` no banco.**~~ — **resolvido em 13/09/2026**
+  (`20260913080000_professional_obrigatorio`). A trava anti-double-booking é
   `EXCLUDE ... professional_id WITH =`, e em PostgreSQL `=` com NULL nunca
-  conflita — um booking sem profissional desarma a R2 em silêncio. O código já
-  não grava NULL (`ensureProfessional()` em `booking-service.ts`) e o seed
-  garante a profissional antes do `--if-empty`. Falta a migration aditiva com
-  backfill + `SET NOT NULL` para fechar por estrutura. **Depende de conferir o
-  banco de produção primeiro** (quantos bookings já estão com NULL) e de
-  autorização para mudar schema em produção.
+  conflita — um booking sem profissional desarmava a R2 em silêncio.
+
+  A dependência de "conferir o banco de produção primeiro" foi resolvida sem
+  acesso ao banco: a migration se defende sozinha. Antes de escrever qualquer
+  coisa ela pergunta se o backfill criaria sobreposição — considerando tanto
+  pares NULL × NULL quanto NULL × preenchida — e, se criaria, aborta com uma
+  mensagem que nomeia o par. Um par assim é um double-booking que já existe na
+  agenda; quem escolhe qual fica é a Mi, não uma migration. Abortar deixa o
+  banco intocado e o Dokploy mantém a versão anterior.
+
+  `scripts/deploy-agenda.sh` roda a mesma conferência no pré-voo, só leitura,
+  para o problema aparecer antes do deploy e não no boot do container.
+
+  Os quatro cenários foram exercitados contra um PostgreSQL 16 real (produção
+  limpa · NULLs sem conflito · NULL × NULL · NULL × preenchida) e três testes
+  de integração novos travam o resultado. ⚠️ **Ainda exige o OK do Rodolfo**
+  como toda mudança de schema em produção.
 
 - **Posse na confirmação (`POST /api/bookings/[id]/confirm`).** A rota não checa
   quem chama. O dano é contido por desenho — ela fixa o ator em `system`, então

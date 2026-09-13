@@ -30,6 +30,9 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 
 - **R1/R14** Noiva e debutante NUNCA agendáveis online — só CTA WhatsApp (travado no backend).
 - **R2** Double-booking impedido **no banco** (`EXCLUDE USING gist`), nunca só no app.
+  `bookings.professional_id` é **NOT NULL** e tem que continuar assim: a trava
+  compara `professional_id WITH =`, e `NULL = NULL` não é verdadeiro em
+  PostgreSQL — reserva sem profissional escapa da trava **em silêncio**.
 - **R3/R15** Zero hardcode — tudo em `business_settings`/`services`.
 - **R4/R16** UTC no banco; exibição `America/Sao_Paulo` (Luxon).
 - **R5** Telefones E.164 (`normalizeE164BR`) antes de qualquer uso.
@@ -133,14 +136,14 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
 
-- `npm test` — **474 testes**, sem banco. Roda em qualquer lugar.
-- `npm run test:db` — **18 testes de integração** contra Postgres de verdade
+- `npm test` — **476 testes**, sem banco. Roda em qualquer lugar.
+- `npm run test:db` — **21 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 474 testes, build) + job `integracao` (postgres:16, aplica as
-migrations de verdade e roda os 18). O repo não tinha CI até 13/09/2026 — um
+(lint, typecheck, 476 testes, build) + job `integracao` (postgres:16, aplica as
+migrations de verdade e roda os 21). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.
 

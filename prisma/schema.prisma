@@ -337,7 +337,10 @@ model Booking {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customerId     String        @map("customer_id") @db.Uuid
   serviceId      String        @map("service_id") @db.Uuid
-  professionalId String?       @map("professional_id") @db.Uuid
+  /// Obrigatório: a trava no_overlap compara `professional_id WITH =`, e NULL
+  /// nunca conflita com NULL — uma reserva sem profissional escapa da R2 em
+  /// silêncio. Fechado por NOT NULL no banco (20260913080000).
+  professionalId String        @map("professional_id") @db.Uuid
   eventSessionId String?       @map("event_session_id") @db.Uuid
   startsAt       DateTime      @map("starts_at") @db.Timestamptz
   endsAt         DateTime      @map("ends_at") @db.Timestamptz // inclui buffer
@@ -371,7 +374,7 @@ model Booking {
   customer      Customer          @relation(fields: [customerId], references: [id])
   service       Service           @relation(fields: [serviceId], references: [id])
   variant       ServiceVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  professional  Professional?     @relation(fields: [professionalId], references: [id])
+  professional  Professional      @relation(fields: [professionalId], references: [id])
   eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
   events        BookingEvent[]
   notifications NotificationLog[]
