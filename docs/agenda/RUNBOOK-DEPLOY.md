@@ -1,5 +1,16 @@
 # Runbook — subir a frente de agendamento
 
+> **Atalho:** `scripts/deploy-agenda.sh` faz os passos 0 a 3 sozinho, abortando
+> no primeiro erro e conferindo o banco no fim. Este documento continua valendo
+> como referência e para quem preferir passo a passo.
+>
+> ```bash
+> export DOKPLOY_URL="https://<seu-dokploy>"
+> export DOKPLOY_API_KEY="..."          # nunca commitar, nunca colar em chat
+> ./scripts/deploy-agenda.sh
+> # sem API key, dispare pelo painel:  DEPLOY_MANUAL=1 ./scripts/deploy-agenda.sh
+> ```
+
 Passo a passo, em ordem. Cada passo diz **o que fazer**, **como saber que deu
 certo** e **o que fazer se der errado**.
 
@@ -12,18 +23,27 @@ coluna e tabela, não apagam nem alteram nada existente.
 
 ```bash
 docker exec miozorio-pgmiozorio-p6ecqh \
-  pg_dump -U postgres miozorio > backup-antes-agenda-$(date +%F).sql
+  pg_dump -U miozorio -d miozorio | gzip > backup-antes-agenda-$(date +%F).sql.gz
 ```
 
-**Deu certo se:** o arquivo tem tamanho > 0 (`ls -lh backup-antes-agenda-*.sql`).
+**Deu certo se:** o arquivo tem mais que alguns KB **e** contém `CREATE TABLE`:
+```bash
+ls -lh backup-antes-agenda-*.sql.gz
+zcat backup-antes-agenda-*.sql.gz | grep -c "CREATE TABLE"
+```
+
+Conferir o conteúdo, não só o tamanho: um `pg_dump` que morre no meio deixa um
+`.gz` pequeno e válido, e você só descobriria que o backup era inútil na hora H.
+(O `deploy-agenda.sh` faz essa checagem sozinho.)
 
 Sem isto, não siga. É o único passo que não dá para refazer depois.
 
 ---
 
-## 1. Merge e deploy
+## 1. Deploy
 
-Branch: `bruce/adoring-faraday-vlk70j` → `master` → deploy pelo Dokploy.
+O merge já foi feito: **PR #103 está em `master`** (commit `c10b402`). Falta só
+disparar o deploy pelo Dokploy — merge não deploya nada sozinho.
 
 O entrypoint roda `prisma migrate deploy` sozinho no boot — as 6 migrations
 entram no momento em que o container sobe. Você não precisa rodar nada à mão.
@@ -110,13 +130,14 @@ Se você quiser sinal em algum serviço específico, ligue a caixinha
 
 ---
 
-## 6. (Opcional) Ligar o pagamento por PIX
+## 6. Ligar o pagamento por PIX (Mercado Pago)
 
-**Só faça isto quando decidir o provedor.** Enquanto estas três variáveis
-estiverem vazias, o portal se comporta como hoje: reserva guardada e sinal
-combinado no seu WhatsApp. Nenhuma cliente vê botão de pagar.
+Passo a passo completo, com onde pegar cada credencial e como testar com R$ 1:
+**`docs/agenda/ATIVAR-PIX-MERCADOPAGO.md`**.
 
-No Dokploy:
+Enquanto as três variáveis estiverem vazias, o portal se comporta como hoje:
+reserva guardada e sinal combinado no seu WhatsApp, e nenhuma cliente vê botão
+de pagar. Resumo do que entra no Dokploy:
 ```
 PAGAMENTO_PROVIDER = mercadopago
 MP_ACCESS_TOKEN    = APP_USR-...      (credencial de PRODUÇÃO da conta da Mi)
@@ -145,7 +166,7 @@ o QR aparece, e ao pagar a tela confirma sozinha em alguns segundos.
 webhook de pagamento sem verificação seria uma porta aberta para qualquer um
 marcar uma reserva como paga.
 
-> Prefere Efí em vez de Mercado Pago? É escrever um arquivo novo
+> Trocar para Efí depois é escrever um arquivo novo
 > (`src/lib/pagamento/efi.ts`) com a mesma interface. O agendamento não muda.
 
 ---
