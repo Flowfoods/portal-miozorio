@@ -406,6 +406,10 @@ export async function adminUpdateService(formData: FormData): Promise<void> {
   const lockedOffline =
     service.category === "noiva" || service.category === "debutante";
 
+  const pendingPrice = formData.get("pendingPrice") === "on";
+  const requiresDeposit = formData.get("requiresDeposit") === "on";
+  assertSinalCoerente(pendingPrice, requiresDeposit);
+
   await prisma.service.update({
     where: { id },
     data: {
@@ -418,15 +422,29 @@ export async function adminUpdateService(formData: FormData): Promise<void> {
         Math.trunc(Number(formData.get("clubPoints")) || 0),
       ),
       active: formData.get("active") === "on",
-      pendingPrice: formData.get("pendingPrice") === "on",
+      pendingPrice,
       bookableOnline: lockedOffline
         ? false
         : formData.get("bookableOnline") === "on",
-      requiresDeposit: formData.get("requiresDeposit") === "on",
+      requiresDeposit,
     },
   });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+}
+
+/**
+ * A7 — "preço a confirmar" + "exige sinal" é combinação impossível: o sinal é
+ * uma porcentagem do valor, e não existe valor ainda. Antes o cadastro aceitava
+ * as duas juntas e o serviço ficava travado — a cliente reservava e nunca
+ * conseguia fechar.
+ */
+function assertSinalCoerente(pendingPrice: boolean, requiresDeposit: boolean) {
+  if (pendingPrice && requiresDeposit) {
+    fail(
+      "Um serviço com preço a confirmar não pode exigir sinal — o sinal é uma % do valor. Defina o preço ou desmarque o sinal.",
+    );
+  }
 }
 
 /** "Maquiagem p/ Festa" → "maquiagem-p-festa" (único: sufixo -2, -3…). */
@@ -481,6 +499,9 @@ export async function adminCreateService(formData: FormData): Promise<void> {
   // R1: noiva/debutante nascem (e permanecem) não-agendáveis online.
   const lockedOffline = category === "noiva" || category === "debutante";
 
+  const requiresDeposit = formData.get("requiresDeposit") === "on";
+  assertSinalCoerente(pendingPrice, requiresDeposit);
+
   await prisma.service.create({
     data: {
       code: await uniqueServiceCode(name),
@@ -494,7 +515,7 @@ export async function adminCreateService(formData: FormData): Promise<void> {
         ? false
         : formData.get("bookableOnline") === "on",
       pendingPrice,
-      requiresDeposit: formData.get("requiresDeposit") === "on",
+      requiresDeposit,
       isCourse: category === "curso",
       clubPoints: Math.max(
         0,

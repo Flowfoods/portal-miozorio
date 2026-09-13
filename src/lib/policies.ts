@@ -6,6 +6,65 @@ import { DateTime } from "luxon";
  * hardcode. Ref.: booking-engine SKILL §5.
  */
 
+// ── Sinal (A7) ───────────────────────────────────────────────────────────────
+
+export interface SinalInput {
+  /** Reincidência (customers.requires_deposit, escrito pelas regras abaixo). */
+  clienteExigeSinal: boolean;
+  /** Flag manual do catálogo, que a Mi liga onde quiser. */
+  servicoExigeSinal: boolean;
+  /** Valor do atendimento em centavos (já resolvido estúdio × domicílio). */
+  priceCents: number;
+  depositPercent: number;
+  now: DateTime;
+  startsAt: DateTime;
+  /** Hold curto normal (só para a cliente terminar o formulário). */
+  holdMinutes: number;
+  depositHoldHours: number;
+  depositCutoffHours: number;
+}
+
+export interface SinalResult {
+  precisaSinal: boolean;
+  /** Centavos do sinal, ou null quando não há sinal. */
+  depositCents: number | null;
+  /** Até quando o horário fica guardado. */
+  holdExpiresAt: DateTime;
+}
+
+/**
+ * Decide se a reserva nasce esperando sinal, quanto é e por quanto tempo o
+ * horário fica guardado.
+ *
+ * O portal NÃO cobra: não existe gateway, e o PIX do sinal vai direto para a
+ * Mi. Por isso o sinal aqui não é uma trava de pagamento — é só um prazo de
+ * combinação mais generoso que o hold de minutos, que existia apenas para a
+ * cliente terminar o formulário. Antes disto uma reserva com sinal morria em 8
+ * minutos sem que ninguém pudesse fazer nada a respeito.
+ */
+export function avaliarSinal(input: SinalInput): SinalResult {
+  const precisaSinal = input.clienteExigeSinal || input.servicoExigeSinal;
+  const holdPadrao = input.now.plus({ minutes: input.holdMinutes });
+  if (!precisaSinal) {
+    return { precisaSinal: false, depositCents: null, holdExpiresAt: holdPadrao };
+  }
+  // Teto de horas, mas nunca depois do corte antes do atendimento — não adianta
+  // o sinal vencer com a Mi já a caminho. O piso do hold padrão protege contra
+  // prazo no passado se um dia o lead time ficar menor que o corte.
+  const holdExpiresAt = DateTime.max(
+    holdPadrao,
+    DateTime.min(
+      input.now.plus({ hours: input.depositHoldHours }),
+      input.startsAt.minus({ hours: input.depositCutoffHours }),
+    ),
+  );
+  return {
+    precisaSinal: true,
+    depositCents: Math.round((input.priceCents * input.depositPercent) / 100),
+    holdExpiresAt,
+  };
+}
+
 export interface CancelPolicyInput {
   startsAt: DateTime;
   now: DateTime;

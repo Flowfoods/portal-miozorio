@@ -56,7 +56,15 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(
-    { id: result.id, holdExpiresAt: result.holdExpiresAt },
+    {
+      id: result.id,
+      holdExpiresAt: result.holdExpiresAt,
+      // A7: o wizard usa isto para NÃO chamar /confirm quando há sinal — antes
+      // ele chamava sempre, tomava 402 e mostrava a recusa como erro de
+      // formulário, como se a reserva não existisse.
+      aguardandoSinal: result.aguardandoSinal,
+      depositCents: result.depositCents,
+    },
     { status: 201 },
   );
 }

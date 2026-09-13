@@ -7,6 +7,7 @@ import {
   evaluateCancellation,
   evaluateNoShow,
   duracaoOcupadaMin,
+  avaliarSinal,
 } from "./policies";
 import {
   creditarPontosServico,
@@ -37,7 +38,20 @@ export interface CreateBookingInput {
 }
 
 export type CreateBookingResult =
-  | { ok: true; id: string; holdExpiresAt: string }
+  | {
+      ok: true;
+      id: string;
+      holdExpiresAt: string;
+      /**
+       * A reserva nasceu esperando sinal. NÃO é erro: o horário está guardado
+       * e quem fecha é a Mi pelo WhatsApp (não existe gateway no portal — o
+       * PIX vai direto pra ela). A cliente vê "aguardando sinal", nunca a
+       * mensagem de erro que a fazia achar que não tinha agendado.
+       */
+      aguardandoSinal: boolean;
+      /** Valor do sinal em centavos quando `aguardandoSinal` (senão null). */
+      depositCents: number | null;
+    }
   | {
       ok: false;
       code:
@@ -176,7 +190,6 @@ export async function createBooking(
   const professional = await ensureProfessional();
 
   const now = DateTime.now().setZone(tz);
-  const holdExpiresAt = now.plus({ minutes: settings.holdMinutes });
 
   const guardianPhone = input.customer.guardianPhone
     ? normalizeE164BR(input.customer.guardianPhone)
@@ -206,6 +219,27 @@ export async function createBooking(
     },
   });
 
+  // ── Sinal (A7) ────────────────────────────────────────────────────────────
+  // Duas origens: a reincidência (3 cancelamentos — política §3, gravada em
+  // customer.requiresDeposit por policies.ts) e a flag manual do serviço, que
+  // a Mi liga onde quiser. Antes disto o sinal era um beco sem saída: nada no
+  // portal preenchia deposit_paid_at, então confirmBooking devolvia 402 para
+  // sempre e o hold de 8 min matava a reserva antes de qualquer combinação.
+  // Agora a reserva NASCE esperando o sinal, com prazo de verdade, e quem
+  // fecha é a Mi pelo WhatsApp (o PIX vai direto pra ela — o portal não tem
+  // gateway; ver docs/agenda/FASE1-DIAGNOSTICO.md).
+  const { precisaSinal, depositCents, holdExpiresAt } = avaliarSinal({
+    clienteExigeSinal: customer.requiresDeposit,
+    servicoExigeSinal: service.requiresDeposit,
+    priceCents,
+    depositPercent: settings.depositPercent,
+    now,
+    startsAt,
+    holdMinutes: settings.holdMinutes,
+    depositHoldHours: settings.depositHoldHours,
+    depositCutoffHours: settings.depositCutoffHours,
+  });
+
   // Auto-inscrição no clube (toda cliente vira membro). Idempotente; falha aqui
   // nunca impede o agendamento.
   await ensureClubMember(customer.id).catch(() => null);
@@ -223,6 +257,7 @@ export async function createBooking(
           location: input.location,
           priceCents,
           holdExpiresAt: holdExpiresAt.toJSDate(),
+          ...(depositCents != null ? { depositCents } : {}),
           ...(input.anamnesis !== undefined
             ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
             : {}),
@@ -238,6 +273,8 @@ export async function createBooking(
       ok: true,
       id: booking.id,
       holdExpiresAt: holdExpiresAt.toISO() ?? "",
+      aguardandoSinal: precisaSinal,
+      depositCents,
     };
   } catch (e) {
     if (isExclusionViolation(e)) {

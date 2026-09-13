@@ -86,6 +86,12 @@ export default function AgendarWizard() {
     holdExpiresAt: string;
   } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  // A7 — reserva feita, sinal a combinar com a Mi. Não é erro: o horário já
+  // está guardado. `null` = não se aplica.
+  const [aguardandoSinal, setAguardandoSinal] = useState<{
+    prazo: string;
+    depositCents: number | null;
+  } | null>(null);
 
   const search = useSearchParams();
   const preselectCode = search.get("servico");
@@ -312,8 +318,23 @@ export default function AgendarWizard() {
         );
         return;
       }
-      const data = (await res.json()) as { id: string; holdExpiresAt: string };
+      const data = (await res.json()) as {
+        id: string;
+        holdExpiresAt: string;
+        aguardandoSinal?: boolean;
+        depositCents?: number | null;
+      };
       setBooking(data);
+      // A7: com sinal a reserva já está guardada e quem fecha é a Mi pelo
+      // WhatsApp. Chamar /confirm aqui só rendia 402 — a cliente lia a recusa
+      // como "não agendou" e ia atrás da Mi no Instagram.
+      if (data.aguardandoSinal) {
+        setAguardandoSinal({
+          prazo: data.holdExpiresAt,
+          depositCents: data.depositCents ?? null,
+        });
+        return;
+      }
       setStep(5);
     } catch {
       setFormError("Tivemos um probleminha de conexão. Tenta de novo, tá?");
@@ -348,6 +369,18 @@ export default function AgendarWizard() {
 
   if (confirmed && service && date && time) {
     return <SuccessScreen service={service} date={date} time={time} />;
+  }
+
+  if (aguardandoSinal && service && date && time) {
+    return (
+      <AguardandoSinalScreen
+        service={service}
+        date={date}
+        time={time}
+        prazo={aguardandoSinal.prazo}
+        depositCents={aguardandoSinal.depositCents}
+      />
+    );
   }
 
   const mostraBarra = step >= 2 && step <= 4 && service !== null;
@@ -858,6 +891,75 @@ function HoldCountdown({
         {mm}:{ss}
       </span>
     </p>
+  );
+}
+
+/**
+ * A7 — reserva feita, sinal a combinar. O portal não tem gateway: o PIX do
+ * sinal vai direto para a Mi, então esta tela entrega o horário guardado, o
+ * prazo real e o caminho do WhatsApp. Antes disto a cliente via a recusa 402
+ * como erro de formulário e ia embora achando que não tinha agendado.
+ */
+function AguardandoSinalScreen({
+  service,
+  date,
+  time,
+  prazo,
+  depositCents,
+}: {
+  service: ApiService;
+  date: string;
+  time: string;
+  prazo: string;
+  depositCents: number | null;
+}) {
+  const prazoFmt = new Date(prazo).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const wa = `https://wa.me/5521970225231?text=${encodeURIComponent(
+    `Oi Mi! Reservei ${service.name} para ${formatDateLong(date)} às ${time} e quero combinar o sinal 💛`,
+  )}`;
+  return (
+    <div className="mx-auto flex min-h-[70dvh] max-w-lg flex-col items-center justify-center px-6 py-12 text-center">
+      <p className="font-corpo text-xs uppercase tracking-[0.3em] text-mi-marrom-escuro">
+        Reserva feita
+      </p>
+      <h1 className="mt-5 font-titulo text-4xl text-mi-marrom-escuro">
+        Seu horário está guardado 💛
+      </h1>
+      <p className="mt-4 font-corpo text-mi-texto">
+        <strong>{service.name}</strong> ·{" "}
+        <span className="capitalize">{formatDateLong(date)}</span> às{" "}
+        <strong>{time}</strong>.
+      </p>
+      <div className="mt-6 w-full rounded-mi border border-mi-cinza bg-mi-branco p-5 text-left shadow-suave">
+        <p className="font-corpo text-sm text-mi-texto">
+          Para fechar, falta combinar o sinal
+          {depositCents != null && depositCents > 0 ? (
+            <>
+              {" "}
+              de <strong>{formatBRL(depositCents)}</strong>
+            </>
+          ) : null}
+          . A Mi te chama no WhatsApp para acertar — e você também pode chamar
+          ela agora, se preferir.
+        </p>
+        <p className="mt-3 font-corpo text-sm text-mi-marrom-700">
+          Guardo esse horário até <strong>{prazoFmt}</strong>. Depois disso ele
+          volta para a agenda.
+        </p>
+      </div>
+      <Botao href={wa} variante="whatsapp" className="mt-6 w-full">
+        Falar com a Mi no WhatsApp
+      </Botao>
+      <Botao href="/" variante="secundario" className="mt-3 w-full">
+        Voltar ao início
+      </Botao>
+    </div>
   );
 }
 
