@@ -169,8 +169,9 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 
 1. **Validade do código** — está em 60 min. Ela pode mudar em _Configurações_
    (mínimo 15). 60 min foi escolhido porque o repasse é manual.
-2. **Contato de emergência** — qual segundo número usar quando o WhatsApp
-   principal estiver fora do ar (`MI_WHATSAPP_EMERGENCIA`). Hoje está vazio.
+2. **Contato de emergência — ✅ DECIDIDO (13/09/2026): existe.** O Rodolfo
+   configura `MI_WHATSAPP_EMERGENCIA` no Dokploy; o código passa a sair para os
+   dois números ao mesmo tempo. Sem mudança de código.
 3. **Tempo de sessão** — cliente 30 dias, painel 7 dias. O painel era 12h e a Mi
    caía no meio do atendimento; 7 dias é o teto sugerido para acesso ao painel.
 4. **Mensagem de login da cliente** — hoje ela diz _"Não encontrei esse telefone
@@ -178,9 +179,23 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
    aquele número **não** tem conta. A recuperação de senha continua 100%
    neutra. Se a Mi preferir privacidade máxima, a mensagem volta a ser única
    ("Telefone ou senha incorretos") — é trocar uma linha.
-5. **Primeiro acesso** — a tela de login ainda diz "no primeiro acesso, sua
-   senha é o seu próprio telefone". É a dica que mais ajuda a cliente leiga e a
-   que mais entrega informação para fora. Manter?
+5. **Primeiro acesso — ✅ DECIDIDO (13/09/2026): fica como está.** A senha
+   inicial da cliente continua sendo o próprio telefone, e a tela de login
+   continua dizendo isso.
+
+   **Risco aceito, de olhos abertos:** enquanto uma cliente nova não faz o
+   primeiro acesso, quem souber o telefone dela pode entrar e definir a senha
+   no lugar dela — tomando a conta. Ela não perde dado (a troca obrigatória
+   barra todas as páginas antes disso: `s.prov` redireciona para
+   `/clube/conta/senha`), mas fica trancada para fora e precisa da Mi para
+   recuperar. A janela é estreita — só entre entrar no Clube e o primeiro
+   login; quem já tem senha própria não é afetada.
+
+   O ganho que pesou mais: a cliente leiga entra sozinha, sem depender da Mi.
+   Se um dia isso incomodar, o conserto já está pronto e é pequeno — basta o
+   primeiro acesso usar o mesmo código da Mi do B2 (o módulo
+   `src/lib/recuperacao.ts` já serve os dois perfis) e desligar o ramo
+   `provisoria` em `loginCliente`.
 
 ---
 
