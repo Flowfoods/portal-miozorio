@@ -4,7 +4,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import ContaShell from "@/components/clube/ContaShell";
 import Botao from "@/components/ui/Botao";
 import EstadoVazio from "@/components/ui/EstadoVazio";
@@ -38,7 +38,7 @@ export default async function MomentosPage({
   searchParams: { enviado?: string; editado?: string };
 }) {
   const s = await getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   const momentos = await prisma.testimonial.findMany({

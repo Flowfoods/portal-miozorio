@@ -1,6 +1,7 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { withAuth, type NextRequestWithAuth } from "next-auth/middleware";
 import { destinoCanonico } from "@/lib/auth-cookies";
+import { HEADER_CAMINHO } from "@/lib/auth-rotas";
 
 /** Rotas do /admin liberadas sem sessão (login + fluxo de recuperação — M13.4). */
 const PUBLIC_ADMIN = ["/admin/login", "/admin/recuperar"];
@@ -51,7 +52,12 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (req.nextUrl.pathname.startsWith("/admin")) {
     return guardaAdmin(req as NextRequestWithAuth, event);
   }
-  return NextResponse.next();
+  // B5 — o caminho pedido viaja num header para o servidor montar o link de
+  // login com `callbackUrl`: depois de entrar, a cliente volta para a página
+  // que ela queria, não para a home.
+  const headers = new Headers(req.headers);
+  headers.set(HEADER_CAMINHO, `${req.nextUrl.pathname}${req.nextUrl.search}`);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

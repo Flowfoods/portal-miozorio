@@ -1,5 +1,7 @@
 import { waLinkMsg } from "@/lib/format";
 import { MIN_SENHA } from "@/lib/security";
+import { caminhoSeguro } from "@/lib/auth-rotas";
+import AuthShell from "@/components/auth/AuthShell";
 import RecuperarFluxo from "@/components/auth/RecuperarFluxo";
 
 export const dynamic = "force-dynamic";
@@ -13,24 +15,28 @@ const MI = process.env.MI_WHATSAPP ?? "+5521970225231";
  * também vai para o contato de emergência (`MI_WHATSAPP_EMERGENCIA`).
  * O antigo link por e-mail saiu de cena: um modelo só, para todo mundo.
  */
-export default function RecuperarPage() {
+export default function RecuperarPage({
+  searchParams,
+}: {
+  searchParams?: { callbackUrl?: string };
+}) {
+  const destino = caminhoSeguro(searchParams?.callbackUrl, "/admin");
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="mb-2 text-3xl">Esqueci a senha</h1>
-      <p className="mb-8 text-sm text-mi-texto/80">
-        Informe o e-mail da conta do estúdio. O código de 6 números chega no
-        WhatsApp da Mi — é só digitar aqui e criar a senha nova.
-      </p>
+    <AuthShell
+      eyebrow="Painel da Mi"
+      titulo="Esqueci a senha"
+      subtitulo="Informe o e-mail da conta do estúdio. O código de 6 números chega no WhatsApp da Mi — é só digitar aqui e criar a senha nova."
+    >
       <RecuperarFluxo
         perfil="admin"
         waMi={waLinkMsg(
           MI,
           "Oi, Mi! Pedi um código para recuperar o acesso ao painel. 💛",
         )}
-        destino="/admin"
+        destino={destino}
         entrarHref="/admin/login"
         minSenha={MIN_SENHA}
       />
-    </div>
+    </AuthShell>
   );
 }

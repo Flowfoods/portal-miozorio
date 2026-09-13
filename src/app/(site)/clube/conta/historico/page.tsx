@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { getSettings } from "@/lib/settings";
 import ContaShell from "@/components/clube/ContaShell";
 import Botao from "@/components/ui/Botao";
@@ -28,7 +28,7 @@ const WA_REPETIR = (servico: string) =>
  */
 export default async function HistoricoPage() {
   const s = await getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   // Isolamento: tudo pelo id da sessão (R18).
@@ -58,7 +58,7 @@ export default async function HistoricoPage() {
     }),
     getSettings(),
   ]);
-  if (!customer) redirect("/clube/entrar");
+  if (!customer) redirect(hrefLoginCliente());
 
   // Atendimentos sobre os quais ela já contou (F3): troca o CTA do card.
   const jaContou = new Set(

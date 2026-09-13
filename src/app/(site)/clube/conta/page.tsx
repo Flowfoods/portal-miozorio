@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { saldoDoCliente } from "@/lib/clube-pontos";
 import { getSettings } from "@/lib/settings";
 import { getSugestaoRetorno } from "@/lib/retencao";
@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function InicioPage() {
   const s = await getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha"); // troca obrigatória antes de tudo
 
   const [customer, saldo, settings, proximo, atendimentos, sugestao] =
@@ -56,7 +56,7 @@ export default async function InicioPage() {
       }),
       getSugestaoRetorno(s.customerId),
     ]);
-  if (!customer) redirect("/clube/entrar");
+  if (!customer) redirect(hrefLoginCliente());
 
   const primeiroNome = customer.name.trim().split(/\s+/)[0] ?? customer.name;
   const proximoDt = proximo

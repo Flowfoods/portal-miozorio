@@ -17,6 +17,7 @@ import {
   normalizarTelefone,
 } from "./auth-identidade";
 import { TTL_SESSAO_CLIENTE_MS, opcoesCookie } from "./auth-cookies";
+import { HEADER_CAMINHO, caminhoSeguro, loginComRetorno } from "./auth-rotas";
 
 /**
  * Autenticação do PORTAL DO CLIENTE (Clube) — separada da do /admin (NextAuth).
@@ -138,6 +139,17 @@ export async function getClienteSession(): Promise<ClienteSession | null> {
 
 export function logoutCliente(): void {
   cookies().set(COOKIE, "", { ...opcoesCookie(0), maxAge: 0 });
+}
+
+/**
+ * B5 — link do login já com a página que a pessoa tentava abrir. Depois de
+ * entrar ela volta exatamente para lá, em vez de cair sempre no início.
+ * O caminho vem do header que o middleware injeta.
+ */
+export function hrefLoginCliente(): string {
+  const caminho = headers().get(HEADER_CAMINHO);
+  const destino = caminhoSeguro(caminho, "");
+  return destino ? loginComRetorno("/clube/entrar", destino) : "/clube/entrar";
 }
 
 /**

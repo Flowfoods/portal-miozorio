@@ -2,20 +2,30 @@
 
 import Link from "next/link";
 import { useFormState } from "react-dom";
-import { entrarAction, type ClienteFormState } from "@/app/(site)/clube/conta/actions";
+import {
+  entrarAction,
+  type ClienteFormState,
+} from "@/app/(site)/clube/conta/actions";
 import SubmitButton from "@/components/admin/SubmitButton";
 import PasswordField from "@/components/auth/PasswordField";
 import PasskeyLoginButton from "@/components/auth/PasskeyLoginButton";
 import { PhoneField, FormError } from "./ClubFields";
 
-/** Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone. */
-export default function LoginForm() {
+/**
+ * Login do portal do cliente: telefone + senha. 1º acesso: senha = telefone.
+ * `callbackUrl` chega pela URL quando a cliente tentou abrir uma página da
+ * conta sem sessão — depois de entrar ela volta exatamente para lá (B5).
+ */
+export default function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, action] = useFormState<ClienteFormState, FormData>(
     entrarAction,
     null,
   );
   return (
     <form action={action} className="space-y-4">
+      {callbackUrl && (
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      )}
       <label className="block">
         <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Seu WhatsApp
@@ -32,7 +42,8 @@ export default function LoginForm() {
           autoComplete="current-password"
         />
         <span className="mt-1 block font-corpo text-xs text-mi-texto/80">
-          No primeiro acesso, sua senha é o seu próprio telefone (só os números).
+          No primeiro acesso, sua senha é o seu próprio telefone (só os
+          números).
         </span>
       </label>
       <FormError error={state?.error}>
@@ -69,7 +80,10 @@ export default function LoginForm() {
       </p>
       <p className="text-center font-corpo text-sm text-mi-texto/80">
         Ainda não tem conta?{" "}
-        <Link href="/clube" className="text-mi-marrom underline underline-offset-4">
+        <Link
+          href="/clube"
+          className="text-mi-marrom underline underline-offset-4"
+        >
           Cadastrar
         </Link>
       </p>

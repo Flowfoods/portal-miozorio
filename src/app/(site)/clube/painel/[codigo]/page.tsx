@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { getSettings } from "@/lib/settings";
 import {
   contarIndicacoesFechadas,
@@ -48,7 +48,7 @@ export default async function PainelMembroPage({
   if (!membro?.clubJoinedAt) notFound();
 
   const sessao = await getClienteSession();
-  if (!sessao) redirect("/clube/entrar");
+  if (!sessao) redirect(hrefLoginCliente());
   // Código de outra pessoa: 404 em vez de 403 — não confirma que o código
   // existe (mesma disciplina de /momentos/foto/[id]).
   if (sessao.customerId !== membro.id) notFound();

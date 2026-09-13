@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import ContaShell from "@/components/clube/ContaShell";
 import MomentoForm from "@/components/clube/MomentoForm";
 import { editarMomentoAction } from "../../actions";
@@ -20,7 +20,7 @@ export default async function EditarMomentoPage({
   params: { id: string };
 }) {
   const s = await getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   // Só o dono, só origem cliente, arquivado não edita (isolamento).

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, hrefLoginCliente } from "@/lib/cliente-auth";
 import { getSettings } from "@/lib/settings";
 import ContaShell from "@/components/clube/ContaShell";
 import MomentoForm from "@/components/clube/MomentoForm";
@@ -22,7 +22,7 @@ export default async function NovoMomentoPage({
   searchParams: { atendimento?: string };
 }) {
   const s = await getClienteSession();
-  if (!s) redirect("/clube/entrar");
+  if (!s) redirect(hrefLoginCliente());
   if (s.prov) redirect("/clube/conta/senha");
 
   const [settings, bookings] = await Promise.all([

@@ -14,13 +14,23 @@ import { FormError } from "./ClubFields";
  * Definição de nova senha do cliente. Na 1ª troca (provisória) o consentimento
  * LGPD é obrigatório; depois disso vira troca de rotina (sem consent).
  */
-export default function SenhaForm({ provisoria }: { provisoria: boolean }) {
+export default function SenhaForm({
+  provisoria,
+  callbackUrl,
+}: {
+  provisoria: boolean;
+  /** Para onde voltar depois de salvar (B5). */
+  callbackUrl?: string;
+}) {
   const [state, action] = useFormState<ClienteFormState, FormData>(
     definirSenhaAction,
     null,
   );
   return (
     <form action={action} className="space-y-4">
+      {callbackUrl && (
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      )}
       <label className="block">
         <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
           Nova senha

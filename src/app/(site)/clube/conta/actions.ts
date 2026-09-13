@@ -10,6 +10,7 @@ import {
   type LoginSugestao,
 } from "@/lib/cliente-auth";
 import { resgatarRecompensa } from "@/lib/clube-pontos";
+import { caminhoSeguro } from "@/lib/auth-rotas";
 
 /** Estado dos forms do portal do cliente (erro inline). */
 export type ClienteFormState = {
@@ -27,7 +28,13 @@ export async function entrarAction(
     String(formData.get("password") ?? ""),
   );
   if (!r.ok) return { error: r.message, sugestao: r.sugestao };
-  redirect(r.mustChange ? "/clube/conta/senha" : "/clube/conta");
+  // B5 — volta para a página que a cliente tentava abrir. `caminhoSeguro`
+  // recusa URL absoluta: o campo vem do form e não pode virar open redirect.
+  const destino = caminhoSeguro(
+    String(formData.get("callbackUrl") ?? ""),
+    "/clube/conta",
+  );
+  redirect(r.mustChange ? "/clube/conta/senha" : destino);
 }
 
 export async function definirSenhaAction(
@@ -39,7 +46,9 @@ export async function definirSenhaAction(
     formData.get("consent") === "on",
   );
   if (!r.ok) return { error: r.message };
-  redirect("/clube/conta");
+  redirect(
+    caminhoSeguro(String(formData.get("callbackUrl") ?? ""), "/clube/conta"),
+  );
 }
 
 export async function sairAction(): Promise<void> {
