@@ -114,8 +114,8 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 ## Frente de agendamento (2026-09-13) — A1–A11
 
 Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
-`docs/agenda/FASE3-VERIFICACAO.md` · deploy: `docs/agenda/RUNBOOK-DEPLOY.md`.
-
+`docs/agenda/FASE3-VERIFICACAO.md` · deploy: `scripts/deploy-agenda.sh` +
+`docs/agenda/RUNBOOK-DEPLOY.md` · ligar PIX: `docs/agenda/ATIVAR-PIX-MERCADOPAGO.md`.
 - **Notificações:** `notify-mi.ts` (para a Mi) e `notify-cliente.ts` (para a
   cliente) — ambas best-effort, idempotentes por dedupeKey, pelo outbox.
   WhatsApp que não sai NUNCA derruba a criação de um agendamento.
