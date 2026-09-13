@@ -46,9 +46,17 @@ export default async function HistoricoPage() {
         startsAt: true,
         location: true,
         service: {
-          select: { name: true, code: true, bookableOnline: true, active: true },
+          select: {
+            name: true,
+            code: true,
+            bookableOnline: true,
+            active: true,
+          },
         },
-        items: { orderBy: { sort: "asc" }, select: { service: { select: { name: true } } } },
+        items: {
+          orderBy: { sort: "asc" },
+          select: { service: { select: { name: true } } },
+        },
       },
     }),
     // Pontos ganhos por atendimento: crédito idempotente service:<bookingId>.
@@ -156,7 +164,9 @@ export default async function HistoricoPage() {
                         </p>
                         <p className="mt-0.5 font-corpo text-xs text-mi-texto/80">
                           com a Mi ·{" "}
-                          {b.location === "home" ? "em domicílio" : "no estúdio"}
+                          {b.location === "home"
+                            ? "em domicílio"
+                            : "no estúdio"}
                         </p>
                       </div>
                       {typeof pontos === "number" && pontos > 0 && (
@@ -170,7 +180,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href="/clube/conta/momentos"
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Você já contou 💛 Ver
                         </Botao>
@@ -178,7 +188,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={`/clube/conta/momentos/novo?atendimento=${b.id}`}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Contar como foi
                         </Botao>
@@ -187,7 +197,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={`/agendar?servico=${b.service.code}&origem=cuidar`}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Repetir esse cuidado
                         </Botao>
@@ -195,7 +205,7 @@ export default async function HistoricoPage() {
                         <Botao
                           href={WA_REPETIR(b.service.name)}
                           variante="secundario"
-                          className="w-full !min-h-[46px] text-sm"
+                          className="!min-h-[46px] w-full text-sm"
                         >
                           Combinar com a Mi
                         </Botao>

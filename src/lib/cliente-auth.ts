@@ -74,7 +74,8 @@ function decode(token: string): (ClienteSession & { exp: number }) | null {
   if (!body || !sig || !safeEqual(sig, sign(body))) return null;
   try {
     const p = JSON.parse(Buffer.from(body, "base64url").toString());
-    if (typeof p?.customerId !== "string" || typeof p?.exp !== "number") return null;
+    if (typeof p?.customerId !== "string" || typeof p?.exp !== "number")
+      return null;
     if (p.exp < Date.now()) return null;
     return { ...p, tv: typeof p.tv === "number" ? p.tv : 0 };
   } catch {
@@ -183,7 +184,9 @@ function digits(s: string): string {
 
 /** "Muitas tentativas" com o tempo real de espera (nunca bloqueio silencioso). */
 function mensagemEspera(ate: Date | null): string {
-  const min = ate ? Math.max(1, Math.ceil((ate.getTime() - Date.now()) / 60_000)) : 15;
+  const min = ate
+    ? Math.max(1, Math.ceil((ate.getTime() - Date.now()) / 60_000))
+    : 15;
   return `Muitas tentativas seguidas. Tente de novo em ${min} min — ou peça um código novo para a Mi 💛`;
 }
 
@@ -291,7 +294,9 @@ export async function loginCliente(
       data: {
         clubFailedLogins: 0,
         clubLockedUntil: null,
-        ...(reidratarHash ? { clubPasswordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) } : {}),
+        ...(reidratarHash
+          ? { clubPasswordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) }
+          : {}),
       },
     });
   }
@@ -334,12 +339,18 @@ export async function setClientePassword(
   const c = await prisma.customer.findUnique({ where: { id: s.customerId } });
   if (!c) return { ok: false, message: "Conta não encontrada." };
   if (c.clubPasswordProvisoria && !consent) {
-    return { ok: false, message: "Para continuar, aceite a política de privacidade." };
+    return {
+      ok: false,
+      message: "Para continuar, aceite a política de privacidade.",
+    };
   }
   // Não deixar a nova senha ser o próprio telefone (continuaria adivinhável) —
   // com ou sem o DDI: "21998626845" é a senha provisória do primeiro acesso.
   if (ehOProprioTelefone(newPassword, c.phoneE164)) {
-    return { ok: false, message: "Escolha uma senha diferente do seu telefone." };
+    return {
+      ok: false,
+      message: "Escolha uma senha diferente do seu telefone.",
+    };
   }
 
   const atualizada = await prisma.customer.update({

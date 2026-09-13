@@ -13,7 +13,10 @@ export const ERRO_THROTTLED = "MUITAS_TENTATIVAS";
 export const ERRO_LOCKED = "CONTA_PAUSADA";
 
 export function codigoLocked(ate: Date, agora = new Date()): string {
-  const min = Math.max(1, Math.ceil((ate.getTime() - agora.getTime()) / 60_000));
+  const min = Math.max(
+    1,
+    Math.ceil((ate.getTime() - agora.getTime()) / 60_000),
+  );
   return `${ERRO_LOCKED}:${min}`;
 }
 

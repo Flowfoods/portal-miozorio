@@ -63,7 +63,8 @@ export function opcoesCookie(maxAgeMs: number): OpcoesCookie {
 export function hostCanonico(): string | null {
   const explicito = process.env.AUTH_CANONICAL_HOST?.trim();
   if (explicito?.toLowerCase() === "off") return null;
-  if (explicito) return explicito.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  if (explicito)
+    return explicito.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (!site) return null;
   try {

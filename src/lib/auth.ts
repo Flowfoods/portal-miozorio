@@ -26,8 +26,9 @@ import { ERRO_THROTTLED, codigoLocked } from "./auth-mensagens";
  */
 
 /** Cookie `Secure` sempre que o portal roda em https (prod atrás do Traefik). */
-const useSecureCookies = (process.env.NEXTAUTH_URL ?? "").startsWith("https://");
-
+const useSecureCookies = (process.env.NEXTAUTH_URL ?? "").startsWith(
+  "https://",
+);
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -94,10 +95,16 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             data: {
               failedAttempts,
-              lockedUntil: ms > 0 ? new Date(Date.now() + ms) : user.lockedUntil,
+              lockedUntil:
+                ms > 0 ? new Date(Date.now() + ms) : user.lockedUntil,
             },
           });
-          await recordAuth("admin", ms > 0 ? "locked" : "login_fail", email, meta);
+          await recordAuth(
+            "admin",
+            ms > 0 ? "locked" : "login_fail",
+            email,
+            meta,
+          );
           if (ms > 0) throw new Error(codigoLocked(new Date(Date.now() + ms)));
           return null;
         }
@@ -156,7 +163,8 @@ export const authOptions: NextAuthOptions = {
         const h = (req?.headers ?? {}) as Record<string, string>;
         const host = h["x-forwarded-host"] ?? h["host"] ?? "localhost:3000";
         const proto =
-          h["x-forwarded-proto"] ?? (host.startsWith("localhost") ? "http" : "https");
+          h["x-forwarded-proto"] ??
+          (host.startsWith("localhost") ? "http" : "https");
         const rpID = host.split(":")[0]!;
         const origin = `${proto}://${host}`;
 

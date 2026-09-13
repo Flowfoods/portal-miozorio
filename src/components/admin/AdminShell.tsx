@@ -24,11 +24,9 @@ export default function AdminShell({
   );
 
   if (isAuthPage) {
-    return (
-      <main className="mx-auto min-h-[70vh] w-full max-w-5xl px-4 py-10">
-        {children}
-      </main>
-    );
+    // Só o enquadramento: o `<main>` dessas telas vem do AuthShell (B5), e dois
+    // <main> aninhados quebram a navegação por leitor de tela.
+    return <div className="min-h-[70vh] w-full">{children}</div>;
   }
 
   return (

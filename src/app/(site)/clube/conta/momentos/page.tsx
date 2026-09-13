@@ -23,7 +23,10 @@ const STATUS_CHIP: Record<string, { label: string; classes: string }> = {
     label: "A Mi vai ler com carinho",
     classes: "bg-mi-alerta/10 text-mi-alerta-tinta",
   },
-  aprovado: { label: "No ar 💛", classes: "bg-mi-sucesso/10 text-mi-sucesso-tinta" },
+  aprovado: {
+    label: "No ar 💛",
+    classes: "bg-mi-sucesso/10 text-mi-sucesso-tinta",
+  },
   rejeitado: {
     label: "Não publicado",
     classes: "bg-mi-cinza text-mi-texto/80",

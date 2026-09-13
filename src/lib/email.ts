@@ -48,5 +48,10 @@ export async function sendPasswordChangedEmail(to: string): Promise<void> {
     </div>`;
   const text =
     "Sua senha do painel da Mi Ozorio foi alterada e as sessões anteriores foram encerradas. Se não foi você, redefina a senha imediatamente.";
-  await sendEmail(to, "Sua senha do painel foi alterada — Mi Ozorio", html, text);
+  await sendEmail(
+    to,
+    "Sua senha do painel foi alterada — Mi Ozorio",
+    html,
+    text,
+  );
 }

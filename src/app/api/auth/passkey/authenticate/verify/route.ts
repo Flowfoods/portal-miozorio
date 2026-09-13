@@ -27,7 +27,10 @@ export async function POST(req: Request) {
     where: { credentialId: response.id },
   });
   if (!cred || cred.area !== "cliente") {
-    return NextResponse.json({ error: "passkey desconhecida" }, { status: 400 });
+    return NextResponse.json(
+      { error: "passkey desconhecida" },
+      { status: 400 },
+    );
   }
 
   const { rpID, origin } = rpFromHeaders(headers());
@@ -47,7 +50,10 @@ export async function POST(req: Request) {
       },
     });
   } catch {
-    return NextResponse.json({ error: "não foi possível verificar" }, { status: 400 });
+    return NextResponse.json(
+      { error: "não foi possível verificar" },
+      { status: 400 },
+    );
   }
   if (!verification.verified) {
     return NextResponse.json({ error: "não verificado" }, { status: 400 });
@@ -62,6 +68,11 @@ export async function POST(req: Request) {
   });
   clearChallenge();
   await iniciarSessaoCliente(cred.subjectId);
-  await recordAuth("cliente", "passkey_login", null, metaFromHeaders(headers()));
+  await recordAuth(
+    "cliente",
+    "passkey_login",
+    null,
+    metaFromHeaders(headers()),
+  );
   return NextResponse.json({ ok: true, redirect: "/clube/conta" });
 }

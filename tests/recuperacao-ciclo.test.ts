@@ -27,7 +27,8 @@ vi.mock("@/lib/prisma", () => {
     Object.entries(where).every(([k, cond]) => {
       const v = row[k];
       if (cond === null) return v === null || v === undefined;
-      if (cond instanceof Date) return (v as Date)?.getTime?.() === cond.getTime();
+      if (cond instanceof Date)
+        return (v as Date)?.getTime?.() === cond.getTime();
       if (cond && typeof cond === "object") {
         const c = cond as Record<string, unknown>;
         if ("not" in c) return c.not === null ? v != null : v !== c.not;
@@ -55,7 +56,13 @@ vi.mock("@/lib/prisma", () => {
   const tabela = (linhas: Row[]) => ({
     findUnique: async ({ where }: { where: Row }) =>
       linhas.find((r) => bate(r, where)) ?? null,
-    findFirst: async ({ where, orderBy }: { where: Row; orderBy?: unknown }) => {
+    findFirst: async ({
+      where,
+      orderBy,
+    }: {
+      where: Row;
+      orderBy?: unknown;
+    }) => {
       const achados = linhas.filter((r) => bate(r, where));
       if (orderBy) achados.sort(recentesPrimeiro);
       return achados[0] ?? null;
@@ -236,7 +243,11 @@ describe("B2 — o código vai para a Mi, nunca direto para a pessoa", () => {
   });
 
   it("funciona com o telefone digitado em qualquer formato", async () => {
-    for (const formato of ["21998626845", "+55 21 99862-6845", " 21 99862 6845 "]) {
+    for (const formato of [
+      "21998626845",
+      "+55 21 99862-6845",
+      " 21 99862 6845 ",
+    ]) {
       H.recoveries.length = 0;
       H.enviados.length = 0;
       await pedirCodigo(formato);
@@ -295,7 +306,9 @@ describe("B3 — o caso do print: confirmar, demorar, salvar", () => {
     expect(salvo).toMatchObject({ ok: true, perfil: "cliente" });
 
     const c = H.customers[0]!;
-    expect(bcrypt.compareSync("senhaNova123", String(c.clubPasswordHash))).toBe(true);
+    expect(bcrypt.compareSync("senhaNova123", String(c.clubPasswordHash))).toBe(
+      true,
+    );
     expect(H.recoveries[0]!.usedAt).toBeInstanceOf(Date);
   });
 
@@ -434,11 +447,15 @@ describe("B2 — o painel usa exatamente o mesmo caminho", () => {
     avancar(10);
 
     const r = await salvarNovaSenha("SenhaForteDoPainel!2026");
-    expect(r).toMatchObject({ ok: true, perfil: "admin", email: "mi@miozorio.com.br" });
+    expect(r).toMatchObject({
+      ok: true,
+      perfil: "admin",
+      email: "mi@miozorio.com.br",
+    });
     const a = H.admins[0]!;
-    expect(bcrypt.compareSync("SenhaForteDoPainel!2026", String(a.passwordHash))).toBe(
-      true,
-    );
+    expect(
+      bcrypt.compareSync("SenhaForteDoPainel!2026", String(a.passwordHash)),
+    ).toBe(true);
     expect(a.tokenVersion).toBe(8); // era 7 → todos os JWTs antigos caem
   });
 

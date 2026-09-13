@@ -1,4 +1,9 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  randomBytes,
+  randomInt,
+  timingSafeEqual,
+} from "node:crypto";
 import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { DateTime } from "luxon";
@@ -127,9 +132,8 @@ interface Sujeito {
   perfil: Perfil;
   id: string;
   nome: string;
+  /** Telefone E.164 (cliente) ou e-mail (painel) — é o que a Mi vê. */
   identificador: string;
-  /** Telefone E.164 para a Mi encaminhar (cliente). Admin entra por e-mail. */
-  telefone: string | null;
 }
 
 /**
@@ -151,7 +155,6 @@ async function acharSujeito(identRaw: string): Promise<Sujeito | null> {
       id: c.id,
       nome: c.name,
       identificador: c.phoneE164,
-      telefone: c.phoneE164,
     };
   }
 
@@ -165,7 +168,6 @@ async function acharSujeito(identRaw: string): Promise<Sujeito | null> {
       id: a.id,
       nome: a.name,
       identificador: a.email,
-      telefone: null,
     };
   }
 
@@ -179,7 +181,6 @@ async function acharSujeito(identRaw: string): Promise<Sujeito | null> {
     id: c.id,
     nome: c.name,
     identificador: c.phoneE164,
-    telefone: c.phoneE164,
   };
 }
 
@@ -188,13 +189,16 @@ function paraLog(s: Sujeito): string {
   return s.perfil === "cliente" ? maskPhone(s.identificador) : s.identificador;
 }
 
+/** A auditoria separa os dois portais — pedido do painel não vira "cliente". */
+function areaDe(perfil: Perfil): "admin" | "cliente" {
+  return perfil === "admin" ? "admin" : "cliente";
+}
+
 // ── Aviso para a Mi ──────────────────────────────────────────────────────────
 /** WhatsApp principal da Mi + contato de emergência (se o principal cair). */
 export function numerosDaMi(): string[] {
   const brutos = [process.env.MI_WHATSAPP, process.env.MI_WHATSAPP_EMERGENCIA];
-  return brutos
-    .map((n) => digitos(n ?? ""))
-    .filter((n) => n.length >= 12);
+  return brutos.map((n) => digitos(n ?? "")).filter((n) => n.length >= 12);
 }
 
 /** Texto que a Mi recebe: contexto + código + a mensagem pronta p/ encaminhar. */
@@ -223,7 +227,11 @@ export function textoParaMi(input: {
 }
 
 /** Mensagem pronta, na voz da Mi, para ela repassar sem reescrever nada. */
-export function textoParaPessoa(nome: string, codigo: string, ate: string): string {
+export function textoParaPessoa(
+  nome: string,
+  codigo: string,
+  ate: string,
+): string {
   const primeiro = nome.trim().split(/\s+/)[0] ?? nome;
   return `Oi, ${primeiro}! Seu código para criar a senha nova é ${codigo} 💛 Ele vale até as ${ate}. É só digitar na tela que você já está.`;
 }
@@ -254,7 +262,8 @@ export async function pedirCodigo(identRaw: string): Promise<void> {
     where: { perfil: sujeito.perfil, subjectId: sujeito.id, usedAt: null },
     orderBy: { createdAt: "desc" },
   });
-  if (recente && Date.now() - recente.lastSentAt.getTime() < COOLDOWN_MS) return;
+  if (recente && Date.now() - recente.lastSentAt.getTime() < COOLDOWN_MS)
+    return;
 
   // B4 — teto de 3 pedidos por hora no mesmo cadastro. Silencioso de propósito:
   // qualquer aviso diferente aqui viraria um jeito de descobrir se o telefone
@@ -268,7 +277,12 @@ export async function pedirCodigo(identRaw: string): Promise<void> {
     },
   });
   if (naHora >= MAX_PEDIDOS_HORA) {
-    await recordAuth("cliente", "throttled", paraLog(sujeito), meta);
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "throttled",
+      paraLog(sujeito),
+      meta,
+    );
     return;
   }
 
@@ -309,7 +323,12 @@ async function criarEAvisar(
   });
 
   const ate = await horaLocal(expiresAt);
-  await recordAuth("cliente", "recover_request", paraLog(sujeito), meta);
+  await recordAuth(
+    areaDe(sujeito.perfil),
+    "recover_request",
+    paraLog(sujeito),
+    meta,
+  );
 
   if (origem === "publico") {
     await avisarMi(row.id, sujeito, codigo, ate);
@@ -415,7 +434,12 @@ export async function verificarCodigo(
     orderBy: { createdAt: "desc" },
   });
   if (!reset) {
-    await recordAuth("cliente", "recover_fail", paraLog(sujeito), meta);
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "recover_fail",
+      paraLog(sujeito),
+      meta,
+    );
     return {
       ok: false,
       message: "Não encontrei um código ativo. Peça um novo 💛",
@@ -423,7 +447,12 @@ export async function verificarCodigo(
     };
   }
   if (reset.expiresAt <= new Date()) {
-    await recordAuth("cliente", "recover_fail", paraLog(sujeito), meta);
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "recover_fail",
+      paraLog(sujeito),
+      meta,
+    );
     return {
       ok: false,
       message: `Seu código venceu às ${await horaLocal(reset.expiresAt)}. Peça um novo 💛`,
@@ -431,7 +460,12 @@ export async function verificarCodigo(
     };
   }
   if (reset.attempts >= MAX_TENTATIVAS) {
-    await recordAuth("cliente", "recover_fail", paraLog(sujeito), meta);
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "recover_fail",
+      paraLog(sujeito),
+      meta,
+    );
     return {
       ok: false,
       message: "Tentativas demais nesse código. Peça um novo 💛",
@@ -444,9 +478,17 @@ export async function verificarCodigo(
     await prisma.passwordRecovery.update({
       where: { id: reset.id },
       // Estourou as tentativas? Queima o código.
-      data: { attempts, usedAt: attempts >= MAX_TENTATIVAS ? new Date() : null },
+      data: {
+        attempts,
+        usedAt: attempts >= MAX_TENTATIVAS ? new Date() : null,
+      },
     });
-    await recordAuth("cliente", "recover_fail", paraLog(sujeito), meta);
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "recover_fail",
+      paraLog(sujeito),
+      meta,
+    );
     const restam = MAX_TENTATIVAS - attempts;
     return restam > 0
       ? {
@@ -536,7 +578,7 @@ export async function salvarNovaSenha(novaRaw: string): Promise<SalvarResult> {
   limparTroca();
 
   await recordAuth(
-    perfil === "admin" ? "admin" : "cliente",
+    areaDe(perfil),
     "recover_ok",
     perfil === "admin" ? reset.identificador : maskPhone(reset.identificador),
     meta,
@@ -605,10 +647,12 @@ async function trocarSenhaAdmin(
 // ── Painel: a Mi gera o código pela ficha da cliente ─────────────────────────
 export interface CodigoDoAdmin {
   codigo: string;
+  /** "14:35" — até que horas o código vale, no fuso da Mi. */
   ate: string;
   nome: string;
-  telefone: string;
+  /** Telefone formatado para a Mi conferir antes de mandar. */
   telefoneVisivel: string;
+  /** wa.me da cliente com a mensagem pronta. */
   link: string;
 }
 
@@ -634,7 +678,6 @@ export async function gerarCodigoParaCliente(
     id: c.id,
     nome: c.name,
     identificador: c.phoneE164,
-    telefone: c.phoneE164,
   };
   const { codigo, ate } = await criarEAvisar(
     sujeito,
@@ -645,7 +688,6 @@ export async function gerarCodigoParaCliente(
     codigo,
     ate,
     nome: c.name,
-    telefone: c.phoneE164,
     telefoneVisivel: formatPhoneBR(c.phoneE164),
     link: linkParaCliente(c.phoneE164, c.name, codigo, ate),
   };

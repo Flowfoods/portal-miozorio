@@ -16,7 +16,11 @@ import {
   TTL_SESSAO_ADMIN_S,
   TTL_SESSAO_CLIENTE_MS,
 } from "@/lib/auth-cookies";
-import { codigoLocked, mensagemLoginAdmin, ERRO_THROTTLED } from "@/lib/auth-mensagens";
+import {
+  codigoLocked,
+  mensagemLoginAdmin,
+  ERRO_THROTTLED,
+} from "@/lib/auth-mensagens";
 
 /**
  * B1 — "a senha está certa e o login não é efetuado; em alguns navegadores a

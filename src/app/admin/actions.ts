@@ -673,7 +673,11 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   if (exists) fail("Já existe uma conta com esse e-mail.");
 
   await prisma.adminUser.create({
-    data: { name, email, passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) },
+    data: {
+      name,
+      email,
+      passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS),
+    },
   });
   revalidatePath("/admin/usuarias");
 }

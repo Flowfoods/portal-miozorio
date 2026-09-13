@@ -72,7 +72,13 @@ export default async function FichaClientePage({
           orderBy: [{ sort: "asc" }, { custoPontos: "asc" }],
         }),
       ])
-    : [{ saldo: 0, extrato: [] as Awaited<ReturnType<typeof getSaldoExtrato>>["extrato"] }, []];
+    : [
+        {
+          saldo: 0,
+          extrato: [] as Awaited<ReturnType<typeof getSaldoExtrato>>["extrato"],
+        },
+        [],
+      ];
 
   // Atividade no site (F1/F3): resumo + últimos eventos, em linguagem leiga.
   const [enviosRecentes, eventos, resumoAtividade] = await Promise.all([
@@ -88,24 +94,34 @@ export default async function FichaClientePage({
       take: 8,
       select: { id: true, tipo: true, createdAt: true },
     }),
-    prisma.$queryRawUnsafe<
-      { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[]
-    >(
-      // $1::uuid: o Prisma tipa parâmetro string como text, e uuid = text não
-      // existe no Postgres (42883) — derrubava a ficha INTEIRA desde 05/07.
-      `SELECT
+    prisma
+      .$queryRawUnsafe<
+        { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[]
+      >(
+        // $1::uuid: o Prisma tipa parâmetro string como text, e uuid = text não
+        // existe no Postgres (42883) — derrubava a ficha INTEIRA desde 05/07.
+        `SELECT
          COUNT(*) FILTER (WHERE tipo = 'SESSAO_INICIADA'
            AND created_at >= now() - INTERVAL '30 days')::int AS "visitas30",
          COUNT(*) FILTER (WHERE tipo IN ('INICIOU_AGENDAMENTO','ABANDONOU_AGENDAMENTO')
            AND created_at >= now() - INTERVAL '30 days')::int AS "tentativas30",
          MAX(created_at) FILTER (WHERE tipo IN ('SESSAO_INICIADA','LOGIN_CLUBE')) AS "ultimoAcesso"
        FROM client_events WHERE client_id = $1::uuid`,
-      customer.id,
-    ).catch((e): { visitas30: number; tentativas30: number; ultimoAcesso: Date | null }[] => {
-      // Atividade é seção auxiliar: se falhar, a ficha continua de pé.
-      console.error("ficha: resumo de atividade falhou", e);
-      return [];
-    }),
+        customer.id,
+      )
+      .catch(
+        (
+          e,
+        ): {
+          visitas30: number;
+          tentativas30: number;
+          ultimoAcesso: Date | null;
+        }[] => {
+          // Atividade é seção auxiliar: se falhar, a ficha continua de pé.
+          console.error("ficha: resumo de atividade falhou", e);
+          return [];
+        },
+      ),
   ]);
   const atividade = resumoAtividade[0] ?? {
     visitas30: 0,
@@ -141,7 +157,13 @@ export default async function FichaClientePage({
           <h1 className="text-3xl">{customer.name}</h1>
           <p className="text-sm text-mi-texto/80">
             {formatPhoneBR(customer.phoneE164)}
-            {idade != null && <> · {idade} anos{menor ? " (menor — responsável obrigatório)" : ""}</>}
+            {idade != null && (
+              <>
+                {" "}
+                · {idade} anos
+                {menor ? " (menor — responsável obrigatório)" : ""}
+              </>
+            )}
             {" · "}cliente desde{" "}
             {DateTime.fromJSDate(customer.createdAt)
               .setZone(tz)
@@ -300,7 +322,8 @@ export default async function FichaClientePage({
               ✓ Autorizou o uso de fotos
               {customer.photoConsentAt && (
                 <>
-                  {" "}em{" "}
+                  {" "}
+                  em{" "}
                   {DateTime.fromJSDate(customer.photoConsentAt)
                     .setZone(tz)
                     .toFormat("dd/LL/yyyy 'às' HH:mm")}
@@ -367,7 +390,8 @@ export default async function FichaClientePage({
                   {customer.rfvSegmento}
                 </span>
                 <span className="rounded-full bg-mi-bege/50 px-3 py-1 text-mi-texto/80">
-                  R {customer.rScore} · F {customer.fScore} · V {customer.vScore}
+                  R {customer.rScore} · F {customer.fScore} · V{" "}
+                  {customer.vScore}
                 </span>
                 <span className="rounded-full bg-mi-bege/50 px-3 py-1 text-mi-texto/80">
                   LTV previsto {formatBRL(customer.ltvPrevistoCents ?? 0)}
@@ -434,7 +458,8 @@ export default async function FichaClientePage({
                 Autoriza mensagens de relacionamento no WhatsApp (jornadas)
                 {customer.whatsappOptInAt && (
                   <span className="text-mi-texto/80">
-                    {" "}· desde{" "}
+                    {" "}
+                    · desde{" "}
                     {DateTime.fromJSDate(customer.whatsappOptInAt)
                       .setZone(tz)
                       .toFormat("dd/LL/yyyy")}
@@ -477,8 +502,8 @@ export default async function FichaClientePage({
                 {customer._count.referrals > indicacoesFechadas && (
                   <>
                     {" "}
-                    · {customer._count.referrals - indicacoesFechadas} aguardando
-                    atendimento
+                    · {customer._count.referrals - indicacoesFechadas}{" "}
+                    aguardando atendimento
                   </>
                 )}
               </p>
@@ -499,7 +524,11 @@ export default async function FichaClientePage({
                     action={adminRedeemReward}
                     className="mt-2 flex flex-wrap items-end gap-2"
                   >
-                    <input type="hidden" name="customerId" value={customer.id} />
+                    <input
+                      type="hidden"
+                      name="customerId"
+                      value={customer.id}
+                    />
                     <select
                       name="rewardId"
                       className="input-mi !w-auto flex-1 !py-2"
@@ -660,7 +689,9 @@ export default async function FichaClientePage({
                     </span>
                   </span>
                   <span className="shrink-0 text-mi-texto/80">
-                    {DateTime.fromJSDate(e.createdAt).setZone(tz).toFormat("dd/LL")}
+                    {DateTime.fromJSDate(e.createdAt)
+                      .setZone(tz)
+                      .toFormat("dd/LL")}
                   </span>
                 </li>
               ))}

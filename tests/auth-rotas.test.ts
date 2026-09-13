@@ -44,13 +44,18 @@ describe("caminhoSeguro", () => {
   it("nunca devolve para uma tela de auth (evita loop)", () => {
     expect(caminhoSeguro("/clube/entrar", "/clube/conta")).toBe("/clube/conta");
     expect(caminhoSeguro("/admin/login?x=1", "/admin")).toBe("/admin");
-    expect(caminhoSeguro("/clube/recuperar", "/clube/conta")).toBe("/clube/conta");
+    expect(caminhoSeguro("/clube/recuperar", "/clube/conta")).toBe(
+      "/clube/conta",
+    );
   });
 });
 
 describe("loginComRetorno", () => {
   it("guarda o destino codificado na URL do login", () => {
-    const href = loginComRetorno("/clube/entrar", "/clube/conta/momentos?novo=1");
+    const href = loginComRetorno(
+      "/clube/entrar",
+      "/clube/conta/momentos?novo=1",
+    );
     expect(href).toBe(
       "/clube/entrar?callbackUrl=%2Fclube%2Fconta%2Fmomentos%3Fnovo%3D1",
     );

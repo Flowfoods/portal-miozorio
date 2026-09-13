@@ -19,7 +19,8 @@ vi.mock("@/lib/prisma", () => {
     Object.entries(where).every(([k, cond]) => {
       const v = row[k];
       if (cond === null) return v === null || v === undefined;
-      if (cond instanceof Date) return (v as Date)?.getTime?.() === cond.getTime();
+      if (cond instanceof Date)
+        return (v as Date)?.getTime?.() === cond.getTime();
       if (cond && typeof cond === "object") {
         const c = cond as Row;
         if ("not" in c) return c.not === null ? v != null : v !== c.not;
@@ -59,7 +60,8 @@ vi.mock("@/lib/prisma", () => {
             .filter((r) => bate(r, where))
             .sort(
               (a, b) =>
-                (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime(),
+                (b.createdAt as Date).getTime() -
+                (a.createdAt as Date).getTime(),
             );
           return take ? achados.slice(0, take) : achados;
         },
@@ -71,7 +73,9 @@ vi.mock("@/lib/prisma", () => {
 vi.mock("next/headers", () => ({
   cookies: () => ({
     get: (n: string) =>
-      H.cookies.has(n) ? { name: n, value: H.cookies.get(n)!.value } : undefined,
+      H.cookies.has(n)
+        ? { name: n, value: H.cookies.get(n)!.value }
+        : undefined,
     set: (n: string, v: string, opts: Record<string, unknown> = {}) => {
       if (v === "") H.cookies.delete(n);
       else H.cookies.set(n, { value: v, opts });
@@ -179,7 +183,9 @@ describe("B1 — senha: trim nas pontas, nada no meio", () => {
 
   it("espaço NO MEIO faz parte da senha", async () => {
     semear({ clubPasswordHash: bcrypt.hashSync("mi nha senha", 12) });
-    expect(await loginCliente(TEL, " mi nha senha ")).toMatchObject({ ok: true });
+    expect(await loginCliente(TEL, " mi nha senha ")).toMatchObject({
+      ok: true,
+    });
     expect(await loginCliente(TEL, "minhasenha")).toMatchObject({ ok: false });
   });
 
@@ -324,7 +330,9 @@ describe("B1 — primeiro acesso (senha = telefone)", () => {
 
   it("aceita também com o DDI na frente", async () => {
     semear({ clubPasswordHash: null, clubPasswordProvisoria: true });
-    expect(await loginCliente(TEL, "5521998626845")).toMatchObject({ ok: true });
+    expect(await loginCliente(TEL, "5521998626845")).toMatchObject({
+      ok: true,
+    });
   });
 
   it("depois de definir a senha, o telefone deixa de servir", async () => {

@@ -5,7 +5,12 @@ import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { BCRYPT_ROUNDS, MIN_SENHA, SENHA_CURTA, senhaFraca } from "@/lib/security";
+import {
+  BCRYPT_ROUNDS,
+  MIN_SENHA,
+  SENHA_CURTA,
+  senhaFraca,
+} from "@/lib/security";
 import { metaFromHeaders, recordAuth } from "@/lib/authlog";
 import { sendPasswordChangedEmail } from "@/lib/email";
 
@@ -44,7 +49,12 @@ export async function trocarSenhaAdminAction(
       tokenVersion: { increment: 1 },
     },
   });
-  await recordAuth("admin", "password_changed", email, metaFromHeaders(headers()));
+  await recordAuth(
+    "admin",
+    "password_changed",
+    email,
+    metaFromHeaders(headers()),
+  );
   try {
     await sendPasswordChangedEmail(email);
   } catch {

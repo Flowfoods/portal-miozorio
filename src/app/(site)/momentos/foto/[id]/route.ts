@@ -44,10 +44,13 @@ export async function GET(
   if (!publica) {
     const cliente = await getClienteSession();
     const dona =
-      !!cliente && !cliente.prov && cliente.customerId === foto.testimonial.customerId;
+      !!cliente &&
+      !cliente.prov &&
+      cliente.customerId === foto.testimonial.customerId;
     if (!dona) {
       const admin = await getAdminSession();
-      if (!admin?.user?.email) return new Response("Não encontrado", { status: 404 });
+      if (!admin?.user?.email)
+        return new Response("Não encontrado", { status: 404 });
     }
   }
 

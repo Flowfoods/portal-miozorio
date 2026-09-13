@@ -34,7 +34,9 @@ export function emailValido(raw: string): boolean {
 }
 
 /** Telefone canônico (E.164) ou null se não for um número brasileiro válido. */
-export function normalizarTelefone(raw: string | null | undefined): string | null {
+export function normalizarTelefone(
+  raw: string | null | undefined,
+): string | null {
   return raw ? normalizeE164BR(raw) : null;
 }
 

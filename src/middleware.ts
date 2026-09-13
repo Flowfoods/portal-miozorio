@@ -1,4 +1,8 @@
-import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import {
+  NextResponse,
+  type NextFetchEvent,
+  type NextRequest,
+} from "next/server";
 import { withAuth, type NextRequestWithAuth } from "next-auth/middleware";
 import { destinoCanonico } from "@/lib/auth-cookies";
 import { HEADER_CAMINHO } from "@/lib/auth-rotas";
@@ -36,7 +40,8 @@ const guardaAdmin = withAuth({
  * preview do Dokploy (*.traefik.me) ficam de fora — preview não é para cliente.
  */
 function redirecionarCanonico(req: NextRequest): NextResponse | null {
-  const hostAtual = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const hostAtual =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host");
   const destino = destinoCanonico(hostAtual);
   if (!destino) return null;
   const url = req.nextUrl.clone();

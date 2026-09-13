@@ -6,7 +6,12 @@ import {
   IP_MAX_FAILS,
   IP_WINDOW_MS,
 } from "@/lib/authlog";
-import { BCRYPT_ROUNDS, hashFraco, lockoutMs, LOCK_THRESHOLD } from "@/lib/security";
+import {
+  BCRYPT_ROUNDS,
+  hashFraco,
+  lockoutMs,
+  LOCK_THRESHOLD,
+} from "@/lib/security";
 import { MAX_PEDIDOS_HORA, MAX_TENTATIVAS } from "@/lib/recuperacao";
 
 /** B4 — rate limit, força do hash e invalidação de sessão. */

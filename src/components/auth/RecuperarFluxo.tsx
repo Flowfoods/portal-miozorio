@@ -210,7 +210,8 @@ export default function RecuperarFluxo({
     return (
       <div className="space-y-4">
         <p className="rounded-mi bg-mi-bege/60 px-4 py-3 font-corpo text-sm text-mi-texto">
-          Pedimos à Mi que te envie o código pelo WhatsApp. Assim que receber,
+          {/* Mensagem neutra do motor: igual exista ou não a conta. */}
+          {pedir && "ok" in pedir ? pedir.aviso : null} Assim que receber,
           digite aqui 💛
         </p>
         <form action={verificarAction} className="space-y-4">
@@ -236,7 +237,9 @@ export default function RecuperarFluxo({
               className="space-y-2 rounded-mi bg-mi-erro/10 px-4 py-3 text-sm text-mi-erro-tinta ring-1 ring-mi-erro/40"
             >
               <p>{erroVerificar.error}</p>
-              {erroVerificar.pedirNovo && <BotaoReenviar rotulo="Pedir novo código" />}
+              {erroVerificar.pedirNovo && (
+                <BotaoReenviar rotulo="Pedir novo código" />
+              )}
             </div>
           )}
           <SubmitButton pendingLabel="Conferindo…" className={botao}>
@@ -312,7 +315,10 @@ function Rodape({
     <div className="space-y-1 pt-2 text-center font-corpo text-sm text-mi-texto/80">
       <p>
         Lembrou a senha?{" "}
-        <Link href={entrarHref} className="text-mi-marrom underline underline-offset-4">
+        <Link
+          href={entrarHref}
+          className="text-mi-marrom underline underline-offset-4"
+        >
           Entrar
         </Link>
       </p>

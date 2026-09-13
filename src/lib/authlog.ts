@@ -112,11 +112,7 @@ export function clientIp(
 
 /** Extrai { ip, userAgent } de um objeto de headers (Fetch Headers ou plain). */
 export function metaFromHeaders(
-  h:
-    | Headers
-    | Record<string, string | string[] | undefined>
-    | undefined
-    | null,
+  h: Headers | Record<string, string | string[] | undefined> | undefined | null,
 ): AuthMeta {
   if (!h) return {};
   const get = (k: string): string | null => {
@@ -166,7 +162,9 @@ export async function recordAuth(
  * `login_fail` e `recover_fail` do mesmo ip_hash. Best-effort — se a checagem
  * falhar, libera (fail-open): trava por conta continua protegendo.
  */
-export async function isIpThrottled(ip: string | null | undefined): Promise<boolean> {
+export async function isIpThrottled(
+  ip: string | null | undefined,
+): Promise<boolean> {
   if (!ip) return false;
   try {
     const desde = new Date(Date.now() - IP_WINDOW_MS);
