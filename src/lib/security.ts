@@ -31,6 +31,24 @@ export function lockoutMs(failedAttempts: number): number {
   return Math.min(LOCK_BASE_MS * 2 ** over, LOCK_MAX_MS);
 }
 
+// ── B4 — força do hash guardado ──────────────────────────────────────────────
+
+/** Custo bcrypt usado hoje em TODO o portal (cliente e painel). */
+export const BCRYPT_ROUNDS = 12;
+
+/**
+ * Função pura: o hash guardado está abaixo do padrão atual? Lê o custo do
+ * próprio prefixo bcrypt (`$2a$10$...`). Um hash que não é bcrypt também conta
+ * como fraco — assim ele é regravado no primeiro login certo, sem pedir nada à
+ * pessoa e sem invalidar senha nenhuma.
+ */
+export function hashFraco(hash: string | null | undefined): boolean {
+  if (!hash) return false; // sem hash não há o que migrar (senha provisória)
+  const m = /^\$2[aby]?\$(\d{2})\$/.exec(hash);
+  if (!m) return true;
+  return Number(m[1]) < BCRYPT_ROUNDS;
+}
+
 // ── M13.4 — token de redefinição de senha ────────────────────────────────────
 
 /** Validade do link de redefinição (30 min — F2.1). */

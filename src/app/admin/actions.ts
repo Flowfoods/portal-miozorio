@@ -22,7 +22,7 @@ import {
   invalidateSettingsCache,
   RECUP_MIN_MINUTOS,
 } from "@/lib/settings";
-import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
+import { BCRYPT_ROUNDS, MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import { gerarCodigoParaCliente } from "@/lib/recuperacao";
 import type { CodigoRecuperacaoState } from "@/lib/recuperacao-tipos";
 import {
@@ -673,7 +673,7 @@ export async function adminCreateUser(formData: FormData): Promise<void> {
   if (exists) fail("Já existe uma conta com esse e-mail.");
 
   await prisma.adminUser.create({
-    data: { name, email, passwordHash: bcrypt.hashSync(password, 12) },
+    data: { name, email, passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) },
   });
   revalidatePath("/admin/usuarias");
 }
@@ -741,7 +741,7 @@ export async function adminResetUserPassword(
 
   await prisma.adminUser.update({
     where: { id },
-    data: { passwordHash: bcrypt.hashSync(password, 12) },
+    data: { passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) },
   });
   revalidatePath("/admin/usuarias");
 }

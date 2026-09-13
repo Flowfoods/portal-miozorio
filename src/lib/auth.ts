@@ -4,8 +4,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { prisma } from "./prisma";
-import { lockoutMs } from "./security";
-import { isIpThrottled, metaFromHeaders, recordAuth } from "./authlog";
+import { BCRYPT_ROUNDS, hashFraco, lockoutMs } from "./security";
+import {
+  isIpThrottled,
+  metaFromHeaders,
+  recordAuth,
+  throttlePorIdentificador,
+} from "./authlog";
 import { challengeFromCookieHeader, fromB64url } from "./webauthn";
 import { TTL_SESSAO_ADMIN_S } from "./auth-cookies";
 import { normalizarEmail, normalizarSenha } from "./auth-identidade";
@@ -47,6 +52,15 @@ export const authOptions: NextAuthOptions = {
           await recordAuth("admin", "throttled", email, meta);
           throw new Error(ERRO_THROTTLED);
         }
+        // B4 — e por identificador: 10 falhas em 15 min pausam este e-mail,
+        // venham de onde vierem. Com o tempo de espera na tela.
+        const porEmail = await throttlePorIdentificador("admin", email);
+        if (porEmail.bloqueado) {
+          await recordAuth("admin", "throttled", email, meta);
+          throw new Error(
+            codigoLocked(new Date(Date.now() + porEmail.minutos * 60_000)),
+          );
+        }
 
         const user = await prisma.adminUser.findUnique({ where: { email } });
         if (!user || !user.active) {
@@ -69,6 +83,8 @@ export const authOptions: NextAuthOptions = {
           senhaOk = bcrypt.compareSync(passwordBruta, user.passwordHash);
           reidratarHash = senhaOk;
         }
+        // Hash com custo menor que o padrão atual sobe de graça no login certo.
+        if (senhaOk && hashFraco(user.passwordHash)) reidratarHash = true;
 
         if (!senhaOk) {
           // Falhou: incrementa e, passando do limite, trava com backoff.
@@ -94,7 +110,7 @@ export const authOptions: NextAuthOptions = {
               failedAttempts: 0,
               lockedUntil: null,
               ...(reidratarHash
-                ? { passwordHash: bcrypt.hashSync(password, 12) }
+                ? { passwordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) }
                 : {}),
             },
           });

@@ -2,9 +2,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
-import { lockoutMs } from "./security";
+import { BCRYPT_ROUNDS, hashFraco, lockoutMs } from "./security";
 import { EV, getSid, mergeAnonToClient, track } from "./tracking";
-import { isIpThrottled, maskPhone, metaFromHeaders, recordAuth } from "./authlog";
+import {
+  isIpThrottled,
+  maskPhone,
+  metaFromHeaders,
+  recordAuth,
+  throttlePorIdentificador,
+} from "./authlog";
 import {
   SENHA_MIN_CLIENTE,
   normalizarSenha,
@@ -190,6 +196,18 @@ export async function loginCliente(
     await recordAuth("cliente", "throttled", ident, meta);
     return { ok: false, message: mensagemEspera(null), sugestao: "aguardar" };
   }
+  // B4 — rate-limit por IDENTIFICADOR: 10 falhas em 15 min pausam este
+  // telefone, mesmo que venham de IPs diferentes. Com o tempo de espera na
+  // tela — bloqueio silencioso deixa a cliente achando que o site quebrou.
+  const porTelefone = await throttlePorIdentificador("cliente", ident);
+  if (porTelefone.bloqueado) {
+    await recordAuth("cliente", "throttled", ident, meta);
+    return {
+      ok: false,
+      message: `Muitas tentativas nesse número. Tente de novo em ${porTelefone.minutos} min — ou peça um código para a Mi 💛`,
+      sugestao: "aguardar",
+    };
+  }
 
   const c = await prisma.customer.findUnique({ where: { phoneE164: phone } });
   // Telefone desconhecido ou fora do Clube: a mensagem diz o que fazer em vez
@@ -224,6 +242,9 @@ export async function loginCliente(
       digits(password) === phoneDigits.replace(/^55/, "");
   } else if (c.clubPasswordHash) {
     valid = bcrypt.compareSync(password, c.clubPasswordHash);
+    // Hash antigo com custo menor que o atual? Regrava na hora certa — de
+    // graça, sem pedir nada à cliente (B4).
+    if (valid && hashFraco(c.clubPasswordHash)) reidratarHash = true;
     // Compatibilidade: senha cadastrada ANTES do trim (com espaço nas pontas)
     // continua entrando — e o hash é regravado já normalizado, para nunca mais
     // depender do espaço. Nenhuma senha existente é invalidada.
@@ -257,7 +278,7 @@ export async function loginCliente(
       data: {
         clubFailedLogins: 0,
         clubLockedUntil: null,
-        ...(reidratarHash ? { clubPasswordHash: bcrypt.hashSync(password, 12) } : {}),
+        ...(reidratarHash ? { clubPasswordHash: bcrypt.hashSync(password, BCRYPT_ROUNDS) } : {}),
       },
     });
   }
@@ -310,7 +331,7 @@ export async function setClientePassword(
   const atualizada = await prisma.customer.update({
     where: { id: c.id },
     data: {
-      clubPasswordHash: bcrypt.hashSync(newPassword, 12),
+      clubPasswordHash: bcrypt.hashSync(newPassword, BCRYPT_ROUNDS),
       clubPasswordProvisoria: false,
       clubFailedLogins: 0,
       clubLockedUntil: null,

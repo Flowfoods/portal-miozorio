@@ -10,7 +10,7 @@ import {
 } from "./settings";
 import { formatPhoneBR, waLinkMsg } from "./format";
 import { sendTransactional } from "./whatsapp/service";
-import { MIN_SENHA, senhaFraca } from "./security";
+import { BCRYPT_ROUNDS, MIN_SENHA, senhaFraca } from "./security";
 import { identificarLogin, normalizarSenha } from "./auth-identidade";
 import { opcoesCookie } from "./auth-cookies";
 import { CLUB_MIN_SENHA, iniciarSessaoCliente } from "./cliente-auth";
@@ -56,6 +56,9 @@ export const TROCA_TTL_MS = 15 * 60_000;
 export const MAX_TENTATIVAS = 5;
 /** Cooldown entre pedidos da mesma pessoa (o botão da UI conta junto). */
 export const COOLDOWN_MS = 60_000;
+/** Teto de pedidos por hora no mesmo cadastro (B4) — a Mi não vira fila. */
+export const MAX_PEDIDOS_HORA = 3;
+const JANELA_PEDIDOS_MS = 60 * 60_000;
 
 const COOKIE_TROCA = "mi_recuperacao";
 
@@ -248,6 +251,22 @@ export async function pedirCodigo(identRaw: string): Promise<void> {
     orderBy: { createdAt: "desc" },
   });
   if (recente && Date.now() - recente.lastSentAt.getTime() < COOLDOWN_MS) return;
+
+  // B4 — teto de 3 pedidos por hora no mesmo cadastro. Silencioso de propósito:
+  // qualquer aviso diferente aqui viraria um jeito de descobrir se o telefone
+  // existe. Quem está de boa-fé vê o contador de 60s do botão na tela.
+  const naHora = await prisma.passwordRecovery.count({
+    where: {
+      perfil: sujeito.perfil,
+      subjectId: sujeito.id,
+      origem: "publico",
+      createdAt: { gte: new Date(Date.now() - JANELA_PEDIDOS_MS) },
+    },
+  });
+  if (naHora >= MAX_PEDIDOS_HORA) {
+    await recordAuth("cliente", "throttled", paraLog(sujeito), meta);
+    return;
+  }
 
   await criarEAvisar(sujeito, meta, "publico");
 }
@@ -542,7 +561,7 @@ async function trocarSenhaCliente(
   await prisma.customer.update({
     where: { id: c.id },
     data: {
-      clubPasswordHash: bcrypt.hashSync(nova, 12),
+      clubPasswordHash: bcrypt.hashSync(nova, BCRYPT_ROUNDS),
       clubPasswordProvisoria: false,
       clubFailedLogins: 0,
       clubLockedUntil: null,
@@ -570,7 +589,7 @@ async function trocarSenhaAdmin(
   await prisma.adminUser.update({
     where: { id: u.id },
     data: {
-      passwordHash: bcrypt.hashSync(nova, 12),
+      passwordHash: bcrypt.hashSync(nova, BCRYPT_ROUNDS),
       failedAttempts: 0,
       lockedUntil: null,
       tokenVersion: { increment: 1 },
