@@ -17,6 +17,7 @@ import {
 import { ensureClubMember } from "./clube";
 import { getAvailability } from "./availability";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
+import { notificarMi } from "./notify-mi";
 
 export interface CreateBookingInput {
   serviceId: string;
@@ -269,6 +270,14 @@ export async function createBooking(
       });
       return created;
     });
+    // A4 — a Mi fica sabendo NA HORA, inclusive de reserva que ainda depende de
+    // sinal. Best-effort: `notificarMi` nunca lança, então um WhatsApp que não
+    // sai não desfaz o agendamento que a cliente acabou de fazer.
+    await notificarMi(
+      precisaSinal ? "aguardando_sinal" : "nova_reserva",
+      booking.id,
+    );
+
     return {
       ok: true,
       id: booking.id,
@@ -667,6 +676,16 @@ export async function confirmBooking(
       },
     });
   });
+
+  // A4 — a Mi só precisa do aviso quando NÃO foi ela quem confirmou. Se ela
+  // clicou "confirmar" no painel, mandar de volta é ruído.
+  if (actor !== "business") {
+    await notificarMi(
+      booking.depositPaidAt ? "sinal_pago" : "confirmado",
+      id,
+    );
+  }
+
   return { ok: true, status: "confirmed" };
 }
 
@@ -851,6 +870,12 @@ export async function cancelBooking(
     }
   });
 
+  // A4 — só quando quem cancelou foi a cliente. Cancelamento feito pela própria
+  // Mi no painel não precisa voltar pra ela como aviso.
+  if (actor === "client") {
+    await notificarMi("cancelado_cliente", id);
+  }
+
   return {
     ok: true,
     status: result.finalStatus,
@@ -908,7 +933,14 @@ export async function expireStaleHolds(): Promise<{ expiradas: number }> {
         });
         return true;
       });
-      if (encerrou) expiradas++;
+      if (encerrou) {
+        expiradas++;
+        // A4 — antes o cron encerrava a reserva em silêncio: a Mi via um
+        // "Cancelado (Mi)" no painel sem nunca ter sido avisada de que existia
+        // um agendamento ali. Fora da transação de propósito — WhatsApp não
+        // entra em transação de banco.
+        await notificarMi("expirado", id);
+      }
     } catch (e) {
       // Uma linha problemática não pode impedir a limpeza das outras.
       console.error("expireStaleHolds: falha em", id, e);
