@@ -90,7 +90,7 @@ reativa em qualquer ponto.
 | A4 notificar a Mi | `59f1123` | `notify-mi` | ✅ código |
 | A5 reativar + rótulo | `172a78e` | `a5-reativar` | ✅ código |
 | A6 anti-duplicação + feedback | `2791e1a` + `c8bba03` | `servico-nome` | ✅ código |
-| A7 fluxo de sinal | `db21d8a` + `<pagamento>` | `sinal`, `pagamento` | ✅ código |
+| A7 fluxo de sinal | `db21d8a` + `1474621` | `sinal`, `pagamento` | ✅ código |
 | A8 horário livre | `4166c56` | manual (9, 10) | ✅ código |
 | A9 confirmação p/ cliente | `2001904` | `notify-cliente` | ✅ código |
 | A10 pós-atendimento + pontos | `b019136` | `pos-atendimento` | ✅ código |
