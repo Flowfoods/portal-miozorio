@@ -365,7 +365,8 @@ export async function createManualBooking(
   const byId = new Map(services.map((s) => [s.id, s]));
   const resolved = items.map((it) => {
     const s = byId.get(it.serviceId);
-    if (!s || !s.active) return null;
+    // A1 — arquivado não entra em encaixe novo, nem por POST forjado.
+    if (!s || !s.active || s.archivedAt) return null;
     const precoTabelaCents =
       input.location === "home" && s.priceHomeCents != null
         ? s.priceHomeCents

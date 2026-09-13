@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 // GET /api/services → serviços agendáveis online (exclui noiva/debutante, R1).
 export async function GET() {
   const rows = await prisma.service.findMany({
-    where: { active: true, bookableOnline: true },
+    where: { active: true, archivedAt: null, bookableOnline: true },
     select: {
       id: true,
       code: true,

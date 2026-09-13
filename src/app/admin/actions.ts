@@ -574,19 +574,36 @@ export async function adminDeleteService(id: string): Promise<void> {
   });
   if (!service) fail("Serviço não encontrado.");
 
+  // A1 — o botão agora existe em TODO card; o que muda é o que ele faz.
+  // Antes a action recusava quando havia histórico, e o botão nem aparecia:
+  // um serviço que a Mi parou de oferecer ficava preso no painel e continuava
+  // sendo oferecido para a cliente.
   const refs =
     service._count.bookings +
     service._count.eventSessions +
     service._count.waitlist;
+
   if (refs > 0) {
-    fail(
-      "Esse serviço já tem atendimentos no histórico — desative em vez de excluir.",
-    );
+    // Com histórico: arquiva. Some do admin, do encaixe e do site; os
+    // atendimentos antigos seguem visíveis na ficha da cliente e no financeiro.
+    await prisma.service.update({
+      where: { id },
+      data: { archivedAt: new Date(), active: false },
+    });
+  } else {
+    await prisma.service.delete({ where: { id } });
   }
 
-  await prisma.service.delete({ where: { id } });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+  revalidatePath("/dia-a-dia");
+  redirect(
+    `/admin/servicos?ok=${encodeURIComponent(
+      refs > 0
+        ? `Serviço "${service.name}" arquivado — o histórico foi preservado`
+        : `Serviço "${service.name}" excluído`,
+    )}`,
+  );
 }
 
 // ── Configurações do negócio (R3) ───────────────────────────────────────────

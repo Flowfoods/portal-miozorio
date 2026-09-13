@@ -9,9 +9,42 @@ import {
   previewBookingMessage,
 } from "@/app/admin/actions";
 
+const CATEGORIA_LABEL: Record<string, string> = {
+  social: "Social",
+  sobrancelha: "Sobrancelha",
+  cabelo: "Cabelo (dia a dia)",
+  curso: "Curso",
+  noiva: "Noiva (combinado)",
+  debutante: "Debutante (combinado)",
+};
+
+/** A6 — [categoria, serviços] preservando a ordem que veio do banco. */
+function agrupadoPorCategoria(
+  lista: AdminService[],
+): [string, AdminService[]][] {
+  const mapa = new Map<string, AdminService[]>();
+  for (const s of lista) {
+    const atual = mapa.get(s.category);
+    if (atual) atual.push(s);
+    else mapa.set(s.category, [s]);
+  }
+  // Array.from em vez de spread: o target do tsconfig não permite iterar Map.
+  return Array.from(mapa.entries());
+}
+
+/**
+ * A6 — o serviço já selecionado ao abrir o encaixe. Precisa ser um agendável:
+ * ordenar por categoria fez "debutante" poder cair em primeiro, e a Mi abriria
+ * o formulário com um serviço de vitrine pré-escolhido.
+ */
+function servicoPadrao(lista: AdminService[]): AdminService | undefined {
+  return lista.find((s) => s.bookableOnline) ?? lista[0];
+}
+
 export interface AdminService {
   id: string;
   name: string;
+  category: string;
   durationMin: number;
   priceCents: number;
   priceHomeCents: number | null;
@@ -69,8 +102,8 @@ export default function NovoAgendamento({
   const [location, setLocation] = useState<"studio" | "home">("studio");
   const [items, setItems] = useState<Item[]>([
     {
-      serviceId: services[0]?.id ?? "",
-      precoReais: centsToReais(priceFor(services[0], "studio")),
+      serviceId: servicoPadrao(services)?.id ?? "",
+      precoReais: centsToReais(priceFor(servicoPadrao(services), "studio")),
       motivo: "",
     },
   ]);
@@ -134,7 +167,7 @@ export default function NovoAgendamento({
     );
   }
   function addItem() {
-    const s = services[0];
+    const s = servicoPadrao(services);
     setItems((prev) => [
       ...prev,
       {
@@ -312,8 +345,8 @@ export default function NovoAgendamento({
   function resetForm() {
     setItems([
       {
-        serviceId: services[0]?.id ?? "",
-        precoReais: centsToReais(priceFor(services[0], "studio")),
+        serviceId: servicoPadrao(services)?.id ?? "",
+        precoReais: centsToReais(priceFor(servicoPadrao(services), "studio")),
         motivo: "",
       },
     ]);
@@ -408,11 +441,17 @@ export default function NovoAgendamento({
                       onChange={(e) => setItem(idx, { serviceId: e.target.value })}
                       className="input-mi w-full"
                     >
-                      {services.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} · {formatDuration(s.durationMin)}
-                          {s.bookableOnline ? "" : " (combinado)"}
-                        </option>
+                      {/* A6 — agrupado por categoria: a lista crua misturava
+                          tudo e a Mi caçava o serviço item a item. */}
+                      {agrupadoPorCategoria(services).map(([cat, lista]) => (
+                        <optgroup key={cat} label={CATEGORIA_LABEL[cat] ?? cat}>
+                          {lista.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} · {formatDuration(s.durationMin)}
+                              {s.bookableOnline ? "" : " (combinado)"}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                     {items.length > 1 && (

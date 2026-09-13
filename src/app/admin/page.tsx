@@ -273,17 +273,21 @@ export default async function AdminAgendaPage({
         },
       }),
       prisma.service.findMany({
-        where: { active: true },
+        where: { active: true, archivedAt: null },
         select: {
           id: true,
           name: true,
           durationMin: true,
+          category: true,
           priceCents: true,
           priceHomeCents: true,
           bookableOnline: true,
           isCourse: true,
         },
-        orderBy: [{ bookableOnline: "desc" }, { name: "asc" }],
+        // A6 — agrupa por categoria e ordena por nome, para a Mi achar o
+        // serviço onde espera. `bookableOnline` primeiro mantinha noiva e
+        // debutante jogadas no fim, longe do resto da categoria delas.
+        orderBy: [{ category: "asc" }, { name: "asc" }],
       }),
       isWeek
         ? queryDay(weekStart.toJSDate(), weekEnd.toJSDate())

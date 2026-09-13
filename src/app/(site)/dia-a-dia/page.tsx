@@ -31,7 +31,11 @@ type Servico = {
 async function getDiaADia(): Promise<{ cabelo: Servico[]; sobrancelha: Servico[] }> {
   try {
     const rows = await prisma.service.findMany({
-      where: { active: true, category: { in: ["cabelo", "sobrancelha"] } },
+      where: {
+        active: true,
+        archivedAt: null,
+        category: { in: ["cabelo", "sobrancelha"] },
+      },
       orderBy: [{ category: "asc" }, { name: "asc" }],
       select: {
         code: true,

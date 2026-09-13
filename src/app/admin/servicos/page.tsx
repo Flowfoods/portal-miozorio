@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Toast from "@/components/admin/Toast";
 import SubmitButton from "@/components/admin/SubmitButton";
+import ConfirmForm from "@/components/admin/ConfirmForm";
 import {
   adminUpdateService,
   adminCreateService,
@@ -34,7 +35,9 @@ const centsToReais = (cents: number) =>
   (cents / 100).toFixed(2).replace(".", ",");
 
 export default async function AdminServicosPage() {
+  // A1 — arquivado some da lista da Mi (o histórico continua no banco).
   const services = await prisma.service.findMany({
+    where: { archivedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
@@ -350,16 +353,23 @@ export default async function AdminServicosPage() {
               </form>
             </details>
 
-            {deletable && (
-              <form
-                action={adminDeleteService.bind(null, s.id)}
-                className="mt-2 text-right"
-              >
-                <button className="text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
-                  Excluir serviço (sem histórico)
-                </button>
-              </form>
-            )}
+            {/* A1 — existe em TODO card. O que muda é o efeito: sem histórico
+                some de vez; com histórico vira arquivo (some de tudo, os
+                atendimentos antigos continuam na ficha da cliente). A
+                confirmação diz qual dos dois vai acontecer. */}
+            <ConfirmForm
+              action={adminDeleteService.bind(null, s.id)}
+              className="mt-2 text-right"
+              message={
+                deletable
+                  ? `Excluir "${s.name}"? Esta ação não pode ser desfeita.`
+                  : `Arquivar "${s.name}"? Ele some do painel, do encaixe e do site. Os ${s._count.bookings} atendimento(s) já feitos continuam no histórico.`
+              }
+            >
+              <button className="min-h-[44px] text-xs text-mi-erro-tinta underline-offset-2 hover:underline">
+                {deletable ? "Excluir serviço" : "Arquivar serviço"}
+              </button>
+            </ConfirmForm>
             </div>
           );
         })}

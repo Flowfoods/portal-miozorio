@@ -114,7 +114,10 @@ model Service {
   pendingPrice    Boolean  @default(false) @map("pending_price") // sobrancelha a confirmar
   isCourse        Boolean  @default(false) @map("is_course") // usa event_sessions
   clubPoints      Int      @default(0) @map("club_points") // pontos do Clube por atendimento (configurável pela Mi)
-  active          Boolean  @default(true)
+  active          Boolean  @default(true) // liga/desliga temporário (some do site, fica no admin)
+  /// A1 — arquivado: some de TUDO (site, admin, encaixe), histórico preservado.
+  /// Diferente de `active`, é definitivo. Null = serviço vivo.
+  archivedAt      DateTime? @map("archived_at") @db.Timestamptz
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   bookings      Booking[]
