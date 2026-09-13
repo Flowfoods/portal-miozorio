@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import Toast from "@/components/admin/Toast";
+import SubmitButton from "@/components/admin/SubmitButton";
 import {
   adminUpdateService,
   adminCreateService,
@@ -42,6 +44,7 @@ export default async function AdminServicosPage() {
 
   return (
     <>
+      <Toast />
       <h1 className="mb-2 text-3xl">Serviços</h1>
       <p className="mb-6 text-sm text-mi-texto/80">
         Preços em reais (ex.: 250,00). Duração e intervalo em minutos. Noiva e
@@ -141,9 +144,12 @@ export default async function AdminServicosPage() {
               <input type="checkbox" name="requiresDeposit" />
               Exige sinal
             </label>
-            <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
+            <SubmitButton
+              pendingLabel="Criando…"
+              className="ml-auto min-h-[44px] rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white disabled:bg-mi-marrom-suave"
+            >
               Criar serviço
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </details>
@@ -264,9 +270,12 @@ export default async function AdminServicosPage() {
                   />
                   Exige sinal
                 </label>
-                <button className="ml-auto rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white">
+                <SubmitButton
+                  pendingLabel="Salvando…"
+                  className="ml-auto min-h-[44px] rounded-mi bg-mi-marrom-escuro px-4 py-2 text-sm text-white disabled:bg-mi-marrom-suave"
+                >
                   Salvar
-                </button>
+                </SubmitButton>
               </div>
             </form>
 

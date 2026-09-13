@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeE164BR } from "@/lib/phone";
+import { chaveServico } from "@/lib/servico-nome";
 import { ensureClubMember } from "@/lib/clube";
 import { criarCliente } from "@/lib/cliente";
 import {
@@ -497,6 +498,22 @@ export async function adminCreateService(formData: FormData): Promise<void> {
     fail("Categoria inválida.");
   }
 
+  // A6 — trava de duplicado no BACKEND. O cadastro não checava nome nenhum: só
+  // o `code` era unificado, com sufixo -2, -3. Cada clique repetido no botão
+  // (que não travava) virava um registro novo — foi assim que "Buço · 10min"
+  // acabou três vezes no banco de produção. A checagem aqui protege também o
+  // duplo submit, que nenhum estado de loading no navegador cobre sozinho.
+  const chave = chaveServico(name);
+  const irmaos = await prisma.service.findMany({
+    where: { category },
+    select: { name: true },
+  });
+  if (irmaos.some((s) => chaveServico(s.name) === chave)) {
+    fail(
+      `Já existe um serviço chamado "${name}" em ${category}. Edite o que já existe em vez de criar outro.`,
+    );
+  }
+
   const priceCents = reaisToCents(formData.get("price"));
   const priceHomeCents = reaisToCents(formData.get("priceHome"));
   const durationMin = Number(formData.get("durationMin"));
@@ -539,6 +556,9 @@ export async function adminCreateService(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/servicos");
   revalidatePath("/agendar");
+  // A6 — o caminho feliz precisa falar. Antes só o erro falava (throw →
+  // error.tsx) e o sucesso era uma tela que piscava.
+  redirect(`/admin/servicos?ok=${encodeURIComponent(`Serviço "${name}" criado`)}`);
 }
 
 export async function adminDeleteService(id: string): Promise<void> {
