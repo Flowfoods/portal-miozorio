@@ -10,6 +10,11 @@ import {
   textoParaMi,
   textoParaPessoa,
 } from "@/lib/recuperacao";
+import {
+  RECUP_MIN_MINUTOS,
+  RECUP_PADRAO_MINUTOS,
+  minutosValidadeCodigo,
+} from "@/lib/settings";
 
 /**
  * B2/B3 — modelo único de recuperação: o código vai para o WhatsApp da MILENE,
@@ -122,5 +127,28 @@ describe("B2 — mensagem pronta para a cliente (voz da Mi)", () => {
     const link = linkParaCliente("+5521998626845", "Ana", "482915", "14:35");
     expect(link.startsWith("https://wa.me/5521998626845?text=")).toBe(true);
     expect(decodeURIComponent(link)).toContain("482915");
+  });
+});
+
+describe("B3 — validade configurável pela Mi (piso de 15 min)", () => {
+  it("sem configuração, vale o padrão de 60 min", () => {
+    expect(minutosValidadeCodigo(undefined)).toBe(RECUP_PADRAO_MINUTOS);
+    expect(minutosValidadeCodigo(null)).toBe(RECUP_PADRAO_MINUTOS);
+    expect(minutosValidadeCodigo("abacaxi")).toBe(RECUP_PADRAO_MINUTOS);
+    expect(RECUP_PADRAO_MINUTOS).toBe(60);
+  });
+
+  it("respeita o que a Mi escolher, acima do piso", () => {
+    expect(minutosValidadeCodigo(90)).toBe(90);
+    expect(minutosValidadeCodigo(15)).toBe(15);
+    expect(minutosValidadeCodigo("120")).toBe(120);
+  });
+
+  it("nunca deixa cair abaixo de 15 min (repasse manual não cabe)", () => {
+    expect(RECUP_MIN_MINUTOS).toBe(15);
+    expect(minutosValidadeCodigo(1)).toBe(RECUP_MIN_MINUTOS);
+    expect(minutosValidadeCodigo(10)).toBe(RECUP_MIN_MINUTOS);
+    expect(minutosValidadeCodigo(-5)).toBe(RECUP_PADRAO_MINUTOS);
+    expect(minutosValidadeCodigo(0)).toBe(RECUP_PADRAO_MINUTOS);
   });
 });

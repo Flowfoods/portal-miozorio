@@ -17,7 +17,11 @@ import {
 } from "@/lib/clube-pontos";
 import { dispatchEvent, buildEventMessage } from "@/lib/notify";
 import { CONTENT_FIELDS, invalidateContentCache } from "@/lib/content";
-import { getSettings, invalidateSettingsCache } from "@/lib/settings";
+import {
+  getSettings,
+  invalidateSettingsCache,
+  RECUP_MIN_MINUTOS,
+} from "@/lib/settings";
 import { MIN_SENHA, SENHA_CURTA } from "@/lib/security";
 import { gerarCodigoParaCliente } from "@/lib/recuperacao";
 import type { CodigoRecuperacaoState } from "@/lib/recuperacao-tipos";
@@ -563,7 +567,12 @@ export async function adminSaveSettings(formData: FormData): Promise<void> {
   // Piso por campo: zero em "passo dos horários" trava a geração de horários
   // e derruba o site; zero em "reserva do horário" faz todo agendamento nascer
   // já vencido para a tela e vivo para a trava do banco.
-  const PISO: Record<string, number> = { slot_step_min: 1, hold_minutes: 1 };
+  const PISO: Record<string, number> = {
+    slot_step_min: 1,
+    hold_minutes: 1,
+    // B3 — abaixo de 15 min o repasse manual do código não cabe.
+    recuperacao_codigo_min: RECUP_MIN_MINUTOS,
+  };
   const numeric: Record<string, number> = {};
   for (const key of [
     "buffer_min",
@@ -574,6 +583,7 @@ export async function adminSaveSettings(formData: FormData): Promise<void> {
     "strike_limit",
     "hold_minutes",
     "slot_step_min",
+    "recuperacao_codigo_min",
   ]) {
     const n = Number(formData.get(key));
     const piso = PISO[key] ?? 0;

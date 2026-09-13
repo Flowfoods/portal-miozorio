@@ -3,7 +3,11 @@ import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { DateTime } from "luxon";
 import { prisma } from "./prisma";
-import { getSettings } from "./settings";
+import {
+  RECUP_PADRAO_MINUTOS,
+  getSettings,
+  minutosValidadeCodigo,
+} from "./settings";
 import { formatPhoneBR, waLinkMsg } from "./format";
 import { sendTransactional } from "./whatsapp/service";
 import { MIN_SENHA, senhaFraca } from "./security";
@@ -33,8 +37,19 @@ import { hashIp, maskPhone, metaFromHeaders, recordAuth } from "./authlog";
  */
 
 // ── Parâmetros ───────────────────────────────────────────────────────────────
-/** Validade do código. Longa de propósito: quem repassa é gente, não robô. */
-export const CODIGO_TTL_MS = 60 * 60_000;
+/**
+ * Validade PADRÃO do código. Longa de propósito: quem repassa é gente, não
+ * robô. A Mi pode mudar em Configurações (piso de 15 min — `RECUP_MIN_MINUTOS`).
+ */
+export const CODIGO_TTL_MS = RECUP_PADRAO_MINUTOS * 60_000;
+
+/** Validade configurada pela Mi, em ms. Cai no padrão se o banco não responder. */
+export async function ttlCodigoMs(): Promise<number> {
+  const { recuperacaoCodigoMin } = await getSettings().catch(() => ({
+    recuperacaoCodigoMin: RECUP_PADRAO_MINUTOS,
+  }));
+  return minutosValidadeCodigo(recuperacaoCodigoMin) * 60_000;
+}
 /** Janela entre "confirmei o código" e "salvei a senha nova". */
 export const TROCA_TTL_MS = 15 * 60_000;
 /** Tentativas de digitação do código antes de queimá-lo. */
@@ -255,7 +270,7 @@ async function criarEAvisar(
   });
 
   const codigo = gerarCodigo();
-  const expiresAt = new Date(Date.now() + CODIGO_TTL_MS);
+  const expiresAt = new Date(Date.now() + (await ttlCodigoMs()));
   const row = await prisma.passwordRecovery.create({
     data: {
       perfil: sujeito.perfil,
