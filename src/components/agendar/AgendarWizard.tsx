@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import {
   formatBRL,
   formatDuration,
@@ -27,6 +28,8 @@ interface ApiService {
   isCourse: boolean;
   /** Dias próprios (Luxon 1=seg..7=dom); null = regra padrão. M9.5. */
   availableWeekdays: number[] | null;
+  /** A2 — foto de exemplo do serviço; null = monograma. */
+  foto: { url: string; alt: string; blurData: string | null } | null;
 }
 
 type Location = "studio" | "home";
@@ -452,9 +455,35 @@ export default function AgendarWizard() {
                     setSlots(null);
                     setStep(2);
                   }}
-                  className="flex w-full items-center justify-between gap-4 rounded-mi border border-mi-cinza bg-mi-branco p-4 text-left shadow-suave transition-colors hover:border-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex w-full items-center gap-4 rounded-mi border border-mi-cinza bg-mi-branco p-3 text-left shadow-suave transition-colors hover:border-mi-marrom disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <span>
+                  {/* A2 — a foto que a Mi subiu no painel. Sem foto, o
+                      monograma: nunca um retângulo vazio nem "sem imagem". */}
+                  <span className="relative block h-20 w-16 shrink-0 overflow-hidden rounded-[10px] bg-mi-bege">
+                    {s.foto ? (
+                      <Image
+                        src={s.foto.url}
+                        alt={s.foto.alt}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        {...(s.foto.blurData
+                          ? {
+                              placeholder: "blur" as const,
+                              blurDataURL: s.foto.blurData,
+                            }
+                          : {})}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="flex h-full w-full items-center justify-center font-titulo text-2xl font-medium italic text-mi-marrom-400"
+                      >
+                        Mi
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
                     <span className="block font-titulo text-lg text-mi-marrom-escuro">
                       {s.name}
                     </span>

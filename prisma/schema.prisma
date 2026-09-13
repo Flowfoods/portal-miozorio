@@ -118,6 +118,9 @@ model Service {
   /// A1 — arquivado: some de TUDO (site, admin, encaixe), histórico preservado.
   /// Diferente de `active`, é definitivo. Null = serviço vivo.
   archivedAt      DateTime? @map("archived_at") @db.Timestamptz
+  /// A2 — foto de exemplo (o "cardápio"). Reusa media_assets: herda WebP, blur
+  /// e dimensões. Null = cai no MonogramPlaceholder.
+  mediaAssetId    String?   @map("media_asset_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   bookings      Booking[]
@@ -125,7 +128,9 @@ model Service {
   waitlist      Waitlist[]
   availability  ServiceAvailability[]
   bookingItems  BookingItem[]
+  mediaAsset    MediaAsset?           @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
 
+  @@index([mediaAssetId])
   @@map("services")
 }
 
@@ -529,6 +534,8 @@ model MediaAsset {
   width     Int? // dimensões do master — proporção sem layout shift
   height    Int?
   blurData  String?  @map("blur_data") // data URL p/ placeholder="blur"
+
+  services Service[] // A2 — serviços que usam esta foto como exemplo
 
   @@index([category, published])
   @@map("media_assets")

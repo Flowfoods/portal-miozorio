@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Toast from "@/components/admin/Toast";
 import SubmitButton from "@/components/admin/SubmitButton";
 import ConfirmForm from "@/components/admin/ConfirmForm";
+import FotoServico from "@/components/admin/FotoServico";
 import {
   adminUpdateService,
   adminCreateService,
@@ -42,6 +43,8 @@ export default async function AdminServicosPage() {
     include: {
       _count: { select: { bookings: true, eventSessions: true, waitlist: true } },
       availability: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
+      // A2 — foto de exemplo do serviço (o "cardápio" que a cliente vê).
+      mediaAsset: { select: { url: true, alt: true, blurData: true } },
     },
   });
 
@@ -352,6 +355,12 @@ export default async function AdminServicosPage() {
                 </button>
               </form>
             </details>
+
+            <FotoServico
+              serviceId={s.id}
+              nome={s.name}
+              foto={s.mediaAsset}
+            />
 
             {/* A1 — existe em TODO card. O que muda é o efeito: sem histórico
                 some de vez; com histórico vira arquivo (some de tudo, os
