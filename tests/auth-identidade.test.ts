@@ -144,6 +144,27 @@ describe("B1 — domínio canônico", () => {
     expect(destinoCanonico("MIOZORIO.COM.BR", "miozorio.com.br")).toBeNull();
   });
 
+  // O host encaminhado pode chegar com porta. Comparar a string inteira fazia a
+  // igualdade nunca bater: o 308 apontava para o mesmo host, o navegador voltava
+  // com a mesma porta, e o laço derrubava o SITE INTEIRO — não só o login.
+  it("ignora a porta dos dois lados (o laço que derrubaria o site)", () => {
+    expect(
+      destinoCanonico("miozorio.com.br:443", "miozorio.com.br"),
+    ).toBeNull();
+    expect(
+      destinoCanonico("miozorio.com.br", "miozorio.com.br:443"),
+    ).toBeNull();
+    expect(
+      destinoCanonico("MIOZORIO.COM.BR:8443", "miozorio.com.br"),
+    ).toBeNull();
+  });
+
+  it("com porta, host DIFERENTE continua sendo redirecionado", () => {
+    expect(destinoCanonico("www.miozorio.com.br:443", "miozorio.com.br")).toBe(
+      "miozorio.com.br",
+    );
+  });
+
   it("nunca mexe em dev nem no preview do Dokploy", () => {
     expect(hostIsento("localhost:3000")).toBe(true);
     expect(hostIsento("app-123.traefik.me")).toBe(true);

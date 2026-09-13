@@ -337,7 +337,10 @@ model Booking {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customerId     String        @map("customer_id") @db.Uuid
   serviceId      String        @map("service_id") @db.Uuid
-  professionalId String?       @map("professional_id") @db.Uuid
+  /// Obrigatório: a trava no_overlap compara `professional_id WITH =`, e NULL
+  /// nunca conflita com NULL — uma reserva sem profissional escapa da R2 em
+  /// silêncio. Fechado por NOT NULL no banco (20260913080000).
+  professionalId String        @map("professional_id") @db.Uuid
   eventSessionId String?       @map("event_session_id") @db.Uuid
   startsAt       DateTime      @map("starts_at") @db.Timestamptz
   endsAt         DateTime      @map("ends_at") @db.Timestamptz // inclui buffer
@@ -354,6 +357,11 @@ model Booking {
   depositProvider  String?  @map("deposit_provider")
   depositPaymentId String?  @unique @map("deposit_payment_id")
   anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
+  // Consentimento ESPECÍFICO para o dado de saúde (alergia). O aceite genérico
+  // da política de privacidade não cobre dado sensível: a LGPD pede
+  // consentimento "específico e destacado" (art. 11, I). Só é exigido quando a
+  // pessoa de fato escreve alguma alergia — campo em branco não coleta nada.
+  healthConsentAt DateTime? @map("health_consent_at") @db.Timestamptz
   source         String        @default("web") // web | whatsapp | manual
   // Foto de referência da cliente (LGPD): chave em storage PRIVADO (nunca URL
   // pública); servida só via /admin/media. Consentimento explícito obrigatório.
@@ -371,7 +379,7 @@ model Booking {
   customer      Customer          @relation(fields: [customerId], references: [id])
   service       Service           @relation(fields: [serviceId], references: [id])
   variant       ServiceVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  professional  Professional?     @relation(fields: [professionalId], references: [id])
+  professional  Professional      @relation(fields: [professionalId], references: [id])
   eventSession  EventSession?     @relation(fields: [eventSessionId], references: [id])
   events        BookingEvent[]
   notifications NotificationLog[]

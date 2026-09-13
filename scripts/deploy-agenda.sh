@@ -57,6 +57,33 @@ ok "banco respondendo"
 BOOKINGS_ANTES="$(psql_q "select count(*) from bookings;")"
 ok "bookings hoje: ${BOOKINGS_ANTES}"
 
+# A migration 20260913080000 torna professional_id obrigatório e, antes de
+# escrever, recusa o deploy se o backfill fosse criar sobreposição. Melhor
+# descobrir isso AQUI, em consulta só de leitura, do que no boot do container:
+# lá o deploy morre e o Dokploy faz rollback — funciona, mas assusta e perde
+# tempo. Esta checagem espelha exatamente a guarda da migration.
+NULOS="$(psql_q "select count(*) from bookings where professional_id is null;")"
+if [ "$NULOS" != "0" ]; then
+  ok "reservas sem profissional: ${NULOS} (a migration vai preencher)"
+  COLIDEM="$(psql_q "
+    with alvo as (
+      select id from professionals order by active desc, name, id limit 1
+    )
+    select count(*) from bookings a join bookings b
+      on a.id < b.id
+     and a.status in ('pending','confirmed')
+     and b.status in ('pending','confirmed')
+     and (a.professional_id is null or b.professional_id is null)
+     and coalesce(a.professional_id, (select id from alvo))
+       = coalesce(b.professional_id, (select id from alvo))
+     and tstzrange(a.starts_at, a.ends_at) && tstzrange(b.starts_at, b.ends_at);
+  ")"
+  [ "$COLIDEM" = "0" ] || fail "há ${COLIDEM} par(es) de reservas vivas que passariam a colidir ao receber a profissional. São double-bookings que o professional_id NULL deixou passar. Cancele ou remarque uma de cada par em /admin e rode de novo. NADA foi alterado."
+  ok "nenhuma colisão no backfill — a migration vai passar"
+else
+  ok "nenhuma reserva sem profissional"
+fi
+
 # ── 1. Backup (o único passo que não dá para refazer) ───────────────────────
 log "Backup do banco"
 mkdir -p "$BACKUP_DIR"
@@ -109,14 +136,22 @@ done
 # ── 4. Conferência do que as migrations produziram ──────────────────────────
 log "Conferindo o banco"
 
+# 10 = 6 da frente de agendamento + 2 da frente de auth (B1-B5) + professional_id
+# obrigatório + consentimento de saúde. Este deploy carrega tudo junto.
 MIGRACOES="$(psql_q "select count(*) from _prisma_migrations where migration_name like '20260913%' and finished_at is not null;")"
-[ "$MIGRACOES" = "6" ] || fail "esperava 6 migrations de 13/09 aplicadas, encontrei ${MIGRACOES}."
-ok "as 6 migrations aplicadas"
+[ "$MIGRACOES" = "10" ] || fail "esperava 10 migrations de 13/09 aplicadas, encontrei ${MIGRACOES}."
+ok "as 10 migrations aplicadas"
 
 # A R2 é a regra mais crítica: confirmar que a trava seguiu intacta.
 psql_q "select 1 from pg_constraint where conname='no_overlap';" | grep -q 1 \
   || fail "constraint no_overlap SUMIU. Restaure o backup."
 ok "trava anti-double-booking (R2) intacta"
+
+# A trava compara `professional_id WITH =`, e NULL nunca conflita com NULL:
+# enquanto a coluna aceitasse NULL, existia uma porta dos fundos silenciosa.
+psql_q "select is_nullable from information_schema.columns where table_name='bookings' and column_name='professional_id';" \
+  | grep -q '^NO$' || fail "professional_id ainda aceita NULL — a R2 continua com a porta dos fundos aberta."
+ok "professional_id obrigatório (R2 fechada por estrutura)"
 
 psql_q "select count(*) from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='CancelledBy';" \
   | grep -q '^3$' || fail "enum CancelledBy não tem os 3 valores."
