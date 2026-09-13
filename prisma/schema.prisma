@@ -346,6 +346,10 @@ model Booking {
   holdExpiresAt  DateTime?     @map("hold_expires_at") @db.Timestamptz // só em pending
   depositCents   Int?          @map("deposit_cents")
   depositPaidAt  DateTime?     @map("deposit_paid_at") @db.Timestamptz
+  /// A7 — quem cobrou e qual cobrança. Null enquanto não houver gateway
+  /// configurado (o sinal é combinado no WhatsApp da Mi).
+  depositProvider  String?  @map("deposit_provider")
+  depositPaymentId String?  @unique @map("deposit_payment_id")
   anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
   source         String        @default("web") // web | whatsapp | manual
   // Foto de referência da cliente (LGPD): chave em storage PRIVADO (nunca URL

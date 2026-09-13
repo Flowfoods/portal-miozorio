@@ -420,11 +420,13 @@ export default function AgendarWizard() {
   if (aguardandoSinal && service && date && time) {
     return (
       <AguardandoSinalScreen
+        bookingId={booking?.id ?? ""}
         service={service}
         date={date}
         time={time}
         prazo={aguardandoSinal.prazo}
         depositCents={aguardandoSinal.depositCents}
+        onPago={() => setConfirmed(true)}
       />
     );
   }
@@ -1035,18 +1037,84 @@ function HoldCountdown({
  * como erro de formulário e ia embora achando que não tinha agendado.
  */
 function AguardandoSinalScreen({
+  bookingId,
   service,
   date,
   time,
   prazo,
   depositCents,
+  onPago,
 }: {
+  bookingId: string;
   service: ApiService;
   date: string;
   time: string;
   prazo: string;
   depositCents: number | null;
+  onPago: () => void;
 }) {
+  // A7 (conclusão) — o PIX. Só aparece se o portal tiver gateway configurado;
+  // a rota devolve 501 quando não tem, e a tela segue no caminho do WhatsApp,
+  // que é como a Mi trabalha hoje. Nenhum botão que não leva a lugar nenhum.
+  const [pix, setPix] = useState<{
+    copiaECola: string;
+    qrCodeBase64: string | null;
+  } | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const [semGateway, setSemGateway] = useState(false);
+  const [erroPix, setErroPix] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  async function gerarPix() {
+    setGerando(true);
+    setErroPix(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/sinal`, {
+        method: "POST",
+      });
+      if (res.status === 501) {
+        setSemGateway(true);
+        return;
+      }
+      const d = (await res.json().catch(() => ({}))) as {
+        copiaECola?: string;
+        qrCodeBase64?: string | null;
+        error?: string;
+      };
+      if (!res.ok || !d.copiaECola) {
+        setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
+        return;
+      }
+      setPix({ copiaECola: d.copiaECola, qrCodeBase64: d.qrCodeBase64 ?? null });
+    } catch {
+      setErroPix("Tivemos um probleminha de conexão. Tenta de novo?");
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  // Enquanto o PIX está na tela, pergunta ao portal se já caiu. O webhook é o
+  // caminho normal; este poll é o que faz a tela REAGIR sem a cliente ter que
+  // recarregar depois de pagar.
+  useEffect(() => {
+    if (!pix || !bookingId) return;
+    const t = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/bookings/${bookingId}/sinal`);
+        if (!r.ok) return;
+        const d = (await r.json()) as { pago?: boolean; confirmado?: boolean };
+        if (d.pago || d.confirmado) {
+          clearInterval(t);
+          onPago();
+        }
+      } catch {
+        // Rede instável não pode virar erro na cara da cliente: o webhook e o
+        // cron de conciliação fecham o caso de qualquer jeito.
+      }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [pix, bookingId, onPago]);
+
   const prazoFmt = new Date(prazo).toLocaleString("pt-BR", {
     timeZone: "America/Sao_Paulo",
     day: "2-digit",
@@ -1079,15 +1147,69 @@ function AguardandoSinalScreen({
               de <strong>{formatBRL(depositCents)}</strong>
             </>
           ) : null}
-          . A Mi te chama no WhatsApp para acertar — e você também pode chamar
-          ela agora, se preferir.
+          {semGateway
+            ? ". A Mi te chama no WhatsApp para acertar — e você também pode chamar ela agora, se preferir."
+            : ". Você pode pagar por PIX aqui mesmo, ou combinar com a Mi no WhatsApp."}
         </p>
         <p className="mt-3 font-corpo text-sm text-mi-marrom-700">
           Guardo esse horário até <strong>{prazoFmt}</strong>. Depois disso ele
           volta para a agenda.
         </p>
+
+        {pix && (
+          <div className="mt-4 border-t border-mi-cinza pt-4">
+            {pix.qrCodeBase64 && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={pix.qrCodeBase64}
+                alt="QR Code do PIX do sinal"
+                className="mx-auto h-48 w-48"
+              />
+            )}
+            <p className="mt-3 font-corpo text-xs text-mi-texto/80">
+              Abra o app do banco, escolha PIX e use o QR ou o código abaixo.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard
+                  ?.writeText(pix.copiaECola)
+                  .then(() => setCopiado(true))
+                  .catch(() => setCopiado(false));
+              }}
+              className="mt-2 min-h-[44px] w-full break-all rounded-mi border border-mi-cinza bg-mi-bege px-3 py-2 text-left font-mono text-xs text-mi-texto"
+            >
+              {pix.copiaECola}
+            </button>
+            <p
+              role="status"
+              aria-live="polite"
+              className="mt-1 font-corpo text-xs text-mi-marrom-700"
+            >
+              {copiado
+                ? "Código copiado ✓ — assim que o pagamento cair, esta tela confirma sozinha."
+                : "Toque no código para copiar."}
+            </p>
+          </div>
+        )}
+
+        {erroPix && (
+          <p role="alert" className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+            {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
+          </p>
+        )}
       </div>
-      <Botao href={wa} variante="whatsapp" className="mt-6 w-full">
+
+      {!pix && !semGateway && (
+        <Botao onClick={gerarPix} disabled={gerando} className="mt-6 w-full">
+          {gerando ? "Gerando PIX…" : "Pagar sinal por PIX"}
+        </Botao>
+      )}
+      <Botao
+        href={wa}
+        variante={pix || semGateway ? "whatsapp" : "secundario"}
+        className="mt-3 w-full"
+      >
         Falar com a Mi no WhatsApp
       </Botao>
       <Botao href="/" variante="secundario" className="mt-3 w-full">

@@ -11,7 +11,7 @@ marcar verde sem evidência é pior do que deixar em aberto.
 
 | Gate | Status | Evidência |
 |---|---|---|
-| `npm test` | ✅ **348/348** (era 246) | saída do vitest |
+| `npm test` | ✅ **360/360** (era 246) | saída do vitest |
 | `tsc --noEmit` | ✅ limpo | exit 0 |
 | `next lint` | ✅ sem avisos | exit 0 |
 | `next build` | ✅ exit 0 | produção compila |
@@ -23,7 +23,7 @@ marcar verde sem evidência é pior do que deixar em aberto.
 > classes de arquivos inteiros; rodar `--write` produziria um diff enorme e sem
 > relação. O pre-commit do repo roda lint+typecheck, não prettier.
 
-## 3.1 — Testes automatizados: 102 novos
+## 3.1 — Testes automatizados: 114 novos
 
 | Arquivo | Testes | Cobre |
 |---|---|---|
@@ -36,6 +36,7 @@ marcar verde sem evidência é pior do que deixar em aberto.
 | `tests/pos-atendimento.test.ts` | 9 | A10: saldo antes/ganho/agora, versão não-membro, voz da marca |
 | `tests/variantes.test.ts` | 14 | A3: preço/duração por tamanho, aguardando-validação derivado |
 | `tests/fase3-regras.test.ts` | 8 | R1 no backend, arquivado fora de circulação, tamanho/foto obrigatórios, LGPD |
+| `tests/pagamento.test.ts` | 12 | A7: gateway ausente = nada muda; assinatura do webhook, incluindo `data.id` adulterado |
 
 ### Itens de 3.1 que exigem banco e ficaram fora
 
@@ -50,14 +51,16 @@ testaria o mock, não a trava, e daria uma falsa sensação de cobertura:
 
 ## 3.2 / 3.3 — Roteiro para rodar em staging
 
-Pré-requisitos: banco com as 5 migrations novas aplicadas, Evolution conectada,
-`WHATSAPP_MI` e `NEXT_PUBLIC_SITE_URL` no ambiente.
+Pré-requisitos: banco com as 6 migrations novas aplicadas, Evolution conectada,
+`WHATSAPP_MI` e `NEXT_PUBLIC_SITE_URL` no ambiente. O PIX (cenário 3b) só roda
+com `PAGAMENTO_PROVIDER` + credenciais.
 
 | # | Cenário | Esperado |
 |---|---|---|
 | 1 | Cliente agenda serviço sem sinal | Mi recebe WhatsApp na hora; status "Pendente" |
 | 2 | Mi confirma no painel | Cliente recebe confirmação com local, valor e orientações; **uma** mensagem |
-| 3 | Serviço com "Exige sinal" ligado | Cliente vê "Seu horário está guardado", valor do sinal e prazo; **nunca** um erro |
+| 3 | Serviço com "Exige sinal", SEM gateway | Cliente vê "Seu horário está guardado", valor e prazo; botão só de WhatsApp; **nunca** um erro |
+| 3b | Idem, COM gateway | Botão "Pagar sinal por PIX"; QR + copia-e-cola; ao pagar, a tela confirma sozinha |
 | 4 | Não combina o sinal | Expira no prazo; rótulo **"Expirado (sistema)"**; Mi avisada; "Reativar e confirmar" funciona |
 | 5 | Serviço com tamanho | Cliente escolhe + manda foto; Mi vê o bloco de validação; aprovar/ajustar; ajuste avisa a cliente |
 | 6 | Cadastro de serviço | Toast "criado ✓"; botão trava em "Criando…"; nome duplicado bloqueado |
@@ -87,23 +90,42 @@ reativa em qualquer ponto.
 | A4 notificar a Mi | `59f1123` | `notify-mi` | ✅ código |
 | A5 reativar + rótulo | `172a78e` | `a5-reativar` | ✅ código |
 | A6 anti-duplicação + feedback | `2791e1a` + `c8bba03` | `servico-nome` | ✅ código |
-| A7 fluxo de sinal | `db21d8a` | `sinal` | ⚠️ **parcial — ver abaixo** |
+| A7 fluxo de sinal | `db21d8a` + `<pagamento>` | `sinal`, `pagamento` | ✅ código |
 | A8 horário livre | `4166c56` | manual (9, 10) | ✅ código |
 | A9 confirmação p/ cliente | `2001904` | `notify-cliente` | ✅ código |
 | A10 pós-atendimento + pontos | `b019136` | `pos-atendimento` | ✅ código |
 | A11 alerta de alergia | `caea4be` | `anamnesis` | ✅ código |
 
-### A7 é o único parcial, e é importante entender por quê
+### A7 — como a cobrança foi resolvida sem travar a decisão
 
-**Não existe gateway de pagamento no projeto.** `depositCents` nunca era escrito
-por nenhum caminho do código, e a escolha MP × Efí é pendência de negócio
-registrada no próprio `claude.md`. Então a parte de A7 que pedia "levar a cliente
-para a tela de pagamento" **não foi implementada** — não há para onde levar.
+O primeiro commit fechou a **regra** (sinal não é mais exigido por padrão), que
+já resolve o caso Carla sozinha. O segundo fechou a **cobrança**.
 
-O que foi feito resolve o caso Carla inteiro sem gateway: o sinal deixou de ser
-exigido por padrão (a política `deposit_policy` do banco já dizia isso desde o
-seed), e quando há sinal a reserva nasce com prazo real e a cliente vai para o
-WhatsApp da Mi — que é onde o PIX acontece de verdade hoje.
+A escolha MP × Efí continua sendo sua — o motor conversa com uma interface
+(`src/lib/pagamento/tipos.ts`) e cada provedor é um adaptador. Trocar para Efí é
+escrever `efi.ts` com a mesma interface e mudar uma env; o fluxo de agendamento,
+que é o caminho que gera receita, não é tocado.
+
+**Sem credencial configurada, nada muda.** `gatewayAtivo()` devolve null e o
+portal se comporta exatamente como antes: reserva guardada, sinal combinado no
+WhatsApp. A rota de cobrança devolve 501 e a tela nem mostra o botão — nenhuma
+cliente vê um "Pagar" que não leva a lugar nenhum.
+
+**Três camadas para o dinheiro não se perder:**
+1. **Webhook** com assinatura HMAC verificada. Fail-closed: sem
+   `MP_WEBHOOK_SECRET` recusa tudo. Um webhook de pagamento sem verificação
+   seria um botão de "marcar como pago" aberto na internet — e trocar o
+   `data.id` sem reassinar é recusado (tem teste).
+2. **O webhook nunca é acreditado.** Ele só diz "algo mudou nesta cobrança"; se
+   está paga, quem responde é o provedor, perguntado por nós.
+3. **Cron de conciliação** (`/api/cron/conciliar-sinais`, a cada 10 min) varre
+   cobranças em aberto. Webhook se perde — entrega falha, deploy no meio — e sem
+   isso uma cliente que PAGOU ficaria "aguardando sinal" até o hold vencer, que
+   é o pior desfecho possível porque o dinheiro entrou.
+
+Idempotência em dois níveis: `X-Idempotency-Key` por booking no provedor (a
+cliente recarregar a tela não abre um PIX novo) e `updateMany` condicional em
+`registrarSinalPago` (webhook repetido não confirma nem notifica duas vezes).
 
 ## Migrations criadas (aplicar é gate do Rodolfo)
 
@@ -114,6 +136,7 @@ WhatsApp da Mi — que é onde o PIX acontece de verdade hoje.
 | `20260913030000_a1_service_archived` | Coluna `archived_at` + índice parcial | Aditiva |
 | `20260913040000_a2_foto_servico` | FK `media_asset_id` (ON DELETE SET NULL) | Aditiva |
 | `20260913050000_a3_variacao_tamanho` | Tabela `service_variants` + 3 colunas em `bookings` | Aditiva |
+| `20260913060000_a7_pagamento_sinal` | `deposit_provider` + `deposit_payment_id` + índices | Aditiva |
 
 Todas aditivas (R11). Nenhuma apaga dado, nenhuma altera coluna existente.
 
@@ -134,6 +157,18 @@ Todas aditivas (R11). Nenhuma apaga dado, nenhuma altera coluna existente.
 3. **n8n/Evolution:** nada novo a configurar. As mensagens novas usam o outbox
    que já existe (`whatsapp_message` + cron `/api/cron/whatsapp-outbox`).
 
+4. **Cron novo** no Dokploy Schedules, a cada 10 min (só faz sentido depois que
+   o gateway estiver ligado; sem ele é no-op):
+   ```
+   curl -fsS -X POST https://miozorio.com.br/api/cron/conciliar-sinais \
+     -H "Authorization: Bearer $CRON_SECRET"
+   ```
+
+5. **Se e quando ligar o pagamento** (ver `.env.example`): `PAGAMENTO_PROVIDER`,
+   `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` no Dokploy, e cadastrar o webhook
+   `https://miozorio.com.br/api/webhooks/pagamento` (evento `payment`) no painel
+   do Mercado Pago. Sem o secret, o webhook recusa tudo — é proposital.
+
 ## Pendente de decisão da Mi
 
 - **Quais serviços exigem sinal.** A migration desligou todos; a flag continua
@@ -144,4 +179,6 @@ Todas aditivas (R11). Nenhuma apaga dado, nenhuma altera coluna existente.
 - **Textos finais** das 4 mensagens novas (confirmação enriquecida, tamanho
   ajustado, pós-atendimento membro e não-membro) — todos editáveis em
   /admin > Textos.
-- **Gateway de pagamento** (MP × Efí), se e quando quiser cobrança no portal.
+- **Gateway de pagamento:** o adaptador do Mercado Pago está pronto e desligado.
+  Se preferir Efí, é escrever `src/lib/pagamento/efi.ts` com a mesma interface —
+  o fluxo de agendamento não muda.
