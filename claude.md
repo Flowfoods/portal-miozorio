@@ -37,6 +37,9 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 - **R4/R16** UTC no banco; exibição `America/Sao_Paulo` (Luxon).
 - **R5** Telefones E.164 (`normalizeE164BR`) antes de qualquer uso.
 - **R6/R18** Alergia = dado de saúde (LGPD): só autenticado; menores exigem responsável;
+  coleta pública exige consentimento ESPECÍFICO (`lib/consentimento-saude.ts`,
+  `booking.health_consent_at`) — o aceite genérico da política não cobre dado
+  sensível (art. 11, I). Só é pedido a quem escreve alergia de fato;
   foto de cliente só com `photo_consent` registrado.
 - **R7/R20** Voz da Mi: acolhedora + sofisticada, "você", 💛 com moderação.
 - **R8** Commits pequenos por sub-fase, pt-BR (`M10.1: encaixe manual - tela`).
@@ -136,13 +139,13 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
 
-- `npm test` — **476 testes**, sem banco. Roda em qualquer lugar.
+- `npm test` — **492 testes**, sem banco. Roda em qualquer lugar.
 - `npm run test:db` — **21 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 476 testes, build) + job `integracao` (postgres:16, aplica as
+(lint, typecheck, 492 testes, build) + job `integracao` (postgres:16, aplica as
 migrations de verdade e roda os 21). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.

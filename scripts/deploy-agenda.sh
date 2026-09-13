@@ -136,11 +136,11 @@ done
 # ── 4. Conferência do que as migrations produziram ──────────────────────────
 log "Conferindo o banco"
 
-# 9 = 6 da frente de agendamento + 2 da frente de auth (B1-B5) + 1 do
-# professional_id obrigatório. Este deploy carrega as três coisas juntas.
+# 10 = 6 da frente de agendamento + 2 da frente de auth (B1-B5) + professional_id
+# obrigatório + consentimento de saúde. Este deploy carrega tudo junto.
 MIGRACOES="$(psql_q "select count(*) from _prisma_migrations where migration_name like '20260913%' and finished_at is not null;")"
-[ "$MIGRACOES" = "9" ] || fail "esperava 9 migrations de 13/09 aplicadas, encontrei ${MIGRACOES}."
-ok "as 9 migrations aplicadas"
+[ "$MIGRACOES" = "10" ] || fail "esperava 10 migrations de 13/09 aplicadas, encontrei ${MIGRACOES}."
+ok "as 10 migrations aplicadas"
 
 # A R2 é a regra mais crítica: confirmar que a trava seguiu intacta.
 psql_q "select 1 from pg_constraint where conname='no_overlap';" | grep -q 1 \

@@ -22,6 +22,11 @@ import {
   exigeTamanho,
   type VarianteBase,
 } from "./variantes";
+import {
+  MSG_FALTA_CONSENTIMENTO_SAUDE,
+  carimboConsentimentoSaude,
+  faltaConsentimentoSaude,
+} from "./consentimento-saude";
 import { reconhecerReceitaDeBooking } from "./finance/queries";
 import { notificarMi } from "./notify-mi";
 import {
@@ -44,6 +49,12 @@ export interface CreateBookingInput {
   };
   anamnesis?: Record<string, unknown>;
   lgpdConsent: boolean;
+  /**
+   * Consentimento ESPECÍFICO para o dado de saúde da anamnese (alergia), R6/R18.
+   * Só é exigido quando a anamnese traz alergia preenchida — ver
+   * `lib/consentimento-saude.ts`.
+   */
+  healthConsent?: boolean;
   /** "web" (default) | "area_cliente" — origem p/ o bônus de reagendamento (F5). */
   source?: "web" | "area_cliente";
   /** A3 — tamanho escolhido, quando o serviço tem variações. */
@@ -77,6 +88,7 @@ export type CreateBookingResult =
         | "slot_taken"
         | "slot_unavailable"
         | "no_consent"
+        | "no_health_consent"
         | "variante_invalida"
         | "foto_obrigatoria";
       message: string;
@@ -120,6 +132,18 @@ export async function createBooking(
       ok: false,
       code: "no_consent",
       message: "É preciso aceitar a política de privacidade.",
+    };
+  }
+
+  // R6/R18 — alergia é dado de saúde (sensível). O aceite genérico da política
+  // não cobre: a LGPD exige consentimento específico e destacado (art. 11, I).
+  // A trava vive AQUI, e não só na tela: a rota é pública e qualquer cliente
+  // HTTP pode montar o POST sem passar pelo formulário.
+  if (faltaConsentimentoSaude(input.anamnesis, input.healthConsent)) {
+    return {
+      ok: false,
+      code: "no_health_consent",
+      message: MSG_FALTA_CONSENTIMENTO_SAUDE,
     };
   }
 
@@ -317,6 +341,13 @@ export async function createBooking(
           ...(input.anamnesis !== undefined
             ? { anamnesis: input.anamnesis as Prisma.InputJsonValue }
             : {}),
+          // Carimbo só quando há dado de saúde E consentimento (R6/R18). Sem
+          // alergia preenchida fica NULL: registrar consentimento que não foi
+          // pedido falsificaria a auditoria.
+          healthConsentAt: carimboConsentimentoSaude(
+            input.anamnesis,
+            input.healthConsent,
+          ),
           source: input.source ?? "web",
         },
       });

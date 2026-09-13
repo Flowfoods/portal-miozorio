@@ -42,6 +42,31 @@
   exige um evento novo no `AuthEvent` (`isIpThrottled` só conta `login_fail` e
   `recover_fail`), então não é plug-and-play.
 
-- **Alergia coletada no formulário público com o checkbox genérico de LGPD.**
-  Dado de saúde merece consentimento próprio. Armazenamento e acesso já estão
-  corretos (só painel autenticado). Depende de decisão da Mi sobre a copy.
+- ~~**Alergia coletada no formulário público com o checkbox genérico de LGPD.**~~
+  — **resolvido em 13/09/2026** (`20260913090000_consentimento_saude`).
+  Alergia é dado de saúde e, pela LGPD, sensível (art. 5º, II): o tratamento por
+  consentimento exige que ele seja "específico e destacado" (art. 11, I), e o
+  aceite genérico da política não é nem um nem outro.
+
+  A regra vive em `src/lib/consentimento-saude.ts` (módulo puro) e é aplicada
+  no `booking-service`, **antes de qualquer consulta ao banco** — a rota é
+  pública e qualquer cliente HTTP monta o POST sem passar pelo formulário.
+  `booking.health_consent_at` registra o aceite.
+
+  Desenho: o consentimento extra só é exigido de quem **de fato escreve** uma
+  alergia. Campo em branco não coleta dado sensível, então não há o que
+  consentir — e pedir autorização de dado sensível para todo mundo seria ruído,
+  que é justamente o que treina as pessoas a clicar sem ler. Nunca carimbamos
+  consentimento não pedido: auditoria de LGPD com data inventada é pior do que
+  auditoria vazia.
+
+  ⚠️ **`<!-- APROVAR COM A MI -->`** o texto da autorização
+  (`AgendarWizard.tsx`, passo 3) — a dívida dizia que a copy dependia dela.
+  O que está lá é proposta, não decisão.
+
+## Ainda abertos
+
+- **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
+  indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
+  ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é
+  decidir se esse campo deve existir ali. Decisão de produto, com a Mi.

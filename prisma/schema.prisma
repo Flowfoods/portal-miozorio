@@ -357,6 +357,11 @@ model Booking {
   depositProvider  String?  @map("deposit_provider")
   depositPaymentId String?  @unique @map("deposit_payment_id")
   anamnesis      Json? // respostas da anamnese (alergia = dado sensível, R6)
+  // Consentimento ESPECÍFICO para o dado de saúde (alergia). O aceite genérico
+  // da política de privacidade não cobre dado sensível: a LGPD pede
+  // consentimento "específico e destacado" (art. 11, I). Só é exigido quando a
+  // pessoa de fato escreve alguma alergia — campo em branco não coleta nada.
+  healthConsentAt DateTime? @map("health_consent_at") @db.Timestamptz
   source         String        @default("web") // web | whatsapp | manual
   // Foto de referência da cliente (LGPD): chave em storage PRIVADO (nunca URL
   // pública); servida só via /admin/media. Consentimento explícito obrigatório.

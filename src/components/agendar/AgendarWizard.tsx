@@ -84,6 +84,9 @@ export default function AgendarWizard() {
     phone: "",
     email: "",
     allergy: "",
+    /** Autorização específica para o dado de saúde (R6/R18). Só vale se
+     *  `allergy` estiver preenchido — ver a caixinha condicional no passo 3. */
+    healthConsent: false,
     reference: "",
     occasion: "",
     lgpd: false,
@@ -275,11 +278,16 @@ export default function AgendarWizard() {
   const precisaTamanho = (service?.variantes.length ?? 0) > 0;
   const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
 
+  /** Escreveu alergia? Então a autorização específica é obrigatória (R6/R18). */
+  const consentimentoSaudeOk =
+    form.allergy.trim().length === 0 || form.healthConsent;
+
   const canSubmit =
     form.name.trim().length >= 2 &&
     form.phone.replace(/\D/g, "").length >= 10 &&
     form.occasion.length > 0 &&
     form.lgpd &&
+    consentimentoSaudeOk &&
     tamanhoOk;
 
   /** O que ainda falta, na voz da Mi — dito no clique, não escondido. */
@@ -294,7 +302,9 @@ export default function AgendarWizard() {
             ? "Confere o WhatsApp? Use DDD + número."
             : form.occasion.length === 0
               ? "Escolhe a ocasião pra eu me preparar direitinho 💛"
-              : "Falta aceitar a política de privacidade.";
+              : !consentimentoSaudeOk
+                ? "Falta autorizar o cuidado com a informação de alergia — ou deixe o campo em branco 💛"
+                : "Falta aceitar a política de privacidade.";
 
   async function submitBooking() {
     if (!service || !date || !time) return;
@@ -333,6 +343,7 @@ export default function AgendarWizard() {
             ocasiao: form.occasion,
           },
           lgpdConsent: form.lgpd,
+          healthConsent: form.healthConsent,
           site: form.site,
           ...(varianteId ? { variantId: varianteId } : {}),
           ...(fotoBase64 ? { fotoBase64 } : {}),
@@ -747,6 +758,28 @@ export default function AgendarWizard() {
                 className="input-mi min-h-[64px]"
                 placeholder="Conte aqui qualquer sensibilidade da sua pele"
               />
+              {/* R6/R18 — alergia é dado de saúde, e a LGPD pede consentimento
+                  específico e destacado (art. 11, I): o aceite genérico da
+                  política não cobre. A caixinha só aparece para quem escreveu
+                  alguma coisa — quem não tem alergia não leva pergunta extra.
+                  <!-- APROVAR COM A MI: texto da autorização --> */}
+              {form.allergy.trim().length > 0 && (
+                <label className="mt-3 flex items-start gap-3 rounded-mi bg-mi-marrom-50 p-3 font-corpo text-sm text-mi-texto">
+                  <input
+                    type="checkbox"
+                    checked={form.healthConsent}
+                    onChange={(e) =>
+                      setForm({ ...form, healthConsent: e.target.checked })
+                    }
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-mi-marrom"
+                  />
+                  <span>
+                    Autorizo a Mi a guardar essa informação de saúde para cuidar
+                    da minha pele com segurança. Fica só com ela, e você pode
+                    pedir para apagar quando quiser.
+                  </span>
+                </label>
+              )}
             </Field>
             <Field label="Já tem referência do que quer?">
               <textarea

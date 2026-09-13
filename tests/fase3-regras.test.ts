@@ -168,3 +168,54 @@ describe("LGPD — consentimento é porta de entrada", () => {
     if (!r.ok) expect(r.code).toBe("no_consent");
   });
 });
+
+describe("R6/R18 — alergia é dado de saúde, exige consentimento específico", () => {
+  it("POST forjado com alergia e sem autorização é recusado", async () => {
+    // A caixinha da tela não é a trava: a rota é pública e qualquer cliente
+    // HTTP monta o corpo sem passar pelo formulário. A regra vive no motor.
+    servicos.set("s1", servico({}));
+    const r = await createBooking({
+      ...base,
+      serviceId: "s1",
+      anamnesis: { alergia: "níquel", ocasiao: "festa" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("no_health_consent");
+      expect(r.message).toContain("alergia");
+    }
+  });
+
+  it("aceitar a política genérica NÃO libera o dado sensível", async () => {
+    // `lgpdConsent: true` já vem do `base`. É exatamente o buraco que a dívida
+    // apontava: um aceite genérico cobrindo dado de saúde.
+    servicos.set("s1", servico({}));
+    const r = await createBooking({
+      ...base,
+      serviceId: "s1",
+      lgpdConsent: true,
+      anamnesis: { alergia: "cheiro forte" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("no_health_consent");
+  });
+
+  it("a recusa vem ANTES de qualquer consulta ao banco", async () => {
+    // Nenhum serviço registrado no mock: se a trava do consentimento rodasse
+    // depois do lookup, o código seria "invalid_service". Ela precisa vir antes
+    // — dado sensível não deve nem chegar perto de uma query.
+    servicos.clear();
+    const r = await createBooking({
+      ...base,
+      serviceId: "inexistente",
+      anamnesis: { alergia: "níquel" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("no_health_consent");
+  });
+
+  // O caso "sem alergia → não exige nada" é coberto em
+  // tests/consentimento-saude.test.ts, contra a função pura. Aqui ele só
+  // atravessaria o motor inteiro até `getAvailability`, que este arquivo não
+  // mocka — testaria a montagem do mock, não a regra.
+});
