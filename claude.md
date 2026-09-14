@@ -74,6 +74,14 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   `recuperacao.ts` é o **módulo único** de recuperação de senha de TODOS os
   perfis. Regra inviolável: o código de 6 dígitos vai para o WhatsApp da **Mi**,
   que repassa à pessoa no número cadastrado — nunca direto para quem pediu.
+- **Posse da reserva (`posse-reserva.ts`):** `/api/bookings` emite um comprovante
+  HMAC em cookie httpOnly e `/confirm` o exige — id de reserva na mão não
+  confirma mais reserva alheia. Não é sessão (não identifica ninguém, não vale
+  para outra reserva); emitir é best-effort, porque a reserva já está no banco
+  quando o comprovante é assinado. O teto de reservas por IP (`authlog.ts`,
+  `RESERVA_IP_MAX`) fecha o que o teto por telefone não alcança — quem troca o
+  telefone a cada POST — e reusa o `auth_log` (a coluna `event` é String: evento
+  novo não pede migration).
 - `src/app/api/` — público: availability, bookings (+confirm/cancel), services, health, NextAuth
 - `src/app/admin/` — painel (server components + `actions.ts`): Agenda, Serviços (CRUD),
   Bloqueios, Clientes (strikes/perdoar), Usuárias, Configurações
@@ -139,13 +147,13 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
 
-- `npm test` — **492 testes**, sem banco. Roda em qualquer lugar.
+- `npm test` — **510 testes**, sem banco. Roda em qualquer lugar.
 - `npm run test:db` — **21 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 492 testes, build) + job `integracao` (postgres:16, aplica as
+(lint, typecheck, 510 testes, build) + job `integracao` (postgres:16, aplica as
 migrations de verdade e roda os 21). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.

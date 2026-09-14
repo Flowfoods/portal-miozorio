@@ -32,15 +32,49 @@
 - **Posse na confirmação (`POST /api/bookings/[id]/confirm`).** A rota não checa
   quem chama. O dano é contido por desenho — ela fixa o ator em `system`, então
   hold vencido é recusado, e a janela é de poucos minutos com um UUID v4 que só
-  a própria cliente recebeu. A correção (cookie httpOnly curto emitido na
-  criação) mexe no caminho que gera receita, e o risco de quebrar o
-  agendamento é maior do que o de um atacante que precisaria adivinhar o UUID.
-  Fazer junto com um QA logado de ponta a ponta.
+  a própria cliente recebeu.
 
-- **Rate limit por IP em `POST /api/bookings`.** Entrou honeypot e teto de
-  reservas em aberto por telefone, que cobrem o abuso realista. O limite por IP
-  exige um evento novo no `AuthEvent` (`isIpThrottled` só conta `login_fail` e
-  `recover_fail`), então não é plug-and-play.
+  **Resolvido em 14/09/2026** (`src/lib/posse-reserva.ts`). Quem cria recebe um
+  comprovante — HMAC-SHA256 do próprio id da reserva mais a validade, em cookie
+  httpOnly — e `/confirm` passa a exigi-lo. **Não é sessão**: não diz quem é a
+  pessoa, não vale para outra reserva e morre junto com o horário guardado.
+  Assinado e não sorteado de propósito: nada de novo no banco, nada a limpar
+  depois, e um comprovante vazado não abre nenhuma outra porta.
+
+  O medo registrado na dívida era quebrar o caminho que gera receita. Três
+  decisões existem só para isso:
+  - **Emitir o comprovante é best-effort.** Quando o código chega lá a reserva
+    já está no banco e a Mi já foi avisada; deixar uma exceção subir devolveria
+    500 para um agendamento que existe, e a cliente tentaria de novo até bater
+    no teto por telefone achando que nada funcionou.
+  - **O comprovante vive 30 min a mais que o hold.** Quem chega atrasado lê "o
+    tempo da reserva expirou" (410, que explica), não "não consegui confirmar
+    por aqui" (403, que é a resposta para quem não é dono).
+  - **Segunda porta para a cliente logada** no Clube que seja dona da reserva —
+    o comprovante mora num navegador só, e quem marca pelo portal e confirma de
+    outro aparelho não pode ficar de fora do próprio agendamento.
+
+  Sobra um caminho pior do que antes: navegador com cookies bloqueados toma 403.
+  A reserva continua de pé e a Mi confirma pelo painel (`actor: "business"`),
+  que é o mesmo caminho do encaixe manual. ⚠️ O **QA logado ponta a ponta** que
+  a dívida pedia continua valendo — nada disso roda contra banco aqui.
+
+- ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
+  14/09/2026** (`RESERVA_IP_MAX`/`throttleDeReservaPorIp` em `authlog.ts`).
+  O honeypot e o teto por telefone cobrem o abuso realista, mas não alcançam
+  quem troca o telefone a cada POST — e cada reserva nova segura um horário
+  durante todo o hold.
+
+  A dívida dizia "exige um evento novo no `AuthEvent`, então não é
+  plug-and-play". O evento novo (`booking_create`) saiu **sem migration**:
+  `auth_log.event` é `String` no schema, não enum, e o índice
+  `[ip_hash, created_at]` que a consulta usa já existe.
+
+  Conta **criações**, não tentativas: quem erra o formulário cinco vezes não
+  pode ficar sem conseguir marcar. Teto folgado (10 por hora) porque o CGNAT das
+  operadoras põe muita cliente atrás do mesmo IP — o número existe para
+  transformar centenas de horários travados em dez, não para policiar quem marca
+  duas vezes. Best-effort como o resto do `authlog`: falha de consulta libera.
 
 - ~~**Alergia coletada no formulário público com o checkbox genérico de LGPD.**~~
   — **resolvido em 13/09/2026** (`20260913090000_consentimento_saude`).
