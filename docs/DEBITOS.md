@@ -56,8 +56,15 @@
 
   Sobra um caminho pior do que antes: navegador com cookies bloqueados toma 403.
   A reserva continua de pé e a Mi confirma pelo painel (`actor: "business"`),
-  que é o mesmo caminho do encaixe manual. ⚠️ O **QA logado ponta a ponta** que
-  a dívida pedia continua valendo — nada disso roda contra banco aqui.
+  que é o mesmo caminho do encaixe manual.
+
+  O **QA logado ponta a ponta** que a dívida pedia **foi executado** em
+  14/09/2026 contra um PostgreSQL 16 de verdade, num Chromium real em 390px:
+  21 asserções, todas verdes, incluindo o teste que separa "fechei o buraco" de
+  "quebrei a rota" — a dona confirma normal, e a cliente logada **não** confirma
+  reserva alheia. Evidência e como repetir: `docs/agenda/QA-POSSE-TETO.md`,
+  roteiro em `scripts/qa-agendar.mjs`. Os 21 testes de integração também
+  rodaram, com as 10 migrations aplicadas do zero.
 
 - ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
   14/09/2026** (`RESERVA_IP_MAX`/`throttleDeReservaPorIp` em `authlog.ts`).
@@ -69,6 +76,12 @@
   plug-and-play". O evento novo (`booking_create`) saiu **sem migration**:
   `auth_log.event` é `String` no schema, não enum, e o índice
   `[ip_hash, created_at]` que a consulta usa já existe.
+
+  ⚠️ **Achado do QA no browser:** o teto depende de `x-forwarded-for` /
+  `x-real-ip`. Sem proxy na frente, `clientIp` devolve `null` e o teto **não
+  arma** — correto (não dá para punir um IP que não se conhece), mas quer dizer
+  que em produção ele só existe porque o Traefik preenche o header. Servir o
+  portal sem proxy transforma o teto em no-op **em silêncio**.
 
   Conta **criações**, não tentativas: quem erra o formulário cinco vezes não
   pode ficar sem conseguir marcar. Teto folgado (10 por hora) porque o CGNAT das
