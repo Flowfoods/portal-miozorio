@@ -173,9 +173,15 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 
 ### 6. Ordem do deploy
 
-1. `merge` na master → `application.deploy` no Dokploy;
-2. o entrypoint roda as migrations sozinho (as duas são aditivas: nada é
-   apagado, ninguém é deslogado);
+> O roteiro completo, com backup e rollback, é o
+> `docs/DEPLOY-AUTH-B1-B5.md`. O resumo abaixo é só para situar.
+
+1. `merge` na master → `scripts/deploy-agenda.sh` (ele faz backup verificado,
+   pré-voo e conferência; `application.deploy` cru pula tudo isso);
+2. o entrypoint roda as migrations sozinho. **As duas desta frente são
+   aditivas** — nada é apagado, ninguém é deslogado. ⚠️ Mas o deploy carrega
+   **quatro frentes e 10 migrations**, e a `20260913080000_professional_obrigatorio`
+   (da #106) **aborta de propósito** se achar double-booking preexistente;
 3. conferir `https://miozorio.com.br/api/health`;
 4. abrir `https://www.miozorio.com.br/clube/entrar` e confirmar que cai no apex;
 5. fazer um pedido de código de teste e ver a mensagem chegar no WhatsApp da Mi.
@@ -227,6 +233,12 @@ telas.
 arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
 `tests/recuperacao-ciclo.test.ts` (o ciclo do código ponta a ponta) e
 `tests/login-cliente.test.ts` (login, limites e sessão).
+
+> Esse 360 é o retrato **daquele dia, neste branch antes do merge** — está aqui
+> como registro, não como número atual. Depois do merge com a master e das
+> frentes que entraram em seguida (#103, #105, #106), a suíte está em **492
+> testes / 46 arquivos**. Se você rodar `npm test` hoje e vir 492, é isso: não
+> há teste faltando.
 
 **Checklist funcional no navegador — 30 de 30 ✅**
 
