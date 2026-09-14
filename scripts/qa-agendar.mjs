@@ -96,12 +96,34 @@ async function criar(api, serviceId, telefone, headers = {}) {
 }
 
 /** Preenche o passo 4 do wizard e pede para continuar. */
-async function preencher(page, nome, telefone) {
+async function preencher(page, nome, telefone, alergia) {
   await page.getByPlaceholder("Como você gosta de ser chamada").fill(nome);
   await page.getByPlaceholder("(21) 90000-0000").fill(telefone);
+  if (alergia !== undefined) {
+    await page
+      .getByPlaceholder("Conte aqui qualquer sensibilidade da sua pele")
+      .fill(alergia);
+  }
   await page.locator("select").first().selectOption({ index: 1 }); // ocasião é obrigatória
-  await page.locator('input[type="checkbox"]').first().check();
+  // Pelo TEXTO, nunca por posição: quando há alergia de verdade, a caixinha de
+  // dado de saúde aparece ANTES da de privacidade, e um `.first()` marcaria a
+  // errada — dando um verde falso justamente no cenário que interessa.
+  await caixaPrivacidade(page).check();
   await page.getByRole("button", { name: "Continuar" }).click();
+}
+
+/** A caixinha da política de privacidade (sempre presente no passo 4). */
+function caixaPrivacidade(page) {
+  return page
+    .locator("label", { hasText: "Li e aceito a" })
+    .locator('input[type="checkbox"]');
+}
+
+/** A caixinha de dado de saúde — só existe quando há alergia DE VERDADE. */
+function caixaSaude(page) {
+  return page
+    .locator("label", { hasText: "autorizo a Mi a guardar" })
+    .locator('input[type="checkbox"]');
 }
 
 /** Clica no primeiro dia que ainda tenha horário livre. */
@@ -291,6 +313,54 @@ ok(
     await ap2.request.post(`${BASE}/api/bookings/${idAlheio}/confirm`)
   ).status() === 403,
   "cliente logada NÃO confirma reserva alheia",
+);
+
+// ── E) "Não" na alergia não é dado de saúde ─────────────────────────────────
+// O bug: quem respondia "Não" via a caixinha de dado sensível e, sem marcá-la,
+// NÃO CONSEGUIA AGENDAR. Eram duas definições de "alergia de verdade" no repo
+// (o alerta da agenda filtrava negações, o consentimento não).
+console.log('\n=== E) "Não" na alergia não vira dado de saúde ===');
+const ctxE = await b.newContext({ viewport: { width: 390, height: 844 } });
+const pE = await ctxE.newPage();
+await pE.goto(`${BASE}/agendar`);
+await pE
+  .getByText(servico.name, { exact: true })
+  .first()
+  .click({ timeout: 20000 });
+await escolherDiaEHora(pE);
+await preencher(pE, "Cliente Sem Alergia", "21933330001", "Não");
+await pE.waitForTimeout(2500);
+ok(
+  (await caixaSaude(pE).count()) === 0,
+  'com "Não", a caixinha de dado de saúde nem aparece',
+);
+ok(
+  /Confirmar meu horário|Agendamento confirmado/i.test(
+    await pE.locator("main").innerText(),
+  ),
+  'com "Não", ela CONSEGUE agendar (o bug barrava aqui)',
+);
+
+// E o contrário: alergia de verdade continua exigindo a autorização.
+const ctxE2 = await b.newContext({ viewport: { width: 390, height: 844 } });
+const pE2 = await ctxE2.newPage();
+await pE2.goto(`${BASE}/agendar`);
+await pE2
+  .getByText(servico.name, { exact: true })
+  .first()
+  .click({ timeout: 20000 });
+await escolherDiaEHora(pE2);
+await preencher(pE2, "Cliente Com Alergia", "21922220001", "níquel e látex");
+await pE2.waitForTimeout(2000);
+ok(
+  (await caixaSaude(pE2).count()) === 1,
+  "com alergia de verdade, a autorização É pedida",
+);
+ok(
+  /Falta autorizar o cuidado com a informação de alergia/.test(
+    await pE2.locator("main").innerText(),
+  ),
+  "e sem marcá-la o agendamento é barrado, como deve ser",
 );
 
 await b.close();

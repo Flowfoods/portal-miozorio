@@ -16,11 +16,11 @@ notificações são best-effort. **Nada foi tocado em produção.**
 
 | Gate | Status |
 |---|---|
-| `npm test` | ✅ 510/510 |
+| `npm test` | ✅ 526/526 |
 | `npm run test:db` | ✅ **21/21** contra Postgres 16 real |
-| Migrations do zero | ✅ as **10**, banco limpo (`prisma migrate deploy`) |
+| Migrations do zero | ✅ as **43**, banco limpo (`prisma migrate deploy`) |
 | `tsc --noEmit` · `next lint` · `next build` | ✅ limpos |
-| QA funcional no browser | ✅ **21 asserções**, detalhadas abaixo |
+| QA funcional no browser | ✅ **26 asserções**, detalhadas abaixo |
 
 ## A) A cliente marca e confirma pela tela
 
@@ -75,6 +75,21 @@ inverso:
   apoia no elo mais fraco; a senha ainda é um número que qualquer pessoa sabe
 - ✅ com senha própria, dona da reserva, outro aparelho: **200**
 - ✅ **logada, reserva de OUTRA cliente: 403**
+
+## E) "Não" na alergia não vira dado de saúde
+
+Cenário acrescentado em 14/09/2026, depois que uma revisão de correção achou
+que as duas definições de "alergia de verdade" no repositório discordavam.
+
+- ✅ com **"Não"**, a caixinha de dado de saúde **nem aparece**
+- ✅ com **"Não"**, ela **consegue agendar** — o bug barrava exatamente aqui
+- ✅ com alergia de verdade, a autorização **é** pedida
+- ✅ e, sem marcá-la, o agendamento é barrado — como deve ser
+
+Detalhe do roteiro que vale copiar: as caixinhas são miradas **pelo texto do
+label**, nunca por posição. Quando há alergia de verdade, a de dado de saúde
+aparece *antes* da de privacidade no DOM, e um `.first()` marcaria a errada —
+dando verde falso justamente no cenário que interessa.
 
 ## Como repetir
 

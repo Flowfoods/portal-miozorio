@@ -16,6 +16,7 @@ import Botao from "@/components/ui/Botao";
 import BarraResumo from "./BarraResumo";
 import { trackClient } from "@/lib/track-client";
 import { otimizar } from "@/lib/imagem-client";
+import { ehNegacao } from "@/lib/anamnesis";
 
 interface ApiService {
   id: string;
@@ -276,11 +277,18 @@ export default function AgendarWizard() {
   // A3 — com variação, tamanho e foto são obrigatórios: é a foto que permite a
   // Mi conferir antes de fechar o valor. Serviço sem variação não muda nada.
   const precisaTamanho = (service?.variantes.length ?? 0) > 0;
-  const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
+  const tamanhoOk =
+    !precisaTamanho || (varianteId !== null && fotoFile !== null);
 
-  /** Escreveu alergia? Então a autorização específica é obrigatória (R6/R18). */
-  const consentimentoSaudeOk =
-    form.allergy.trim().length === 0 || form.healthConsent;
+  /**
+   * Contou uma alergia DE VERDADE? Então a autorização específica é obrigatória
+   * (R6/R18). "Não" e afins não contam: mesma regra do servidor
+   * (`consentimento-saude.ts`) e do alerta da agenda, para a tela nunca pedir
+   * uma autorização que o backend não vai exigir — nem o contrário.
+   */
+  const contouAlergia =
+    form.allergy.trim().length > 0 && !ehNegacao(form.allergy);
+  const consentimentoSaudeOk = !contouAlergia || form.healthConsent;
 
   const canSubmit =
     form.name.trim().length >= 2 &&
@@ -769,7 +777,7 @@ export default function AgendarWizard() {
                   QUAL dado (o que ela escreveu sobre alergia), PARA QUÊ (a
                   escolha dos produtos — finalidade concreta, não "para melhor
                   atendê-la"), QUEM acessa (só a Mi) e como desfazer. */}
-              {form.allergy.trim().length > 0 && (
+              {contouAlergia && (
                 <label className="mt-3 flex items-start gap-3 rounded-mi bg-mi-marrom-50 p-3 font-corpo text-sm text-mi-texto">
                   <input
                     type="checkbox"
@@ -842,7 +850,9 @@ export default function AgendarWizard() {
             </label>
 
             {formError && (
-              <p className="font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+              <p className="font-corpo text-sm text-mi-erro-tinta">
+                {formError}
+              </p>
             )}
 
             {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
@@ -900,7 +910,9 @@ export default function AgendarWizard() {
           />
 
           {formError && (
-            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+              {formError}
+            </p>
           )}
 
           <button
@@ -1125,7 +1137,10 @@ function AguardandoSinalScreen({
         setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
         return;
       }
-      setPix({ copiaECola: d.copiaECola, qrCodeBase64: d.qrCodeBase64 ?? null });
+      setPix({
+        copiaECola: d.copiaECola,
+        qrCodeBase64: d.qrCodeBase64 ?? null,
+      });
     } catch {
       setErroPix("Tivemos um probleminha de conexão. Tenta de novo?");
     } finally {
@@ -1234,7 +1249,10 @@ function AguardandoSinalScreen({
         )}
 
         {erroPix && (
-          <p role="alert" className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+          <p
+            role="alert"
+            className="mt-3 font-corpo text-sm text-mi-erro-tinta"
+          >
             {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
           </p>
         )}

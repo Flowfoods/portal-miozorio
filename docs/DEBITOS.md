@@ -151,6 +151,55 @@
   Nada se perde: a anamnese acontece quando ela mesma marca o horário, com o
   consentimento específico exigido de quem de fato escreve uma alergia.
 
+- ~~**"Não" na alergia era tratado como dado de saúde.**~~ — **resolvido em
+  14/09/2026**, achado por uma revisão de correção. Não era dívida registrada:
+  era bug vivo, introduzido junto com a própria correção de LGPD do #106.
+
+  Havia **duas definições de "alergia de verdade"** no repositório, e elas
+  discordavam. `anamnesis.ts` (A11) filtra negações — "Não", "nenhuma", "-" —
+  justamente para o alerta da agenda não acender à toa. `consentimento-saude.ts`
+  tratava **qualquer texto não-vazio** como dado sensível.
+
+  Para a cliente que respondia "Não", a mais comum de todas: aparecia a caixinha
+  de dado de saúde e, sem marcá-la, **ela não conseguia agendar**. Marcando,
+  o portal gravava `health_consent_at` para um dado que a A11 já havia decidido
+  que não existe — a auditoria inventada que aquele módulo foi escrito para
+  evitar.
+
+  Conserto: `ehNegacao` sai do `anamnesis.ts` como fonte única e é usado pelos
+  dois lados, mais a tela (a caixinha nem aparece para negação). O viés
+  conservador da A11 vale nos dois usos: só a lista fechada apaga, texto
+  ambíguo continua contando como alergia de verdade — o lado seguro tanto para
+  o alerta quanto para a LGPD. Um teste compara os dois módulos e cai se eles
+  divergirem de novo; o roteiro de QA cobre o caso na tela.
+
+  ⚠️ **Confira as reservas já carimbadas à toa** antes de confiar na auditoria:
+
+  ```sql
+  select id, anamnesis->>'alergia' as alergia, health_consent_at
+  from bookings where health_consent_at is not null
+  order by health_consent_at desc;
+  ```
+
+  Toda linha cuja alergia seja uma negação pura tem consentimento registrado
+  sem dado sensível correspondente. Não apaguei nada: decidir entre limpar o
+  carimbo ou deixá-lo com nota é do Rodolfo, e depende de o #106 já ter subido.
+
 ## Ainda abertos
 
-- **Nenhum.** As quatro dívidas registradas em 15/08/2026 estão fechadas.
+- **`POST /api/bookings/[id]/sinal` não checa dono** — a mesma classe de IDOR
+  que o comprovante de posse fechou no `/confirm`, na rota vizinha. Verificado,
+  **não consertado**.
+
+  Hoje está adormecido: sem gateway (R22) o POST devolve 501 antes de tocar em
+  qualquer coisa. O `GET` já responde `{pago, confirmado}` para qualquer id de
+  reserva, o que vaza pouco — mas vaza.
+
+  ⚠️ **Ligar o PIX (item 6 do Anexo A) acorda o buraco**: com gateway ativo,
+  quem tiver um UUID de reserva gera cobrança PIX na reserva de outra pessoa e
+  sobrescreve `depositProvider`/`depositPaymentId` dela. O conserto é o mesmo
+  `podeConfirmar` do `/confirm` — não foi feito aqui para não inchar um PR que
+  já estava pronto, e porque a rota está inerte enquanto o gateway estiver
+  desligado. **Fazer junto com a decisão do gateway, não depois.**
+
+- As quatro dívidas registradas em 15/08/2026 estão todas fechadas.

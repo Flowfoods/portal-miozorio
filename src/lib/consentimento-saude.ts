@@ -12,8 +12,10 @@
  * cliente que não tem alergia não vê caixinha extra alguma.
  *
  * Módulo PURO: sem Prisma, sem I/O. A regra é testável sozinha, e o
- * `booking-service` só a chama.
+ * `booking-service` só a chama. (`anamnesis.ts`, a única dependência, também é
+ * puro — nenhum import de servidor entra por aqui.)
  */
+import { ehNegacao } from "./anamnesis";
 
 /**
  * Chaves da anamnese que carregam dado de saúde. Hoje só `alergia`; se um campo
@@ -22,14 +24,27 @@
  */
 export const CAMPOS_DE_SAUDE = ["alergia"] as const;
 
-/** A anamnese enviada contém, de fato, algum dado de saúde preenchido? */
+/**
+ * A anamnese enviada contém, de fato, algum dado de saúde preenchido?
+ *
+ * "Preenchido" não basta: **negação pura não é dado de saúde.** Quem responde
+ * "Não" não está contando nada sobre a própria saúde, então não há o que
+ * consentir. Antes disto, essa cliente via a caixinha de dado sensível e, se
+ * não marcasse, **não conseguia agendar** — e, se marcasse, o portal carimbava
+ * `health_consent_at` para um dado inexistente, que é exatamente a auditoria
+ * inventada que este módulo existe para evitar.
+ *
+ * O filtro é o MESMO do alerta da agenda (`anamnesis.ts`), de propósito: eram
+ * duas definições de "alergia de verdade" e elas discordavam.
+ */
 export function coletaDadoDeSaude(
   anamnesis: Record<string, unknown> | null | undefined,
 ): boolean {
   if (!anamnesis) return false;
-  return CAMPOS_DE_SAUDE.some(
-    (campo) => String(anamnesis[campo] ?? "").trim().length > 0,
-  );
+  return CAMPOS_DE_SAUDE.some((campo) => {
+    const valor = String(anamnesis[campo] ?? "").trim();
+    return valor.length > 0 && !ehNegacao(valor);
+  });
 }
 
 /**
