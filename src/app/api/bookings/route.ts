@@ -4,6 +4,12 @@ import { createBooking } from "@/lib/booking-service";
 import { processPrivatePhoto, deletePrivatePhoto } from "@/lib/media";
 import { EV, getSid, track } from "@/lib/tracking";
 import { getClienteSession } from "@/lib/cliente-auth";
+import { opcoesCookie } from "@/lib/auth-cookies";
+import {
+  assinarPosse,
+  nomeCookiePosse,
+  validadeDaPosse,
+} from "@/lib/posse-reserva";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +58,10 @@ export async function POST(req: NextRequest) {
       photoKey = await processPrivatePhoto(Buffer.from(bruto, "base64"));
     } catch {
       return NextResponse.json(
-        { error: "Não consegui ler essa foto — tente outra?", code: "foto_invalida" },
+        {
+          error: "Não consegui ler essa foto — tente outra?",
+          code: "foto_invalida",
+        },
         { status: 415 },
       );
     }
@@ -79,7 +88,7 @@ export async function POST(req: NextRequest) {
     metadata: { servico: parsed.data.serviceId, local: parsed.data.location },
   });
 
-  return NextResponse.json(
+  const res = NextResponse.json(
     {
       id: result.id,
       holdExpiresAt: result.holdExpiresAt,
@@ -91,4 +100,25 @@ export async function POST(req: NextRequest) {
     },
     { status: 201 },
   );
+
+  // Comprovante de posse: é isto que `/confirm` vai exigir. Fica só neste
+  // navegador, vale só para esta reserva e vence junto com o horário guardado.
+  //
+  // Best-effort de propósito. A reserva JÁ ESTÁ no banco e a Mi JÁ FOI avisada
+  // quando chegamos aqui: deixar uma exceção subir (o `NEXTAUTH_SECRET` sumir
+  // do Dokploy, por exemplo) devolveria 500 para um agendamento que existe, a
+  // cliente tentaria de novo e bateria no teto por telefone achando que nada
+  // funcionou. Sem o comprovante ela cai no 403 do /confirm e a Mi confirma
+  // pelo painel — caminho pior, mas honesto.
+  try {
+    const validade = validadeDaPosse(result.holdExpiresAt);
+    res.cookies.set(
+      nomeCookiePosse(result.id),
+      assinarPosse(result.id, validade),
+      opcoesCookie(validade.getTime() - Date.now()),
+    );
+  } catch (e) {
+    console.error("posse: não consegui emitir o comprovante", result.id, e);
+  }
+  return res;
 }
