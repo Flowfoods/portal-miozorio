@@ -101,7 +101,10 @@ export async function submitReferral(
     return { error: "Para continuar, aceite a política de privacidade." };
   }
 
-  const alergia = String(formData.get("alergia") ?? "").trim();
+  // Alergia NÃO é coletada aqui (14/09/2026 — ver IndicarForm.tsx): é dado
+  // sensível e o aceite desta tela é o genérico da política, que a LGPD não
+  // aceita para o art. 11. Um POST forjado que mande `alergia` é ignorado por
+  // construção — o campo simplesmente não é lido.
   const referencia = String(formData.get("referencia") ?? "").trim();
   const interesse = [
     `Ocasião: ${ocasiao}`,
@@ -124,7 +127,6 @@ export async function submitReferral(
         phoneE164: phone,
         referredById: embaixadora.id,
         clubInterest: interesse,
-        allergies: alergia || null,
         lgpdConsentAt: new Date(),
       },
     });
@@ -138,8 +140,6 @@ export async function submitReferral(
       data: {
         ...(podeVincular ? { referredById: embaixadora.id } : {}),
         clubInterest: interesse,
-        // Alergia da indicada nunca sobrescreve o que a Mi já anotou (M11).
-        ...(alergia && !existente.allergies ? { allergies: alergia } : {}),
         // Consentimento NÃO é carimbado aqui: este formulário é público e não
         // prova posse do telefone. Registrar aceite em nome de uma titular que
         // não o deu é pior do que não registrar — o aceite dela vem quando ela

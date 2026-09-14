@@ -111,9 +111,38 @@
   (`AgendarWizard.tsx`, passo 3) — a dívida dizia que a copy dependia dela.
   O que está lá é proposta, não decisão.
 
+## Resolvidos depois
+
+- ~~**Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`)~~ —
+  **resolvido em 14/09/2026**, mas a dívida estava **errada no diagnóstico** e
+  isso importa mais que o conserto.
+
+  A dívida dizia: *"quem indica escreve a alergia da amiga; consentimento de
+  dado sensível não pode ser dado por outra pessoa adulta"*. **Não é o que
+  acontece.** `/indicar/[codigo]` é a tela da **indicada** — título "Você foi
+  indicada", campos "Seu nome" e "Seu WhatsApp", e `submitReferral` chega a
+  recusar o número da própria embaixadora (*"Esse é o seu próprio número 💛
+  indique uma amiga!"*). Quem preenche é a titular do dado. Ninguém consentia
+  por ninguém.
+
+  O problema real era **outro, e do mesmo tipo que a R6/R18 já resolve**:
+  alergia é dado sensível, e ali o único aceite era o checkbox genérico da
+  política — o que o art. 11, I não aceita. Era a mesma falha do formulário
+  público de agendamento, num caminho que a correção de 13/09 não alcançou.
+
+  **Conserto: o campo saiu.** Dois motivos para não reaproveitar
+  `consentimento-saude.ts` aqui:
+  - `health_consent_at` vive em `booking`. Guardar o aceite de uma *customer*
+    pediria coluna nova — mudança de schema em produção para um dado que vai ser
+    perguntado de novo daqui a pouco.
+  - Este formulário é público e **não prova posse do telefone** (a mesma razão
+    pela qual `submitReferral` já se recusava a carimbar `lgpdConsentAt` da
+    cliente existente). Aceite de dado sensível colhido sem prova de quem é a
+    pessoa vale pouco.
+
+  Nada se perde: a anamnese acontece quando ela mesma marca o horário, com o
+  consentimento específico exigido de quem de fato escreve uma alergia.
+
 ## Ainda abertos
 
-- **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
-  indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
-  ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é
-  decidir se esse campo deve existir ali. Decisão de produto, com a Mi.
+- **Nenhum.** As quatro dívidas registradas em 15/08/2026 estão fechadas.
