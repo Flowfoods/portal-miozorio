@@ -111,6 +111,10 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
 
 ## Pendências de negócio (Anexo A da v3 — confirmar com a Mi)
 
+> Diagnóstico de 14/09/2026 em `docs/ANEXO-A-DIAGNOSTICO.md`: o que o portal faz
+> hoje na ausência de cada decisão e quem destrava. Resumo: só o adaptador da Efí
+> é trabalho de código; a janela de dias de semana já existe e é configuração.
+
 1. Preços/durações do dia a dia (escova, hidratação, sobrancelhas… hoje `pending_price`).
 2. Dias/horários da linha dia a dia (janela própria em dias de semana).
 3. Pacote de fotos (hero, retrato, portfólio, estúdio) + logo vetorial.
