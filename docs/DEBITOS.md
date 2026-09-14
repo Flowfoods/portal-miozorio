@@ -77,11 +77,19 @@
   `auth_log.event` é `String` no schema, não enum, e o índice
   `[ip_hash, created_at]` que a consulta usa já existe.
 
-  ⚠️ **Achado do QA no browser:** o teto depende de `x-forwarded-for` /
-  `x-real-ip`. Sem proxy na frente, `clientIp` devolve `null` e o teto **não
-  arma** — correto (não dá para punir um IP que não se conhece), mas quer dizer
-  que em produção ele só existe porque o Traefik preenche o header. Servir o
-  portal sem proxy transforma o teto em no-op **em silêncio**.
+  ⚠️ **Achado do QA no browser:** o teto depende do header do proxy. Sem proxy
+  na frente, `clientIp` devolve `null` e o teto **não arma** — correto (não dá
+  para punir um IP que não se conhece), mas quer dizer que em produção ele só
+  existe porque o Traefik preenche o header. Servir o portal sem proxy
+  transforma o teto em no-op **em silêncio**.
+
+  🔒 **E a revisão de segurança achou o buraco de verdade:** `clientIp` lia o
+  **primeiro** item do `x-forwarded-for`. O Traefik *acrescenta* o IP real ao
+  header que chegou, sem apagar o que veio — então quem mandasse o próprio
+  `X-Forwarded-For` ficava em primeiro e **escolhia o próprio balde**. Girar
+  esse valor contornava o teto inteiro, de graça. Agora `x-real-ip` (que o
+  Traefik **sobrescreve** com o peer TCP) manda, e o `x-forwarded-for` é só
+  reserva. Vale também para o rate limit de login, que tinha a mesma falha.
 
   Conta **criações**, não tentativas: quem erra o formulário cinco vezes não
   pode ficar sem conseguir marcar. Teto folgado (10 por hora) porque o CGNAT das

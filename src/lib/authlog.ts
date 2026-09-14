@@ -129,13 +129,31 @@ export function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex");
 }
 
-/** Primeiro IP do `x-forwarded-for` (Traefik) com fallback ao `x-real-ip`. */
+/**
+ * IP do request: `x-real-ip` primeiro, `x-forwarded-for` como reserva.
+ *
+ * A ordem importa e já foi o contrário. O Traefik **acrescenta** o IP real ao
+ * `x-forwarded-for` que chegou, sem apagar o que veio — então quem manda o
+ * próprio `X-Forwarded-For: 1.2.3.4` fica em PRIMEIRO na lista, e ler o
+ * primeiro item entregava ao cliente a escolha do próprio balde de rate limit.
+ * Girar esse header contornava o teto inteiro, de graça.
+ *
+ * `x-real-ip` o Traefik **sobrescreve** com o peer TCP, que o cliente não
+ * forja. Onde não há proxy os dois faltam e isto devolve null — os tetos não
+ * armam, que é o certo: não dá para punir um IP que não se conhece.
+ *
+ * ⚠️ Vale para UM proxy na frente (o nosso caso). Numa cadeia de dois, o
+ * `x-real-ip` do interno seria o IP do externo, e todo mundo cairia no mesmo
+ * balde — daí o certo passaria a ser o ÚLTIMO item do `x-forwarded-for`.
+ */
 export function clientIp(
   forwardedFor?: string | null,
   realIp?: string | null,
 ): string | null {
+  const real = (realIp ?? "").trim();
+  if (real) return real;
   const fwd = (forwardedFor ?? "").split(",")[0]?.trim();
-  return fwd || (realIp ?? "").trim() || null;
+  return fwd || null;
 }
 
 /** Extrai { ip, userAgent } de um objeto de headers (Fetch Headers ou plain). */

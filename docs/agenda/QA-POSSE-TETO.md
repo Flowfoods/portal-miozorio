@@ -50,11 +50,19 @@ O terceiro item é o que separa "fechei o buraco" de "quebrei a rota".
 - ✅ a tela diz **quantos minutos faltam**, e não o antigo "Tenta de novo?" —
   que mandaria repetir na hora exatamente o que está sendo segurado
 
-⚠️ Detalhe que só o teste com browser mostrou: o teto depende de
-`x-forwarded-for`/`x-real-ip`. **Sem proxy na frente, `clientIp` devolve `null` e
-o teto não arma** — o que é correto (não dá para punir um IP que não se conhece),
-mas significa que em produção ele só existe porque o Traefik preenche o header.
-Se um dia o portal for servido sem proxy, o teto vira no-op **em silêncio**.
+⚠️ Detalhe que só o teste com browser mostrou: o teto depende do header do
+proxy. **Sem proxy na frente, `clientIp` devolve `null` e o teto não arma** — o
+que é correto (não dá para punir um IP que não se conhece), mas significa que em
+produção ele só existe porque o Traefik preenche o header. Se um dia o portal
+for servido sem proxy, o teto vira no-op **em silêncio**.
+
+🔒 E a revisão de segurança achou o buraco que o QA não pegou: `clientIp` lia o
+**primeiro** item do `x-forwarded-for`, e o Traefik *acrescenta* o IP real ao
+header que chegou em vez de apagá-lo. Quem mandasse o próprio `X-Forwarded-For`
+ficava em primeiro e escolhia o próprio balde — girar esse valor contornava o
+teto inteiro. Agora quem manda é o `x-real-ip`, que o Traefik **sobrescreve**
+com o peer TCP. Dois testes travam isso (`tests/authlog.test.ts`), e a correção
+vale também para o rate limit de login, que tinha a mesma falha.
 
 ## D) A segunda porta (cliente logada) é porta, não portão
 
@@ -63,7 +71,9 @@ cobre quem marca num aparelho e confirma em outro. O teste que importa é o
 inverso:
 
 - ✅ deslogada, sem comprovante: **403**
-- ✅ logada, dona da reserva, outro aparelho: **200**
+- ✅ **sessão provisória (1º acesso, senha = telefone): 403** — a porta não se
+  apoia no elo mais fraco; a senha ainda é um número que qualquer pessoa sabe
+- ✅ com senha própria, dona da reserva, outro aparelho: **200**
 - ✅ **logada, reserva de OUTRA cliente: 403**
 
 ## Como repetir

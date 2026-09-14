@@ -36,6 +36,11 @@ async function podeConfirmar(id: string): Promise<boolean> {
 
   const sessao = await getClienteSession();
   if (!sessao) return false;
+  // Sessão provisória é 1º acesso: a senha ainda é o próprio telefone, que
+  // qualquer pessoa que conheça o número sabe. Todo o resto da área da cliente
+  // já recusa esse estado e manda trocar a senha antes; abrir exceção logo na
+  // porta que existe para PROVAR posse seria apoiá-la no elo mais fraco.
+  if (sessao.prov) return false;
   // `id` vem da URL: um valor que não é UUID faz o Prisma recusar a consulta, e
   // recusa é a resposta certa aqui de qualquer jeito.
   const reserva = await prisma.booking

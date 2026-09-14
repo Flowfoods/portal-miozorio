@@ -2,15 +2,32 @@ import { describe, it, expect } from "vitest";
 import { clientIp, hashIp, maskPhone, metaFromHeaders } from "@/lib/authlog";
 
 describe("clientIp — IP do request (LGPD: base p/ hash)", () => {
-  it("pega o primeiro do x-forwarded-for (cadeia do Traefik)", () => {
+  it("o x-real-ip manda, porque é o que o Traefik SOBRESCREVE", () => {
+    expect(clientIp("203.0.113.9, 10.0.0.1", " 198.51.100.2 ")).toBe(
+      "198.51.100.2",
+    );
+  });
+
+  it("cliente NÃO escolhe o próprio balde forjando x-forwarded-for", () => {
+    // O Traefik ACRESCENTA o IP real ao header que chegou, sem apagar o que
+    // veio. Ler o primeiro item entregava ao atacante a escolha do balde de
+    // rate limit: bastava girar esse valor para o teto nunca armar.
+    const forjado = "1.2.3.4";
+    const real = "203.0.113.77";
+    expect(clientIp(`${forjado}, ${real}`, real)).toBe(real);
+    expect(clientIp(`${forjado}, ${real}`, real)).not.toBe(forjado);
+  });
+
+  it("sem x-real-ip, cai no primeiro do x-forwarded-for", () => {
+    // Proxy que só preenche o forwarded continua funcionando como antes.
     expect(clientIp("203.0.113.9, 10.0.0.1", null)).toBe("203.0.113.9");
+    expect(clientIp("203.0.113.9, 10.0.0.1", "  ")).toBe("203.0.113.9");
   });
-  it("faz trim e cai no x-real-ip quando não há forwarded", () => {
-    expect(clientIp("", " 198.51.100.2 ")).toBe("198.51.100.2");
-  });
-  it("null quando não há nenhum", () => {
+
+  it("null quando não há nenhum — sem proxy, teto não arma", () => {
     expect(clientIp(null, null)).toBeNull();
     expect(clientIp(undefined, undefined)).toBeNull();
+    expect(clientIp("", "")).toBeNull();
   });
 });
 
@@ -39,7 +56,10 @@ describe("metaFromHeaders — Fetch Headers e objeto plano", () => {
       "x-forwarded-for": "203.0.113.9",
       "user-agent": "Safari",
     });
-    expect(metaFromHeaders(h)).toEqual({ ip: "203.0.113.9", userAgent: "Safari" });
+    expect(metaFromHeaders(h)).toEqual({
+      ip: "203.0.113.9",
+      userAgent: "Safari",
+    });
   });
   it("extrai de um Record simples (req do NextAuth)", () => {
     expect(
