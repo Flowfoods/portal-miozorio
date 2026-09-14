@@ -364,10 +364,12 @@ export default function AgendarWizard() {
       if (!res.ok) {
         // Nunca ecoar a mensagem crua do servidor: "Dados inválidos" e "JSON
         // inválido" são texto de sistema e chegavam à cliente no último passo,
-        // sem dizer qual campo. 422 já vem com mensagem escrita para ela.
+        // sem dizer qual campo. 422 e 429 já vêm com mensagem escrita para ela
+        // — e no 429 o texto genérico seria pior que nada: mandaria tentar de
+        // novo justamente o que está sendo segurado, sem dizer por quanto tempo.
         const e = (await res.json().catch(() => ({}))) as { error?: string };
         setFormError(
-          res.status === 422 && e.error
+          (res.status === 422 || res.status === 429) && e.error
             ? e.error
             : res.status === 400
               ? "Confere os campos? Algum dado ficou fora do formato — o e-mail é o mais comum."

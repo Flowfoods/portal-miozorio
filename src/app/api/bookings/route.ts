@@ -4,6 +4,12 @@ import { createBooking } from "@/lib/booking-service";
 import { processPrivatePhoto, deletePrivatePhoto } from "@/lib/media";
 import { EV, getSid, track } from "@/lib/tracking";
 import { getClienteSession } from "@/lib/cliente-auth";
+import {
+  maskPhone,
+  metaFromHeaders,
+  recordAuth,
+  throttleDeReservaPorIp,
+} from "@/lib/authlog";
 import { opcoesCookie } from "@/lib/auth-cookies";
 import {
   assinarPosse,
@@ -47,6 +53,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: "", holdExpiresAt: "" }, { status: 201 });
   }
 
+  // Teto de reservas por IP. Vem ANTES da foto de propósito: processar imagem é
+  // a parte cara do request, e quem está sendo barrado não deve pagar CPU nossa.
+  const meta = metaFromHeaders(req.headers);
+  const espera = await throttleDeReservaPorIp(meta.ip);
+  if (espera.bloqueado) {
+    await recordAuth("cliente", "booking_throttled", null, meta);
+    return NextResponse.json(
+      {
+        error: `Muitos horários marcados desta conexão agora há pouco. Tente de novo em ${espera.minutos} min, ou chame a Mi no WhatsApp 💛`,
+        code: "muitas_reservas",
+      },
+      { status: 429 },
+    );
+  }
+
   // A3 — a foto vira arquivo PRIVADO antes de tocar no motor. processPrivatePhoto
   // valida o conteúdo por magic bytes, então um base64 de qualquer outra coisa
   // morre aqui e não vira linha no banco.
@@ -79,6 +100,15 @@ export async function POST(req: NextRequest) {
       { status },
     );
   }
+  // Alimenta o teto por IP da próxima requisição. Best-effort e com o telefone
+  // mascarado (••••7766) — o log de auditoria nunca guarda PII completa.
+  await recordAuth(
+    "cliente",
+    "booking_create",
+    maskPhone(parsed.data.customer.phone),
+    meta,
+  );
+
   // Tracking F1 (server-authoritative): a cliente concluiu o fluxo de agendar.
   // serviceId não é PII; sanitizeMeta descarta o que não for primitivo simples.
   await track({
