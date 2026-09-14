@@ -764,7 +764,11 @@ export default function AgendarWizard() {
                   específico e destacado (art. 11, I): o aceite genérico da
                   política não cobre. A caixinha só aparece para quem escreveu
                   alguma coisa — quem não tem alergia não leva pergunta extra.
-                  <!-- APROVAR COM A MI: texto da autorização --> */}
+
+                  O texto nomeia as quatro coisas que o art. 11 exige enxergar:
+                  QUAL dado (o que ela escreveu sobre alergia), PARA QUÊ (a
+                  escolha dos produtos — finalidade concreta, não "para melhor
+                  atendê-la"), QUEM acessa (só a Mi) e como desfazer. */}
               {form.allergy.trim().length > 0 && (
                 <label className="mt-3 flex items-start gap-3 rounded-mi bg-mi-marrom-50 p-3 font-corpo text-sm text-mi-texto">
                   <input
@@ -776,9 +780,10 @@ export default function AgendarWizard() {
                     className="mt-0.5 h-5 w-5 shrink-0 accent-mi-marrom"
                   />
                   <span>
-                    Autorizo a Mi a guardar essa informação de saúde para cuidar
-                    da minha pele com segurança. Fica só com ela, e você pode
-                    pedir para apagar quando quiser.
+                    Pode deixar comigo — autorizo a Mi a guardar o que escrevi
+                    sobre alergia só para escolher os produtos certos para a
+                    minha pele. Fica só com ela, e é só me pedir que ela apaga
+                    💛
                   </span>
                 </label>
               )}

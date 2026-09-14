@@ -449,7 +449,11 @@ export const CONTENT_FIELDS: ContentField[] = [
   },
   // F5 — rascunhos de WhatsApp por etapa do funil de noiva. NUNCA enviados
   // sozinhos: o botão abre o WhatsApp com o texto pronto e a Mi edita antes.
-  // <!-- APROVAR COM A MI: copies do funil -->
+  // Textos de partida (14/09/2026). Regra do emoji, para não virar gosto
+  // pessoal na próxima edição: 💛 fica nos momentos de EMOÇÃO (primeiro
+  // contato, resultado da prévia, contrato fechado, pós-evento) e sai dos
+  // OPERACIONAIS (agendar a prévia, confirmar horários do dia) — a R7/R20 pede
+  // moderação, e seis de seis não é moderação.
   {
     key: "msg.funil_lead",
     label: "WhatsApp · funil — Lead",
@@ -463,7 +467,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.funil_previa_agendada",
     label: "WhatsApp · funil — Prévia agendada",
     default:
-      "Oi, {nome}! Sua prévia está chegando 💛 Separe suas referências e venha decidida — vai ser lindo. Qualquer dúvida antes, me chama!",
+      "Oi, {nome}! Sua prévia está chegando. Separe suas referências e venha decidida — vai ser lindo. Qualquer dúvida antes, me chama!",
     multiline: true,
     grupo: "Mensagens de WhatsApp · Funil de noiva",
     ajuda: "Rascunho do botão da etapa Prévia agendada. Disponível: {nome}.",
@@ -490,7 +494,7 @@ export const CONTENT_FIELDS: ContentField[] = [
     key: "msg.funil_evento",
     label: "WhatsApp · funil — Semana do evento",
     default:
-      "Oi, {nome}! Tá chegando! 💛 Confirma comigo os horários do grande dia? Já deixei tudo separado com muito carinho.",
+      "Oi, {nome}! Está chegando! Confirma comigo os horários do grande dia? Já deixei tudo separado com muito carinho.",
     multiline: true,
     grupo: "Mensagens de WhatsApp · Funil de noiva",
     ajuda: "Rascunho do botão da etapa Evento. Disponível: {nome}.",

@@ -1067,6 +1067,13 @@ export async function adminToggleJornada(
 }
 
 // Rascunhos sem emoji, voz da Mi — placeholders até a Mi aprovar (R20).
+/**
+ * Textos de partida das jornadas — aprovados em 14/09/2026 como RASCUNHO, não
+ * como piloto automático: a jornada nasce desativada e, desde a F4, nenhuma
+ * delas envia sozinha (`jornadas.ts`) — cada mensagem vira sugestão na fila de
+ * aprovação da Mi, que edita antes de mandar. Era isso que o antigo marcador de
+ * aprovação guardava aqui.
+ */
 const JORNADAS_PADRAO: {
   nome: string;
   gatilho: string;
@@ -1076,7 +1083,7 @@ const JORNADAS_PADRAO: {
   {
     nome: "Boas-vindas",
     gatilho: "boas_vindas",
-    descricao: "Após o 1º atendimento concluído. <!-- APROVAR COM A MI -->",
+    descricao: "Após o 1º atendimento concluído.",
     template:
       "Que alegria ter você por aqui, {nome}! Obrigada pela confiança no seu primeiro cuidado comigo. Quando quiser marcar o próximo, é só me chamar por aqui.",
   },
@@ -1084,7 +1091,7 @@ const JORNADAS_PADRAO: {
     nome: "Manutenção",
     gatilho: "manutencao",
     descricao:
-      "Lembrete de recompra após um tempo sem voltar (cadência em business_settings). <!-- APROVAR COM A MI -->",
+      "Lembrete de recompra após um tempo sem voltar (cadência em business_settings).",
     template:
       "Oi, {nome}! Já faz um tempinho do seu {servico} — que tal reservarmos a sua manutenção? Me chama por aqui que a gente encontra o melhor horário.",
   },
@@ -1092,7 +1099,7 @@ const JORNADAS_PADRAO: {
     nome: "Reativação",
     gatilho: "reativacao",
     descricao:
-      "Para clientes em risco ou hibernando (segmento RFV). <!-- APROVAR COM A MI -->",
+      "Para clientes em risco ou hibernando (segmento RFV).",
     template:
       "Oi, {nome}! Senti sua falta por aqui. Quando quiser reservar um cuidado só para você, é só me chamar — vou adorar te receber de novo.",
   },
