@@ -37,10 +37,30 @@
   agendamento é maior do que o de um atacante que precisaria adivinhar o UUID.
   Fazer junto com um QA logado de ponta a ponta.
 
-- **Rate limit por IP em `POST /api/bookings`.** Entrou honeypot e teto de
-  reservas em aberto por telefone, que cobrem o abuso realista. O limite por IP
-  exige um evento novo no `AuthEvent` (`isIpThrottled` só conta `login_fail` e
-  `recover_fail`), então não é plug-and-play.
+- ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
+  14/09/2026**, e **sem migration**. A dívida dizia que "exige um evento novo no
+  `AuthEvent`": exige mesmo, mas `AuthEvent` é um union de TypeScript e
+  `auth_log.event` é uma coluna `String` — acrescentar `booking_new` não toca no
+  schema. O que travava era a leitura da dívida, não o banco.
+
+  **Conta reservas CRIADAS, não falhas.** Foi o ponto de desenho: o abuso aqui
+  não é errar, é acertar muitas vezes — cada reserva nasce com hold e segura um
+  horário na agenda. Contar falhas (como o `isIpThrottled` do login faz) não
+  pararia nada. O honeypot e o teto por telefone já pegam o bot burro; isto
+  fecha a brecha de quem troca de telefone a cada POST.
+
+  10 por hora, folgado de propósito: um IP pode ser NAT (prédio, estúdio,
+  operadora móvel), e punir uma casa inteira é pior do que o abuso evitado.
+  Nenhum caminho do painel passa por essa rota — só o wizard público —, então a
+  Mi nunca esbarra nisto. Fail-open se o log estiver indisponível: derrubar
+  agendamento por causa da auditoria seria trocar abuso raro por perda de
+  receita certa.
+
+  A checagem vem **antes** de processar a foto (um flood não deve custar decode
+  de base64) e **depois** do honeypot. A recusa é 429 com quanto falta esperar,
+  nunca bloqueio silencioso — e o `AgendarWizard` passou a ecoar a mensagem do
+  429, porque o genérico _"tenta de novo?"_ é o conselho errado para quem bateu
+  num limite de taxa.
 
 - ~~**Alergia coletada no formulário público com o checkbox genérico de LGPD.**~~
   — **resolvido em 13/09/2026** (`20260913090000_consentimento_saude`).

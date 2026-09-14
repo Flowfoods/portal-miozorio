@@ -276,7 +276,8 @@ export default function AgendarWizard() {
   // A3 — com variação, tamanho e foto são obrigatórios: é a foto que permite a
   // Mi conferir antes de fechar o valor. Serviço sem variação não muda nada.
   const precisaTamanho = (service?.variantes.length ?? 0) > 0;
-  const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
+  const tamanhoOk =
+    !precisaTamanho || (varianteId !== null && fotoFile !== null);
 
   /** Escreveu alergia? Então a autorização específica é obrigatória (R6/R18). */
   const consentimentoSaudeOk =
@@ -364,10 +365,12 @@ export default function AgendarWizard() {
       if (!res.ok) {
         // Nunca ecoar a mensagem crua do servidor: "Dados inválidos" e "JSON
         // inválido" são texto de sistema e chegavam à cliente no último passo,
-        // sem dizer qual campo. 422 já vem com mensagem escrita para ela.
+        // sem dizer qual campo. 422 e 429 já vêm com mensagem escrita para ela
+        // — e no 429 o genérico seria pior que nada: "tenta de novo?" é
+        // justamente o conselho errado para quem bateu num limite de taxa.
         const e = (await res.json().catch(() => ({}))) as { error?: string };
         setFormError(
-          res.status === 422 && e.error
+          (res.status === 422 || res.status === 429) && e.error
             ? e.error
             : res.status === 400
               ? "Confere os campos? Algum dado ficou fora do formato — o e-mail é o mais comum."
@@ -835,7 +838,9 @@ export default function AgendarWizard() {
             </label>
 
             {formError && (
-              <p className="font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+              <p className="font-corpo text-sm text-mi-erro-tinta">
+                {formError}
+              </p>
             )}
 
             {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
@@ -893,7 +898,9 @@ export default function AgendarWizard() {
           />
 
           {formError && (
-            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+              {formError}
+            </p>
           )}
 
           <button
@@ -1118,7 +1125,10 @@ function AguardandoSinalScreen({
         setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
         return;
       }
-      setPix({ copiaECola: d.copiaECola, qrCodeBase64: d.qrCodeBase64 ?? null });
+      setPix({
+        copiaECola: d.copiaECola,
+        qrCodeBase64: d.qrCodeBase64 ?? null,
+      });
     } catch {
       setErroPix("Tivemos um probleminha de conexão. Tenta de novo?");
     } finally {
@@ -1227,7 +1237,10 @@ function AguardandoSinalScreen({
         )}
 
         {erroPix && (
-          <p role="alert" className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+          <p
+            role="alert"
+            className="mt-3 font-corpo text-sm text-mi-erro-tinta"
+          >
             {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
           </p>
         )}

@@ -4,6 +4,12 @@ import { createBooking } from "@/lib/booking-service";
 import { processPrivatePhoto, deletePrivatePhoto } from "@/lib/media";
 import { EV, getSid, track } from "@/lib/tracking";
 import { getClienteSession } from "@/lib/cliente-auth";
+import {
+  maskPhone,
+  metaFromHeaders,
+  recordAuth,
+  throttleReservasPorIp,
+} from "@/lib/authlog";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +47,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: "", holdExpiresAt: "" }, { status: 201 });
   }
 
+  // Rate limit por IP. Vem ANTES de processar a foto de propósito: um flood não
+  // deve nos custar decode de base64 e escrita em disco antes de ser recusado.
+  // Depois do honeypot, porque o bot burro nem chega aqui.
+  const meta = metaFromHeaders(req.headers);
+  const limite = await throttleReservasPorIp(meta.ip);
+  if (limite.bloqueado) {
+    // Nunca bloqueio silencioso: diz quanto esperar e oferece a saída humana.
+    return NextResponse.json(
+      {
+        error: `Recebi vários agendamentos deste aparelho agora há pouco. Espera ${limite.minutos} min e tenta de novo? Se for urgente, me chama no WhatsApp 💛`,
+        code: "muitas_reservas",
+        minutos: limite.minutos,
+      },
+      { status: 429 },
+    );
+  }
+
   // A3 — a foto vira arquivo PRIVADO antes de tocar no motor. processPrivatePhoto
   // valida o conteúdo por magic bytes, então um base64 de qualquer outra coisa
   // morre aqui e não vira linha no banco.
@@ -52,7 +75,10 @@ export async function POST(req: NextRequest) {
       photoKey = await processPrivatePhoto(Buffer.from(bruto, "base64"));
     } catch {
       return NextResponse.json(
-        { error: "Não consegui ler essa foto — tente outra?", code: "foto_invalida" },
+        {
+          error: "Não consegui ler essa foto — tente outra?",
+          code: "foto_invalida",
+        },
         { status: 415 },
       );
     }
@@ -70,6 +96,16 @@ export async function POST(req: NextRequest) {
       { status },
     );
   }
+  // Substrato do limite acima. Best-effort por dentro (recordAuth engole erro),
+  // e o telefone vai MASCARADO — o log guarda os 4 últimos dígitos, nunca o
+  // número inteiro, e o IP só hasheado (LGPD).
+  await recordAuth(
+    "cliente",
+    "booking_new",
+    maskPhone(parsed.data.customer.phone),
+    meta,
+  );
+
   // Tracking F1 (server-authoritative): a cliente concluiu o fluxo de agendar.
   // serviceId não é PII; sanitizeMeta descarta o que não for primitivo simples.
   await track({

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  BOOKING_IP_MAX,
+  BOOKING_IP_WINDOW_MS,
   esperaPorIdentificador,
   IDENT_MAX_FAILS,
   IDENT_WINDOW_MS,
@@ -93,5 +95,82 @@ describe("B4 — hash de senha", () => {
   it("sem hash (senha provisória = telefone) não há o que migrar", () => {
     expect(hashFraco(null)).toBe(false);
     expect(hashFraco("")).toBe(false);
+  });
+});
+
+/**
+ * Limite de RESERVAS por IP em `POST /api/bookings` (dívida do DEBITOS.md).
+ *
+ * O que se conta aqui são reservas CRIADAS, não falhas: o abuso não é errar, é
+ * acertar muitas vezes — cada reserva nasce com hold e segura um horário. O
+ * honeypot e o teto por telefone já pegam o bot burro; isto fecha a brecha de
+ * quem troca de telefone a cada POST.
+ */
+describe("Reservas por IP (10 / hora) — POST /api/bookings", () => {
+  const reservas = (n: number, espacamentoMin = 1) =>
+    Array.from({ length: n }, (_, i) => min(i * espacamentoMin));
+
+  it("os parâmetros são os combinados", () => {
+    expect(BOOKING_IP_MAX).toBe(10);
+    expect(BOOKING_IP_WINDOW_MS).toBe(60 * 60_000);
+  });
+
+  it("uso normal passa longe do teto", () => {
+    // Uma pessoa remarcando algumas vezes na mesma hora continua entrando.
+    const r = esperaPorIdentificador(
+      reservas(4),
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
+    expect(r.bloqueado).toBe(false);
+  });
+
+  it("libera na 9ª e bloqueia na 10ª reserva da janela", () => {
+    const nove = esperaPorIdentificador(
+      reservas(9),
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
+    expect(nove.bloqueado).toBe(false);
+
+    const dez = esperaPorIdentificador(
+      reservas(10),
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
+    expect(dez.bloqueado).toBe(true);
+  });
+
+  it("sempre diz quanto falta — nunca bloqueio silencioso", () => {
+    const r = esperaPorIdentificador(
+      reservas(10, 2), // 10 reservas nos últimos 18 min
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
+    expect(r.bloqueado).toBe(true);
+    expect(r.minutos).toBeGreaterThan(0);
+    expect(r.minutos).toBeLessThanOrEqual(60);
+  });
+
+  it("o bloqueio destrava sozinho: reservas fora da janela não contam", () => {
+    // 30 reservas, todas com mais de uma hora — o IP volta a agendar.
+    const antigas = Array.from({ length: 30 }, (_, i) => min(61 + i));
+    const r = esperaPorIdentificador(
+      antigas,
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
+    expect(r.bloqueado).toBe(false);
+  });
+
+  it("é mais folgado que o limite de falhas de login por identificador", () => {
+    // NAT existe: prédio, estúdio, operadora móvel. Punir uma casa inteira por
+    // causa de uma pessoa é pior do que o abuso que estamos evitando.
+    expect(BOOKING_IP_WINDOW_MS).toBeGreaterThan(IDENT_WINDOW_MS);
   });
 });

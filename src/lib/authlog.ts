@@ -25,7 +25,8 @@ export type AuthEvent =
   | "recover_fail" // código errado/expirado
   | "password_changed" // troca de senha logada (cliente/admin)
   | "passkey_added" // cadastrou uma passkey (Face ID/biometria)
-  | "passkey_login"; // entrou por passkey
+  | "passkey_login" // entrou por passkey
+  | "booking_new"; // reserva criada pelo site (substrato do limite por IP)
 
 export interface AuthMeta {
   ip?: string | null;
@@ -48,10 +49,32 @@ export const IDENT_WINDOW_MS = 15 * 60_000;
 /** Falhas toleradas no mesmo identificador dentro da janela. */
 export const IDENT_MAX_FAILS = 10;
 
+// ── Janela de RESERVAS por IP (POST /api/bookings) ───────────────────────────
+/** Janela de contagem de reservas criadas pelo mesmo IP. */
+export const BOOKING_IP_WINDOW_MS = 60 * 60_000;
 /**
- * Função pura: dadas as falhas recentes do identificador (mais nova primeiro),
- * diz se está bloqueado e quantos minutos faltam. O bloqueio cai quando a
- * N-ésima falha mais recente sai da janela — nunca é bloqueio "para sempre".
+ * Reservas toleradas por IP na janela.
+ *
+ * Conta reservas CRIADAS, não falhas: o abuso aqui não é errar, é acertar
+ * muitas vezes — cada reserva nasce com hold e segura um horário na agenda. O
+ * honeypot e o teto de reservas em aberto por telefone já cobrem o bot burro;
+ * este limite fecha a brecha de quem troca de telefone a cada POST.
+ *
+ * 10/h é folgado de propósito. Um IP pode ser NAT (prédio, estúdio, operadora
+ * móvel), e punir uma casa inteira por causa de uma pessoa é pior do que o
+ * abuso que estamos evitando. Nenhum caminho do painel passa por esta rota —
+ * só o wizard público —, então a Mi nunca esbarra nisto.
+ */
+export const BOOKING_IP_MAX = 10;
+
+/**
+ * Função pura de janela deslizante: dadas as datas dos eventos recentes (em
+ * qualquer ordem), diz se estourou o teto e quantos minutos faltam para
+ * liberar. O bloqueio cai quando o N-ésimo evento mais recente sai da janela —
+ * nunca é bloqueio "para sempre".
+ *
+ * Nasceu para falhas de login por identificador (daí o nome) e serve para
+ * qualquer contagem por janela: os limites passam por parâmetro.
  */
 export function esperaPorIdentificador(
   falhas: Date[],
@@ -91,6 +114,39 @@ export async function throttlePorIdentificador(
       select: { createdAt: true },
     });
     return esperaPorIdentificador(falhas.map((f) => f.createdAt));
+  } catch {
+    return { bloqueado: false, minutos: 0 };
+  }
+}
+
+/**
+ * Rate-limit de RESERVAS por IP (`POST /api/bookings`): 10 reservas por hora no
+ * mesmo IP. Best-effort — se a checagem falhar, libera (fail-open): derrubar o
+ * agendamento porque o log de auditoria está indisponível seria trocar um abuso
+ * raro por perda de receita certa.
+ */
+export async function throttleReservasPorIp(
+  ip: string | null | undefined,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  if (!ip) return { bloqueado: false, minutos: 0 };
+  try {
+    const desde = new Date(Date.now() - BOOKING_IP_WINDOW_MS);
+    const recentes = await prisma.authLog.findMany({
+      where: {
+        event: "booking_new",
+        ipHash: hashIp(ip),
+        createdAt: { gte: desde },
+      },
+      orderBy: { createdAt: "desc" },
+      take: BOOKING_IP_MAX,
+      select: { createdAt: true },
+    });
+    return esperaPorIdentificador(
+      recentes.map((r) => r.createdAt),
+      new Date(),
+      BOOKING_IP_MAX,
+      BOOKING_IP_WINDOW_MS,
+    );
   } catch {
     return { bloqueado: false, minutos: 0 };
   }
