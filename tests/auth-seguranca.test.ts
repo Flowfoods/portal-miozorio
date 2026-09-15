@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import bcrypt from "bcryptjs";
 import {
   BOOKING_IP_MAX,
   BOOKING_IP_WINDOW_MS,
@@ -7,9 +8,12 @@ import {
   IDENT_WINDOW_MS,
   IP_MAX_FAILS,
   IP_WINDOW_MS,
+  RECUP_IP_MAX,
+  RECUP_IP_WINDOW_MS,
 } from "@/lib/authlog";
 import {
   BCRYPT_ROUNDS,
+  HASH_FANTASMA,
   hashFraco,
   lockoutMs,
   LOCK_THRESHOLD,
@@ -172,5 +176,20 @@ describe("Reservas por IP (10 / hora) — POST /api/bookings", () => {
     // NAT existe: prédio, estúdio, operadora móvel. Punir uma casa inteira por
     // causa de uma pessoa é pior do que o abuso que estamos evitando.
     expect(BOOKING_IP_WINDOW_MS).toBeGreaterThan(IDENT_WINDOW_MS);
+  });
+});
+
+describe("Revisão pré-deploy (15/09) — tetos novos e anti-enumeração por tempo", () => {
+  it("pedidos de código por IP: 10 por hora", () => {
+    expect(RECUP_IP_MAX).toBe(10);
+    expect(RECUP_IP_WINDOW_MS).toBe(60 * 60_000);
+  });
+
+  it("o hash fantasma é bcrypt no custo atual e nunca bate", () => {
+    // Login com e-mail desconhecido gasta um compareSync contra ele, para
+    // custar o mesmo que um login de verdade — o tempo não entrega a lista.
+    expect(hashFraco(HASH_FANTASMA)).toBe(false);
+    expect(bcrypt.compareSync("", HASH_FANTASMA)).toBe(false);
+    expect(bcrypt.compareSync("qualquer coisa", HASH_FANTASMA)).toBe(false);
   });
 });

@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { prisma } from "./prisma";
-import { BCRYPT_ROUNDS, hashFraco, lockoutMs } from "./security";
+import { BCRYPT_ROUNDS, HASH_FANTASMA, hashFraco, lockoutMs } from "./security";
 import {
   isIpThrottled,
   metaFromHeaders,
@@ -65,6 +65,10 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.adminUser.findUnique({ where: { email } });
         if (!user || !user.active) {
+          // Gasta o mesmo bcrypt de um login real. A mensagem já é única
+          // (anti-enumeração); sem isto o TEMPO de resposta dizia quais e-mails
+          // têm conta no painel.
+          bcrypt.compareSync(password, HASH_FANTASMA);
           await recordAuth("admin", "login_fail", email, meta);
           return null;
         }
