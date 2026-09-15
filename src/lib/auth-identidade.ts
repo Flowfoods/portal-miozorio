@@ -50,9 +50,16 @@ export function ehOProprioTelefone(
   senha: string,
   telefoneE164: string,
 ): boolean {
-  const d = (s: string) => s.replace(/\D/g, "");
-  const senhaDigitos = d(senha);
-  if (!senhaDigitos || senhaDigitos !== senha.trim()) return false;
+  const s = senha.trim();
+  // Conta como "o telefone" tudo que é só jeito de escrever telefone: dígitos
+  // e a pontuação que o site e o WhatsApp usam — "(21) 99862-6845",
+  // "+55 21 99862-6845", "21 99862 6845". Antes, qualquer caractere que não
+  // fosse dígito liberava, e a forma FORMATADA (a que a cliente vê na
+  // carteirinha e na mensagem da Mi) passava como senha nova.
+  if (!s || !/^[\d\s()\-.+]+$/.test(s)) return false;
+  const d = (x: string) => x.replace(/\D/g, "");
+  const senhaDigitos = d(s);
+  if (!senhaDigitos) return false;
   const tel = d(telefoneE164);
   return senhaDigitos === tel || senhaDigitos === tel.replace(/^55/, "");
 }
