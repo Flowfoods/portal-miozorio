@@ -271,10 +271,10 @@ arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
 `tests/login-cliente.test.ts` (login, limites e sessão).
 
 > Esse 360 é o retrato **daquele dia, neste branch antes do merge** — está aqui
-> como registro, não como número atual. Depois do merge com a master e das
-> frentes que entraram em seguida (#103, #105, #106), a suíte está em **492
-> testes / 46 arquivos**. Se você rodar `npm test` hoje e vir 492, é isso: não
-> há teste faltando.
+> como registro, não como número atual. Depois do merge com a master, das
+> frentes que entraram em seguida (#103, #105, #106) e da revisão adversarial
+> de 15/09 (#107), a suíte está em **512 testes / 46 arquivos**. Se você rodar
+> `npm test` hoje e vir 512, é isso: não há teste faltando.
 
 **Checklist funcional no navegador — 30 de 30 ✅**
 
