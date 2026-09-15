@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { prisma } from "./prisma";
 
 /**
@@ -67,6 +67,18 @@ export const BOOKING_IP_WINDOW_MS = 60 * 60_000;
  */
 export const BOOKING_IP_MAX = 10;
 
+// ── Janela de PEDIDOS DE CÓDIGO por IP (recuperação de senha) ────────────────
+/** Janela de contagem de pedidos de código de recuperação pelo mesmo IP. */
+export const RECUP_IP_WINDOW_MS = 60 * 60_000;
+/**
+ * Pedidos de código tolerados por IP na janela. Cada pedido de conta existente
+ * vira uma mensagem no WhatsApp da Mi; sem teto por IP, um único script com
+ * uma lista de telefones enchia o WhatsApp dela — e podia derrubar o número
+ * por spam. O teto por cadastro (3/h) não segura isso: é por pessoa, não por
+ * origem.
+ */
+export const RECUP_IP_MAX = 10;
+
 /**
  * Função pura de janela deslizante: dadas as datas dos eventos recentes (em
  * qualquer ordem), diz se estourou o teto e quantos minutos faltam para
@@ -119,37 +131,96 @@ export async function throttlePorIdentificador(
   }
 }
 
+const LIVRE = { bloqueado: false, minutos: 0 };
+
 /**
- * Rate-limit de RESERVAS por IP (`POST /api/bookings`): 10 reservas por hora no
- * mesmo IP. Best-effort — se a checagem falhar, libera (fail-open): derrubar o
- * agendamento porque o log de auditoria está indisponível seria trocar um abuso
- * raro por perda de receita certa.
+ * Janela deslizante por IP sobre o auth_log. Best-effort — se a consulta
+ * falhar, libera (fail-open): é rate-limit, a trava por conta continua.
+ *
+ * `inclusivo` = a chamada acontece DEPOIS de registrar a própria tentativa, que
+ * então entra na conta; o teto vira "max anteriores + esta". Registrar antes de
+ * contar é o que segura uma rajada: N requisições simultâneas liam o mesmo
+ * total e passavam todas pela checagem antes de qualquer uma ser gravada.
  */
-export async function throttleReservasPorIp(
+async function janelaPorIp(
   ip: string | null | undefined,
+  eventos: AuthEvent[],
+  max: number,
+  janelaMs: number,
+  inclusivo: boolean,
 ): Promise<{ bloqueado: boolean; minutos: number }> {
-  if (!ip) return { bloqueado: false, minutos: 0 };
+  if (!ip) return { ...LIVRE };
   try {
-    const desde = new Date(Date.now() - BOOKING_IP_WINDOW_MS);
+    const teto = inclusivo ? max + 1 : max;
     const recentes = await prisma.authLog.findMany({
       where: {
-        event: "booking_new",
         ipHash: hashIp(ip),
-        createdAt: { gte: desde },
+        event: { in: eventos },
+        createdAt: { gte: new Date(Date.now() - janelaMs) },
       },
       orderBy: { createdAt: "desc" },
-      take: BOOKING_IP_MAX,
+      take: teto,
       select: { createdAt: true },
     });
     return esperaPorIdentificador(
       recentes.map((r) => r.createdAt),
       new Date(),
-      BOOKING_IP_MAX,
-      BOOKING_IP_WINDOW_MS,
+      teto,
+      janelaMs,
     );
   } catch {
-    return { bloqueado: false, minutos: 0 };
+    return { ...LIVRE };
   }
+}
+
+/**
+ * Rate-limit por IP das FALHAS de auth (login errado, código errado): 20 em
+ * 15 min. Devolve quanto falta esperar — bloqueio nunca é silencioso.
+ */
+export async function throttlePorIp(
+  ip: string | null | undefined,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  return janelaPorIp(
+    ip,
+    ["login_fail", "recover_fail"],
+    IP_MAX_FAILS,
+    IP_WINDOW_MS,
+    false,
+  );
+}
+
+/**
+ * Rate-limit de RESERVAS por IP (`POST /api/bookings`): 10 reservas por hora no
+ * mesmo IP. Chame DEPOIS de registrar a tentativa (`booking_new`) — ela entra
+ * na conta. Fail-open: derrubar o agendamento porque o log de auditoria está
+ * indisponível seria trocar um abuso raro por perda de receita certa.
+ */
+export async function throttleReservasPorIp(
+  ip: string | null | undefined,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  return janelaPorIp(
+    ip,
+    ["booking_new"],
+    BOOKING_IP_MAX,
+    BOOKING_IP_WINDOW_MS,
+    true,
+  );
+}
+
+/**
+ * Rate-limit de PEDIDOS DE CÓDIGO por IP (recuperação de senha): 10 por hora.
+ * Chame DEPOIS de registrar o pedido (`recover_request`).
+ */
+export async function throttlePedidosPorIp(
+  ip: string | null | undefined,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  return janelaPorIp(
+    ip,
+    ["recover_request"],
+    RECUP_IP_MAX,
+    RECUP_IP_WINDOW_MS,
+    true,
+  );
 }
 
 /** SHA-256 do IP — nunca guardamos o IP cru (LGPD). */
@@ -189,6 +260,34 @@ export function maskPhone(raw: string): string {
 }
 
 /**
+ * Chave de um telefone no auth_log: os 4 últimos dígitos (o que a Mi lê na
+ * tela de Acessos) + um HMAC curto do número inteiro.
+ *
+ * Só os 4 últimos dígitos eram a chave do rate-limit por identificador (B4) —
+ * e 10^4 baldes é pouco: duas clientes com o mesmo final dividiam o balde de
+ * 10 falhas, e bastava errar 10 vezes num número QUALQUER terminado em 6845
+ * para pausar o login de todas as clientes com esse final. O HMAC separa os
+ * baldes sem gravar o telefone: a chave é NEXTAUTH_SECRET, e sem ela ninguém
+ * reverte por força bruta o espaço de ~10^9 números.
+ */
+export function identTelefone(phoneE164: string): string {
+  const d = phoneE164.replace(/\D/g, "");
+  const tag = createHmac("sha256", process.env.NEXTAUTH_SECRET ?? "")
+    .update(d)
+    .digest("hex")
+    .slice(0, 10);
+  return `${maskPhone(phoneE164)}·${tag}`;
+}
+
+/** O que mostrar na tela: `••••6845·a1b2c3d4e5` vira `••••6845`. */
+export function identificadorVisivel(
+  identifier: string | null | undefined,
+): string {
+  if (!identifier) return "—";
+  return identifier.split("·")[0] ?? identifier;
+}
+
+/**
  * Registra um evento de auth. Best-effort: engole qualquer erro (inclusive
  * tabela ausente antes da migration) para nunca interromper o fluxo de login.
  */
@@ -197,9 +296,9 @@ export async function recordAuth(
   event: AuthEvent,
   identifier: string | null,
   meta: AuthMeta = {},
-): Promise<void> {
+): Promise<bigint | null> {
   try {
-    await prisma.authLog.create({
+    const row = await prisma.authLog.create({
       data: {
         area,
         event,
@@ -207,32 +306,39 @@ export async function recordAuth(
         ipHash: meta.ip ? hashIp(meta.ip) : null,
         userAgent: meta.userAgent?.slice(0, 400) ?? null,
       },
+      select: { id: true },
     });
+    return row.id;
   } catch {
     // silencioso de propósito (R: log não pode quebrar login)
+    return null;
   }
 }
 
 /**
- * Rate-limit por IP: true se este IP acumulou falhas demais na janela. Conta
- * `login_fail` e `recover_fail` do mesmo ip_hash. Best-effort — se a checagem
- * falhar, libera (fail-open): trava por conta continua protegendo.
+ * Apaga um registro (best-effort). A rota de reservas registra a TENTATIVA
+ * antes de criar a reserva; se ela não vira reserva (horário tomado, foto
+ * inválida), o registro sai para não cobrar da pessoa uma reserva que não
+ * existiu.
+ */
+export async function apagarRegistroAuth(
+  id: bigint | null | undefined,
+): Promise<void> {
+  if (id == null) return;
+  try {
+    await prisma.authLog.delete({ where: { id } });
+  } catch {
+    // best-effort
+  }
+}
+
+/**
+ * Rate-limit por IP: true se este IP acumulou falhas demais na janela (`login_fail`
+ * e `recover_fail` do mesmo ip_hash). Atalho de `throttlePorIp` para quem só
+ * precisa do sim/não.
  */
 export async function isIpThrottled(
   ip: string | null | undefined,
 ): Promise<boolean> {
-  if (!ip) return false;
-  try {
-    const desde = new Date(Date.now() - IP_WINDOW_MS);
-    const fails = await prisma.authLog.count({
-      where: {
-        ipHash: hashIp(ip),
-        event: { in: ["login_fail", "recover_fail"] },
-        createdAt: { gte: desde },
-      },
-    });
-    return fails >= IP_MAX_FAILS;
-  } catch {
-    return false;
-  }
+  return (await throttlePorIp(ip)).bloqueado;
 }

@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { clientIp, hashIp, maskPhone, metaFromHeaders } from "@/lib/authlog";
+import {
+  clientIp,
+  hashIp,
+  identTelefone,
+  identificadorVisivel,
+  maskPhone,
+  metaFromHeaders,
+} from "@/lib/authlog";
 
 describe("clientIp — IP do request (LGPD: base p/ hash)", () => {
   it("pega o primeiro do x-forwarded-for (cadeia do Traefik)", () => {
@@ -39,7 +46,10 @@ describe("metaFromHeaders — Fetch Headers e objeto plano", () => {
       "x-forwarded-for": "203.0.113.9",
       "user-agent": "Safari",
     });
-    expect(metaFromHeaders(h)).toEqual({ ip: "203.0.113.9", userAgent: "Safari" });
+    expect(metaFromHeaders(h)).toEqual({
+      ip: "203.0.113.9",
+      userAgent: "Safari",
+    });
   });
   it("extrai de um Record simples (req do NextAuth)", () => {
     expect(
@@ -48,5 +58,35 @@ describe("metaFromHeaders — Fetch Headers e objeto plano", () => {
   });
   it("vazio quando não há headers", () => {
     expect(metaFromHeaders(undefined)).toEqual({});
+  });
+});
+
+describe("identTelefone — chave do rate-limit por telefone (B4)", () => {
+  it("dois telefones com o mesmo final têm chaves diferentes", () => {
+    // Era só a máscara: 10^4 baldes, e as falhas de uma cliente pausavam a
+    // outra. A chave ganha um HMAC curto do número inteiro.
+    process.env.NEXTAUTH_SECRET = "segredo-de-teste";
+    const a = identTelefone("+5521998626845");
+    const b = identTelefone("+5511988886845");
+    expect(a).not.toBe(b);
+    expect(a.startsWith("••••6845·")).toBe(true);
+    expect(b.startsWith("••••6845·")).toBe(true);
+  });
+
+  it("é determinística e não carrega o número (LGPD)", () => {
+    process.env.NEXTAUTH_SECRET = "segredo-de-teste";
+    expect(identTelefone("+5521998626845")).toBe(
+      identTelefone("+5521998626845"),
+    );
+    expect(identTelefone("+5521998626845")).not.toContain("99862");
+    expect(identTelefone("+5521998626845")).toMatch(/^••••6845·[0-9a-f]{10}$/);
+  });
+
+  it("na tela, só a máscara", () => {
+    expect(identificadorVisivel("••••6845·a1b2c3d4e5")).toBe("••••6845");
+    expect(identificadorVisivel("mi@miozorio.com.br")).toBe(
+      "mi@miozorio.com.br",
+    );
+    expect(identificadorVisivel(null)).toBe("—");
   });
 });
