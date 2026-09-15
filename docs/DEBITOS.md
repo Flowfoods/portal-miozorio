@@ -221,6 +221,13 @@
   e o `POST` fechado, que é exatamente a forma como este buraco existiu.
   Conferido por mutação: cada conserto foi quebrado e o teste caiu.
 
+  **QA ponta a ponta executado** (`docs/agenda/QA-POSSE-TETO.md`, seção de
+  15/09): Postgres 16 real + Chromium, **34 asserções**, duas execuções a partir
+  do estado zerado. O cenário **F** exercita o `GET /sinal` — estranho 403, dona
+  200 — e prova que sem gateway o `POST` é 501 igual para os dois. O que
+  **continua sem QA de browser** é o `POST /sinal` com gateway ligado: entra
+  como cenário obrigatório do roteiro **no dia em que o PIX for ativado**.
+
   ⚠️ **Não auditado:** se alguma cobrança PIX já foi criada por terceiro, não dá
   para saber — `depositPaymentId` não guarda quem pediu. Com o gateway desligado
   desde sempre (R22), o POST nunca passou do 501, então a resposta prática é

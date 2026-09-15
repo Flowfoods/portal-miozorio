@@ -210,12 +210,16 @@ ok((await rE.json()).code === "sem_posse", "código sem_posse");
 // A inspeção vai pela DONA: `GET /api/bookings/:id` também passou a exigir
 // posse, então o estranho não enxerga mais nem o status — e é isso que a
 // asserção seguinte cobra dele.
-const rEstranhoLe = await ctxEstranho.request.get(`${BASE}/api/bookings/${idB}`);
+const rEstranhoLe = await ctxEstranho.request.get(
+  `${BASE}/api/bookings/${idB}`,
+);
 ok(
   rEstranhoLe.status() === 403,
   `estranho nem lê o status (recebeu ${rEstranhoLe.status()})`,
 );
-const est = await (await ctxB.request.get(`${BASE}/api/bookings/${idB}`)).json();
+const est = await (
+  await ctxB.request.get(`${BASE}/api/bookings/${idB}`)
+).json();
 ok(est.status === "pending", `a reserva continua pendente (${est.status})`);
 const rD = await ctxB.request.post(`${BASE}/api/bookings/${idB}/confirm`);
 ok(
@@ -367,6 +371,52 @@ ok(
     await pE2.locator("main").innerText(),
   ),
   "e sem marcá-la o agendamento é barrado, como deve ser",
+);
+
+// ── F) o GET do sinal — o lado da rota que nunca dormiu ─────────────────────
+// O POST do /sinal devolve 501 sem gateway antes de tocar em qualquer coisa
+// (R22). O GET não tem essa guarda: respondia {pago, confirmado} de qualquer
+// reserva para quem tivesse o UUID. É o único pedaço da posse que dá para
+// exercitar de ponta a ponta SEM ligar o PIX — e por isso entra aqui.
+console.log("\n=== F) GET /sinal: o lado da rota que nunca dormiu ===");
+const ctxF = await b.newContext();
+const rF = await criar(ctxF.request, servico.id, "21977770001");
+const idF = (await rF.json()).id;
+ok(rF.status() === 201 && !!idF, `reserva criada (${idF})`);
+
+const ctxFEstranho = await b.newContext(); // tem o id, não tem o comprovante
+const getEstranho = await ctxFEstranho.request.get(
+  `${BASE}/api/bookings/${idF}/sinal`,
+);
+ok(
+  getEstranho.status() === 403,
+  `estranho não lê o sinal (recebeu ${getEstranho.status()})`,
+);
+ok((await getEstranho.json()).code === "sem_posse", "código sem_posse");
+
+const getDona = await ctxF.request.get(`${BASE}/api/bookings/${idF}/sinal`);
+ok(getDona.status() === 200, `a dona lê o sinal (recebeu ${getDona.status()})`);
+const sinalDona = await getDona.json();
+ok(
+  sinalDona.pago === false && sinalDona.confirmado === false,
+  "e vê pago=false, confirmado=false — o poll da tela segue funcionando",
+);
+
+// Sem gateway o POST é 501 IGUAL para dona e estranho. É a ordem
+// gateway-antes-da-posse: um portal sem PIX não pode passar a distinguir
+// quem é dona de quem não é, porque isso já seria contar se a reserva existe.
+const postEstranho = await ctxFEstranho.request.post(
+  `${BASE}/api/bookings/${idF}/sinal`,
+);
+const postDona = await ctxF.request.post(`${BASE}/api/bookings/${idF}/sinal`);
+ok(
+  postEstranho.status() === 501 && postDona.status() === 501,
+  `sem gateway, POST é 501 para os dois (${postEstranho.status()}/${postDona.status()})`,
+);
+ok(
+  (await postEstranho.json()).code === "sem_gateway" &&
+    (await postDona.json()).code === "sem_gateway",
+  "e o código é sem_gateway para os dois — não sem_posse",
 );
 
 await b.close();
