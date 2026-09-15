@@ -10,6 +10,7 @@ import GaugeChart from "@/components/ui/charts/GaugeChart";
 import BarrasHChart from "@/components/ui/charts/BarrasHChart";
 import { ChartCarregando, ChartVazio, ChartErro } from "@/components/ui/charts/estados";
 import { fmtBRL, fmtInt } from "@/lib/charts/theme";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 /**
  * Vitrine interna do design system (não linkada na navegação). Mostra tokens
@@ -36,11 +37,12 @@ const APOIO = [
   ["erro", "#A65D57", "#7E3A35"],
 ] as const;
 
-export default function DesignSystemPage({
+export default async function DesignSystemPage({
   searchParams,
 }: {
   searchParams: { seg?: string };
 }) {
+  await exigirSessaoDoPainel();
   const seg = searchParams.seg ?? "mes";
   return (
     <>

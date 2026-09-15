@@ -9,6 +9,7 @@ import {
   engajadasIndicacao,
   explorarClientes,
 } from "@/lib/crm-listas";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export default async function CrmListasPage({
     origem?: string;
   };
 }) {
+  await exigirSessaoDoPainel();
   const cfg = await getCrmConfig();
   const tipo: Tipo = (TIPOS.some((t) => t.id === searchParams.tipo)
     ? searchParams.tipo

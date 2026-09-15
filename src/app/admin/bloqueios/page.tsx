@@ -2,10 +2,12 @@ import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { adminCreateBlock, adminDeleteBlock } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBloqueiosPage() {
+  await exigirSessaoDoPainel();
   const settings = await getSettings();
   const tz = settings.timezone;
   const blocks = await prisma.scheduleBlock.findMany({

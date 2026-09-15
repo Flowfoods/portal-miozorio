@@ -5,6 +5,7 @@ import { formatBRL, waLinkMsg } from "@/lib/format";
 import { getCrmConfig } from "@/lib/crm-config";
 import { getSiteContent, aplicarTemplate } from "@/lib/content";
 import FunilBoard, { type CardFunil } from "./FunilBoard";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ const NEGOCIACAO = ["lead", "previa_agendada", "previa_feita"];
 
 /** F5 — funil 2.0: kanban arrastável + tempos + pipeline + alerta de parada. */
 export default async function CrmFunilPage() {
+  await exigirSessaoDoPainel();
   const [cfg, content, noivas, tempos] = await Promise.all([
     getCrmConfig(),
     getSiteContent(),

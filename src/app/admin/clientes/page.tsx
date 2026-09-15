@@ -4,6 +4,7 @@ import { formatPhoneBR } from "@/lib/format";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
 import NovaClienteForm from "@/components/admin/NovaClienteForm";
 import { adminResetStrikes } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function AdminClientesPage({
 }: {
   searchParams: { q?: string };
 }) {
+  await exigirSessaoDoPainel();
   const q = (searchParams.q ?? "").trim();
   const digits = q.replace(/\D/g, "");
 

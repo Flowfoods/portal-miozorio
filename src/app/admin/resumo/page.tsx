@@ -13,6 +13,7 @@ import BarrasHChart from "@/components/ui/charts/BarrasHChart";
 import GaugeChart from "@/components/ui/charts/GaugeChart";
 import { ChartVazio } from "@/components/ui/charts/estados";
 import { fmtBRL } from "@/lib/charts/theme";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default async function ResumoPage({
 }: {
   searchParams: { mes?: string; periodo?: string; de?: string; ate?: string };
 }) {
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
 
   // Período global (F3): se a URL/cookie trouxer período, ele manda; o legado

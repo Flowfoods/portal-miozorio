@@ -5,6 +5,7 @@ import { evolutionConfigured } from "@/lib/notify";
 import { formatPhoneBR } from "@/lib/format";
 import { REGUA_LABEL } from "@/lib/reguas";
 import FilaMensagens, { type ItemFila } from "./FilaMensagens";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const fmt = (d: Date) =>
  * (intervalo por cliente, teto por dia) é configurado em /admin/crm/config.
  */
 export default async function MensagensPage() {
+  await exigirSessaoDoPainel();
   const [aguardando, historico] = await Promise.all([
     prisma.envioMensagem.findMany({
       where: { status: "aguardando" },

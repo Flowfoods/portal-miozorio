@@ -26,6 +26,7 @@ import {
   adminValidarTamanho,
   adminDeleteBookingPhoto,
 } from "./actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -298,6 +299,7 @@ export default async function AdminAgendaPage({
     ate?: string;
   };
 }) {
+  await exigirSessaoDoPainel();
   const settings = await getSettings();
   const tz = settings.timezone;
   const today = DateTime.now().setZone(tz).startOf("day");

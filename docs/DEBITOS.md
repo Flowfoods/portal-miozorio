@@ -86,21 +86,27 @@
 
 ## Ainda abertos
 
-- **Revogação de sessão do painel em navegação interna** (achado da revisão
-  adversarial de 15/09/2026). Trocar a senha sobe `tokenVersion`, mas só o
-  carregamento completo (e as 7 páginas com `requireAdmin`) conferem isso no
-  banco: o middleware roda no Edge e só valida a assinatura do JWT, e o
-  `admin/layout.tsx` não roda de novo em `<Link>` — nem um `template.tsx`
-  rodaria (é prop reaproveitada pelo roteador do cliente). Cenário: celular da
-  Mi com o painel aberto, ela troca a senha no notebook; quem está com o
-  celular segue clicando pelas 27 páginas sem guarda até recarregar ou o JWT
-  vencer (7 dias). Duas saídas: **(a)** `requireAdmin()` no topo de TODAS as
-  páginas do painel — 27 arquivos, mecânico, sem risco de arquitetura;
-  **(b)** o middleware consultar uma rota interna (`/api/admin/sessao`) que
-  confere `tokenVersion` no banco, com cache curto — uma chamada local por
-  request de `/admin` e um ponto novo que, se falhar, precisa cair para o
-  comportamento de hoje. Recomendação: (a), por ser à prova de surpresa no
-  componente que, se quebrar, tranca a Mi para fora.
+- ~~**Revogação de sessão do painel em navegação interna**~~ (achado da
+  revisão adversarial de 15/09/2026) — **resolvido em 15/09/2026**, pela saída
+  (a). Trocar a senha sobe `tokenVersion`, mas só o carregamento completo
+  conferia isso no banco: o middleware roda no Edge e só valida a assinatura
+  do JWT, e o `admin/layout.tsx` não roda de novo em `<Link>` — nem um
+  `template.tsx` rodaria (é prop reaproveitada pelo roteador do cliente).
+  Cenário: celular da Mi com o painel aberto, ela troca a senha no notebook;
+  quem está com o celular seguia clicando pelo painel até recarregar ou o JWT
+  vencer (7 dias). A outra saída, (b) — o middleware consultar uma rota
+  interna que confere `tokenVersion`, com cache — criava um ponto novo de
+  falha exatamente no componente que, se quebrar, tranca a Mi para fora.
+
+  A guarda é `exigirSessaoDoPainel()` (`src/lib/auth-painel.ts`), no topo das
+  32 páginas do painel e no layout. Ela **redireciona** para o login com o
+  caminho de volta; `requireAdmin()`, que lança, continua sendo a guarda de
+  server action e rota de API — em página ele virava a tela "Ops, algo deu
+  errado". Das 34 páginas, 6 usavam esse `requireAdmin` e 26 não tinham guarda
+  própria (login e recuperar são públicas). `tests/auth-painel.test.ts` varre
+  o `src/app/admin` e falha se uma página nascer sem a chamada. Resíduo: o
+  cache do roteador do cliente pode reaproveitar por até 30 s uma página
+  aberta logo antes da troca (`staleTimes` padrão do Next 14.2).
 
 - **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
   indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode

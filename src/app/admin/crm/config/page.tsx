@@ -9,6 +9,7 @@ import {
   type CrmConfigData,
 } from "@/lib/crm-config";
 import ReguaEditor from "./ReguaEditor";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
  * recálculo imediato e histórico de alterações (quem/quando/de→para).
  */
 export default async function CrmConfigPage() {
+  await exigirSessaoDoPainel();
   const [cfg, versoes] = await Promise.all([
     getCrmConfig(true),
     prisma.crmConfig.findMany({

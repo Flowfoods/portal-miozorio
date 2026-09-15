@@ -226,7 +226,7 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 ## Limites conhecidos (revisão adversarial de 15/09/2026)
 
 Uma revisão com sete lentes independentes sobre o código de auth achou 20
-pontos; 13 viraram conserto (na PR #107). Estes **não** foram corrigidos — por
+pontos; 14 viraram conserto (na PR #107). Estes **não** foram corrigidos — por
 decisão ou por escopo — e ficam aqui para ninguém redescobrir:
 
 1. **Enumeração residual pela recuperação.** O texto é neutro nos dois passos,
@@ -236,16 +236,17 @@ decisão ou por escopo — e ficam aqui para ninguém redescobrir:
    importam se a enumeração pelo login (decisão 4, aceita) um dia for
    revertida; aí o conserto é enfileirar o aviso à Mi sem esperar a resposta e
    tirar o contador da mensagem.
-2. **Sessão do painel derrubada "de verdade" só em carregamento completo.**
-   Trocar a senha sobe `tokenVersion`, mas o middleware só valida a assinatura
-   do JWT (roda no Edge, sem banco) e a conferência no banco vive no
-   `admin/layout.tsx` — que o App Router **não** re-renderiza em navegação
-   interna (`<Link>`). Das 34 páginas do painel, só 7 chamam `requireAdmin`.
-   Quem estiver com uma sessão aberta continua navegando entre as outras 27
-   até recarregar a página ou o JWT vencer (7 dias). `template.tsx` não
-   resolve: é uma prop que o roteador do cliente reaproveita, não roda de novo
-   no servidor. **Precisa de decisão** — as duas saídas reais estão no
-   `docs/DEBITOS.md`.
+2. **Sessão do painel derrubada: até 30 s de cache do roteador.** Era pior: o
+   middleware só valida a assinatura do JWT (roda no Edge, sem banco) e a
+   conferência no banco vivia só no `admin/layout.tsx`, que o App Router
+   **não** re-renderiza em navegação interna (`<Link>`) — uma sessão aberta
+   seguia navegando pelo painel até recarregar ou o JWT vencer (7 dias).
+   Fechado no mesmo dia com `exigirSessaoDoPainel()` no topo de cada página
+   (`src/lib/auth-painel.ts`; histórico no `docs/DEBITOS.md`). O que resta é
+   o cache do roteador do cliente, que pode reaproveitar por até 30 s uma
+   página aberta logo antes da troca de senha (`staleTimes` padrão do Next
+   14.2). `template.tsx` não resolveria: é uma prop que o roteador do cliente
+   reaproveita, não roda de novo no servidor.
 3. **Trocar a senha logada não pede a senha atual.** Foi assim de propósito
    (cliente leiga, fluxo curto). Consequência: aparelho destravado por um
    minuto = senha trocada e a dona deslogada dos outros aparelhos. Se
@@ -273,8 +274,8 @@ arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
 > Esse 360 é o retrato **daquele dia, neste branch antes do merge** — está aqui
 > como registro, não como número atual. Depois do merge com a master, das
 > frentes que entraram em seguida (#103, #105, #106) e da revisão adversarial
-> de 15/09 (#107), a suíte está em **512 testes / 46 arquivos**. Se você rodar
-> `npm test` hoje e vir 512, é isso: não há teste faltando.
+> de 15/09 (#107), a suíte está em **522 testes / 47 arquivos**. Se você rodar
+> `npm test` hoje e vir 522, é isso: não há teste faltando.
 
 **Checklist funcional no navegador — 30 de 30 ✅**
 

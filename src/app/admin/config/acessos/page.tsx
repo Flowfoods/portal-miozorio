@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatPhoneBR } from "@/lib/format";
@@ -38,7 +38,7 @@ const EVENTO: Record<string, { label: string; tom: string }> = {
 };
 
 export default async function AcessosPage() {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
   const desde24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 

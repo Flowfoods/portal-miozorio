@@ -11,10 +11,12 @@ import {
   adminToggleDestaqueMomento,
   adminArquivarMomento,
 } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDepoimentosPage() {
+  await exigirSessaoDoPainel();
   const [pendentes, items] = await Promise.all([
     prisma.testimonial.findMany({
       where: { status: "pendente" },

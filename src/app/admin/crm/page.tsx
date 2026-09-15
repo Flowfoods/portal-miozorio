@@ -9,6 +9,7 @@ import { getCrmConfig, nomesSegmentos } from "@/lib/crm-config";
 import { contagensListas } from "@/lib/crm-listas";
 import PeriodSelector from "@/components/admin/PeriodSelector";
 import ClientesHubNav from "@/components/admin/ClientesHubNav";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export default async function CrmPage({
 }: {
   searchParams: { periodo?: string; de?: string; ate?: string };
 }) {
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
 
   // Recorte de VISUALIZAÇÃO por período (F4) — não altera a lógica RFV (job diário).

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPhoneBR, waLink } from "@/lib/format";
 import { getCrmConfig, nomesSegmentos } from "@/lib/crm-config";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function CrmRfvPage({
 }: {
   searchParams: { seg?: string };
 }) {
+  await exigirSessaoDoPainel();
   // Nomes válidos vêm da régua editável (F2) + segmentos antigos ainda gravados.
   const SEGMENTOS = nomesSegmentos(await getCrmConfig());
   const seg =

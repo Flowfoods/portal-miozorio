@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminCreateCategory, adminUpdateCategory } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ const DRE_OPTS = [
 ];
 
 export default async function CategoriasPage() {
+  await exigirSessaoDoPainel();
   const categorias = await prisma.financialCategory.findMany({
     orderBy: [{ kind: "asc" }, { sort: "asc" }],
   });

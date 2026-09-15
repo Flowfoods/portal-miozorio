@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import { formatBRL } from "@/lib/format";
 import { TZ_PADRAO } from "@/lib/periods";
@@ -18,7 +18,7 @@ const STATUS_TOM: Record<string, string> = {
 };
 
 export default async function CampanhasPage() {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const inicioMes = DateTime.now().setZone(TZ_PADRAO).startOf("month").toJSDate();
   const [campanhas, msgsMes, enviosAgg] = await Promise.all([
     prisma.campanha.findMany({
