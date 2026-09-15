@@ -79,11 +79,18 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   `recuperacao.ts` é o **módulo único** de recuperação de senha de TODOS os
   perfis. Regra inviolável: o código de 6 dígitos vai para o WhatsApp da **Mi**,
   que repassa à pessoa no número cadastrado — nunca direto para quem pediu.
-- **Posse da reserva (`posse-reserva.ts`):** `/api/bookings` emite um comprovante
-  HMAC em cookie httpOnly e `/confirm` o exige — id de reserva na mão não
-  confirma mais reserva alheia. Não é sessão (não identifica ninguém, não vale
-  para outra reserva); emitir é best-effort, porque a reserva já está no banco
-  quando o comprovante é assinado. O teto de reservas por IP (`authlog.ts`,
+- **Posse da reserva (`posse-reserva.ts` + `posse-reserva-guarda.ts`):**
+  `/api/bookings` emite um comprovante HMAC em cookie httpOnly e **toda** rota
+  sob `/api/bookings/[id]` o exige — id de reserva na mão não abre, confirma nem
+  cobra reserva alheia. Não é sessão (não identifica ninguém, não vale para
+  outra reserva); emitir é best-effort, porque a reserva já está no banco quando
+  o comprovante é assinado.
+  ⚠️ **Rota nova sob `[id]` nasce pública — a guarda é manual.** Importe
+  `temPosseDaReserva` de `posse-reserva-guarda.ts` e chame-a **antes** de
+  qualquer consulta (senão o 403 denuncia se a reserva existe). O módulo puro
+  guarda as decisões (`verificarPosse`, `sessaoEDona`, que recusa sessão
+  provisória); a guarda faz o I/O. `tests/posse-sinal.test.ts` varre os handlers
+  e falha nomeando o que ficou sem guarda. O teto de reservas por IP (`authlog.ts`,
   `RESERVA_IP_MAX`) fecha o que o teto por telefone não alcança — quem troca o
   telefone a cada POST — e reusa o `auth_log` (a coluna `event` é String: evento
   novo não pede migration).

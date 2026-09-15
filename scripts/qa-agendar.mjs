@@ -207,9 +207,15 @@ const rE = await ctxEstranho.request.post(
 );
 ok(rE.status() === 403, `estranho recebe 403 (recebeu ${rE.status()})`);
 ok((await rE.json()).code === "sem_posse", "código sem_posse");
-const est = await (
-  await ctxEstranho.request.get(`${BASE}/api/bookings/${idB}`)
-).json();
+// A inspeção vai pela DONA: `GET /api/bookings/:id` também passou a exigir
+// posse, então o estranho não enxerga mais nem o status — e é isso que a
+// asserção seguinte cobra dele.
+const rEstranhoLe = await ctxEstranho.request.get(`${BASE}/api/bookings/${idB}`);
+ok(
+  rEstranhoLe.status() === 403,
+  `estranho nem lê o status (recebeu ${rEstranhoLe.status()})`,
+);
+const est = await (await ctxB.request.get(`${BASE}/api/bookings/${idB}`)).json();
 ok(est.status === "pending", `a reserva continua pendente (${est.status})`);
 const rD = await ctxB.request.post(`${BASE}/api/bookings/${idB}/confirm`);
 ok(

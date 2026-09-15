@@ -1,10 +1,11 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { confirmBooking } from "@/lib/booking-service";
-import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
 import { opcoesCookie } from "@/lib/auth-cookies";
-import { nomeCookiePosse, verificarPosse } from "@/lib/posse-reserva";
+import { nomeCookiePosse } from "@/lib/posse-reserva";
+import {
+  CODIGO_SEM_POSSE,
+  temPosseDaReserva,
+} from "@/lib/posse-reserva-guarda";
 
 export const dynamic = "force-dynamic";
 
@@ -15,51 +16,17 @@ const STATUS_BY_CODE: Record<string, number> = {
   requires_deposit: 402,
 };
 
-/**
- * Quem pode confirmar esta reserva: quem a criou (comprovante de posse emitido
- * na criação) ou a cliente logada no Clube que é dona dela.
- *
- * A segunda porta existe porque o comprovante mora num navegador só: quem marca
- * pelo portal logado e confirma de outro aparelho — ou depois de uma limpeza de
- * cookies — não pode ficar de fora do próprio agendamento.
- */
-async function podeConfirmar(id: string): Promise<boolean> {
-  try {
-    if (verificarPosse(cookies().get(nomeCookiePosse(id))?.value, id))
-      return true;
-  } catch (e) {
-    // `verificarPosse` não lança por entrada ruim — só por segredo ausente, que
-    // é erro de configuração. Vira "não é dono" (403, com caminho de saída) em
-    // vez de 500 em cima de uma reserva que está de pé.
-    console.error("posse: não consegui conferir o comprovante", id, e);
-  }
-
-  const sessao = await getClienteSession();
-  if (!sessao) return false;
-  // Sessão provisória é 1º acesso: a senha ainda é o próprio telefone, que
-  // qualquer pessoa que conheça o número sabe. Todo o resto da área da cliente
-  // já recusa esse estado e manda trocar a senha antes; abrir exceção logo na
-  // porta que existe para PROVAR posse seria apoiá-la no elo mais fraco.
-  if (sessao.prov) return false;
-  // `id` vem da URL: um valor que não é UUID faz o Prisma recusar a consulta, e
-  // recusa é a resposta certa aqui de qualquer jeito.
-  const reserva = await prisma.booking
-    .findUnique({ where: { id }, select: { customerId: true } })
-    .catch(() => null);
-  return reserva?.customerId === sessao.customerId;
-}
-
 // POST /api/bookings/:id/confirm  → pending → confirmed (valida posse + hold + sinal)
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
-  if (!(await podeConfirmar(params.id))) {
+  if (!(await temPosseDaReserva(params.id))) {
     return NextResponse.json(
       {
         error:
           "Não consegui confirmar por aqui. Abra o agendamento no mesmo aparelho em que você marcou, ou chame a Mi no WhatsApp 💛",
-        code: "sem_posse",
+        code: CODIGO_SEM_POSSE,
       },
       { status: 403 },
     );

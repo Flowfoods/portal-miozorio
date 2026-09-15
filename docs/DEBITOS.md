@@ -187,19 +187,43 @@
 
 ## Ainda abertos
 
-- **`POST /api/bookings/[id]/sinal` não checa dono** — a mesma classe de IDOR
-  que o comprovante de posse fechou no `/confirm`, na rota vizinha. Verificado,
-  **não consertado**.
+- ~~**`POST /api/bookings/[id]/sinal` não checa dono**~~ — **resolvido em
+  15/09/2026**, antes de a decisão do gateway acordar o buraco, como a própria
+  dívida pedia. Sem migration e sem env nova.
 
-  Hoje está adormecido: sem gateway (R22) o POST devolve 501 antes de tocar em
-  qualquer coisa. O `GET` já responde `{pago, confirmado}` para qualquer id de
-  reserva, o que vaza pouco — mas vaza.
+  A guarda saiu de dentro do `/confirm` (onde era uma função local chamada
+  `podeConfirmar`) para `src/lib/posse-reserva-guarda.ts`, e as **três** rotas
+  públicas sob `/api/bookings/[id]` passaram a importá-la. A decisão da segunda
+  porta virou `sessaoEDona`, pura, em `posse-reserva.ts` — separada porque é ela
+  que precisa de teste e é ela que não pode divergir de uma rota para a outra.
 
-  ⚠️ **Ligar o PIX (item 6 do Anexo A) acorda o buraco**: com gateway ativo,
-  quem tiver um UUID de reserva gera cobrança PIX na reserva de outra pessoa e
-  sobrescreve `depositProvider`/`depositPaymentId` dela. O conserto é o mesmo
-  `podeConfirmar` do `/confirm` — não foi feito aqui para não inchar um PR que
-  já estava pronto, e porque a rota está inerte enquanto o gateway estiver
-  desligado. **Fazer junto com a decisão do gateway, não depois.**
+  Além do `POST` que a dívida nomeava, entraram os dois GETs:
+
+  - **`GET .../sinal`** — a dívida já o registrava como "vaza pouco, mas vaza".
+    Ele é o único lado que **nunca esteve adormecido**: não tem a guarda de
+    gateway que devolve 501 no POST, então respondia `{pago, confirmado}` de
+    qualquer reserva, e o 404 contra o 200 dizia de graça se ela existia.
+  - **`GET /api/bookings/[id]`** — não estava registrado em lugar nenhum.
+    Devolve `status`, `startsAt` e `endsAt`, ou seja, **o horário marcado de
+    outra pessoa** a quem tivesse o UUID. Nenhuma tela a consome hoje (o wizard
+    faz poll pelo `/sinal`), e é por isso mesmo que ela entrou: rota pública
+    esquecida é a que volta a ser usada sem ninguém lembrar que nunca checou
+    dono.
+
+  Ordem que importa e está travada por comentário nas três: no POST do `/sinal`
+  o `gatewayAtivo()` vem **antes** da posse, para que um portal sem PIX continue
+  respondendo 501 igual para todo mundo sem tocar no banco; a posse vem **antes**
+  do `findUnique`, para o 403 não depender de a reserva existir.
+
+  17 testes novos (`tests/posse-sinal.test.ts`), entre eles uma varredura que
+  exige a guarda no corpo de **cada handler** exportado sob `[id]` — a versão
+  frouxa dela (uma chamada por arquivo) passaria com o `GET` do `/sinal` aberto
+  e o `POST` fechado, que é exatamente a forma como este buraco existiu.
+  Conferido por mutação: cada conserto foi quebrado e o teste caiu.
+
+  ⚠️ **Não auditado:** se alguma cobrança PIX já foi criada por terceiro, não dá
+  para saber — `depositPaymentId` não guarda quem pediu. Com o gateway desligado
+  desde sempre (R22), o POST nunca passou do 501, então a resposta prática é
+  "não houve". Os dois GETs não deixam rastro em `auth_log`.
 
 - As quatro dívidas registradas em 15/08/2026 estão todas fechadas.

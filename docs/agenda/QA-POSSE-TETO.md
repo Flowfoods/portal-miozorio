@@ -43,6 +43,19 @@ do wizard (serviço → data → horário → dados → confirmar), em 390px.
 
 O terceiro item é o que separa "fechei o buraco" de "quebrei a rota".
 
+> ⚠️ **O roteiro mudou depois deste QA e a diferença NÃO foi executada.**
+> Em 15/09/2026 a posse passou a valer também nos dois GETs (`/sinal` e
+> `/api/bookings/[id]` — ver `DEBITOS.md`). Com isso, o `scripts/qa-agendar.mjs`
+> deixou de ler o status pelo navegador do estranho (que agora toma 403) e
+> passou a lê-lo pelo da dona, com uma asserção nova cobrando esse 403.
+>
+> As três linhas acima seguem valendo — são o que **rodou** em 14/09 e a
+> mudança não as toca. Mas a asserção nova só tem ✅ quando alguém rodar o
+> script de novo contra banco e browser reais: **a sessão que a escreveu não
+> tinha nenhum dos dois.** O conserto em si está coberto por
+> `tests/posse-sinal.test.ts` (17 testes, validados por mutação), que é
+> verificação de outra natureza — não substitui este QA.
+
 ## C) Teto de reservas por IP
 
 - ✅ 10 criações do mesmo IP passam; a **11ª toma 429**

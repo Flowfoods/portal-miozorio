@@ -73,6 +73,35 @@ export function assinarPosse(bookingId: string, validade: Date): string {
 }
 
 /**
+ * A segunda porta: a cliente logada no Clube que é dona da reserva.
+ *
+ * Existe porque o comprovante mora num navegador só — quem marca pelo portal
+ * logado e volta de outro aparelho, ou depois de uma limpeza de cookies, não
+ * pode ficar de fora do próprio agendamento.
+ *
+ * Pura de propósito. Quem vai ao banco buscar o dono é a guarda de rota, e só
+ * depois de o comprovante falhar; aqui mora a DECISÃO, que é o que precisa de
+ * teste e o que não pode divergir entre uma rota e outra.
+ */
+export function sessaoEDona(
+  sessao: { customerId: string; prov: boolean } | null | undefined,
+  donoDaReserva: string | null | undefined,
+): boolean {
+  if (!sessao) return false;
+  // Sessão provisória é 1º acesso: a senha ainda é o próprio telefone, que
+  // qualquer pessoa que conheça o número sabe. Todo o resto da área da cliente
+  // já recusa esse estado e manda trocar a senha antes; apoiar no elo mais
+  // fraco justamente a porta que existe para PROVAR posse seria o pior lugar
+  // do portal para abrir exceção.
+  if (sessao.prov) return false;
+  // Reserva que não existe chega aqui como dono nulo. Sem esta linha, uma
+  // reserva sumida daria posse a qualquer pessoa logada no dia em que o
+  // `select` passasse a devolver nulo em vez de a consulta não achar nada.
+  if (!donoDaReserva) return false;
+  return donoDaReserva === sessao.customerId;
+}
+
+/**
  * Confere o comprovante contra ESTA reserva. Nunca lança: entrada lixo, cookie
  * truncado ou assinatura adulterada são todos `false`, porque a resposta certa
  * para qualquer um deles é a mesma — não é dono.
