@@ -25,8 +25,19 @@ export function caminhoSeguro(
   if (!v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\")) {
     return padrao;
   }
-  if (v.includes("://") || /[\r\n]/.test(v)) return padrao;
-  const caminho = v.split("?")[0] ?? v;
+  if (v.includes("://")) return padrao;
+  // Caractere de controle em qualquer posição (TAB, CR, LF…): o parser de URL
+  // do navegador os REMOVE antes de interpretar — "/\t/golpe.com" vira
+  // "//golpe.com", e a checagem de "//" acima nunca via isso. CR/LF também
+  // seria injeção de header.
+  for (const ch of v) {
+    const c = ch.charCodeAt(0);
+    if (c < 0x20 || c === 0x7f) return padrao;
+  }
+  // Compara sem query, sem fragmento e sem barra final: "/admin/login/" e
+  // "/admin/login#x" são a mesma tela de login — mandar a Mi para lá depois
+  // de entrar a deixava no formulário de novo, já logada.
+  const caminho = (v.split(/[?#]/)[0] ?? v).replace(/\/+$/, "") || "/";
   if (PROIBIDOS.some((p) => caminho === p)) return padrao;
   return v;
 }
