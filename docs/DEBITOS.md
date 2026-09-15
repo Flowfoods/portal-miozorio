@@ -86,6 +86,22 @@
 
 ## Ainda abertos
 
+- **Revogação de sessão do painel em navegação interna** (achado da revisão
+  adversarial de 15/09/2026). Trocar a senha sobe `tokenVersion`, mas só o
+  carregamento completo (e as 7 páginas com `requireAdmin`) conferem isso no
+  banco: o middleware roda no Edge e só valida a assinatura do JWT, e o
+  `admin/layout.tsx` não roda de novo em `<Link>` — nem um `template.tsx`
+  rodaria (é prop reaproveitada pelo roteador do cliente). Cenário: celular da
+  Mi com o painel aberto, ela troca a senha no notebook; quem está com o
+  celular segue clicando pelas 27 páginas sem guarda até recarregar ou o JWT
+  vencer (7 dias). Duas saídas: **(a)** `requireAdmin()` no topo de TODAS as
+  páginas do painel — 27 arquivos, mecânico, sem risco de arquitetura;
+  **(b)** o middleware consultar uma rota interna (`/api/admin/sessao`) que
+  confere `tokenVersion` no banco, com cache curto — uma chamada local por
+  request de `/admin` e um ponto novo que, se falhar, precisa cair para o
+  comportamento de hoje. Recomendação: (a), por ser à prova de surpresa no
+  componente que, se quebrar, tranca a Mi para fora.
+
 - **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
   indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
   ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é

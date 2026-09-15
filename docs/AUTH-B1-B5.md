@@ -199,9 +199,10 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
    caía no meio do atendimento; 7 dias é o teto sugerido para acesso ao painel.
 4. **Mensagem de login da cliente** — hoje ela diz _"Não encontrei esse telefone
    por aqui"_, o que é muito mais gentil, mas confirma para quem perguntar que
-   aquele número **não** tem conta. A recuperação de senha continua 100%
-   neutra. Se a Mi preferir privacidade máxima, a mensagem volta a ser única
-   ("Telefone ou senha incorretos") — é trocar uma linha.
+   aquele número **não** tem conta. A recuperação de senha é neutra no
+   **texto** dos dois passos — ver _Limites conhecidos_ abaixo para o que
+   ainda escapa. Se a Mi preferir privacidade máxima, a mensagem volta a ser
+   única ("Telefone ou senha incorretos") — é trocar uma linha.
 5. **Primeiro acesso — ✅ DECIDIDO (13/09/2026): fica como está.** A senha
    inicial da cliente continua sendo o próprio telefone, e a tela de login
    continua dizendo isso.
@@ -221,6 +222,41 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
    `provisoria` em `loginCliente`.
 
 ---
+
+## Limites conhecidos (revisão adversarial de 15/09/2026)
+
+Uma revisão com sete lentes independentes sobre o código de auth achou 20
+pontos; 13 viraram conserto (na PR #107). Estes **não** foram corrigidos — por
+decisão ou por escopo — e ficam aqui para ninguém redescobrir:
+
+1. **Enumeração residual pela recuperação.** O texto é neutro nos dois passos,
+   mas (a) o passo 1 demora mais quando a conta existe — é o tempo de avisar a
+   Mi pela Evolution, que é síncrono; (b) com um código ativo, o contador
+   "você ainda pode tentar N vezes" confirma que existe conta. Os dois só
+   importam se a enumeração pelo login (decisão 4, aceita) um dia for
+   revertida; aí o conserto é enfileirar o aviso à Mi sem esperar a resposta e
+   tirar o contador da mensagem.
+2. **Sessão do painel derrubada "de verdade" só em carregamento completo.**
+   Trocar a senha sobe `tokenVersion`, mas o middleware só valida a assinatura
+   do JWT (roda no Edge, sem banco) e a conferência no banco vive no
+   `admin/layout.tsx` — que o App Router **não** re-renderiza em navegação
+   interna (`<Link>`). Das 34 páginas do painel, só 7 chamam `requireAdmin`.
+   Quem estiver com uma sessão aberta continua navegando entre as outras 27
+   até recarregar a página ou o JWT vencer (7 dias). `template.tsx` não
+   resolve: é uma prop que o roteador do cliente reaproveita, não roda de novo
+   no servidor. **Precisa de decisão** — as duas saídas reais estão no
+   `docs/DEBITOS.md`.
+3. **Trocar a senha logada não pede a senha atual.** Foi assim de propósito
+   (cliente leiga, fluxo curto). Consequência: aparelho destravado por um
+   minuto = senha trocada e a dona deslogada dos outros aparelhos. Se
+   incomodar, é pedir a senha atual no `SenhaForm` quando `provisoria=false`.
+4. **Hora de "vale até / venceu às" está no fuso das Configurações da Mi**,
+   sem indicação de fuso. Cliente em Manaus lê uma hora que não é a dela.
+5. **Rajada distribuída de pedidos de código.** O teto por IP (10/h) segura
+   uma origem só; N origens ainda somam N×10 mensagens/hora no WhatsApp da Mi.
+   Fechar isso exige guarda no banco (índice único parcial em
+   `password_recoveries` por pessoa com `used_at IS NULL`) — migration, fora
+   deste PR.
 
 ## Verificação (13/09/2026)
 
