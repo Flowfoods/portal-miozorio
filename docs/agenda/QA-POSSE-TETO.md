@@ -59,11 +59,11 @@ Evolution/n8n — nada saiu para ninguém, nada tocou produção.
 
 | Gate | Status |
 |---|---|
-| `npm test` | ✅ 559/559 (+33: `tests/posse-sinal.test.ts` e `tests/posse-rotas.test.ts`) |
+| `npm test` | ✅ 560/560 (+34: `tests/posse-sinal.test.ts` e `tests/posse-rotas.test.ts`) |
 | `npm run test:db` | ✅ **21/21** contra Postgres 16 real, num segundo banco |
 | Migrations do zero | ✅ as **43**, nos dois bancos |
-| `scripts/qa-agendar.mjs` | ✅ **34 asserções** (eram 26), **quatro execuções** — da segunda em diante a partir do estado zerado pelo SQL do cabeçalho, para provar que o roteiro é repetível; a terceira e a quarta contra os builds **com os consertos da revisão adversarial** (guarda sem consulta para sessão provisória, copy e poll do sinal, e depois o poll limpando o QR — ver `DEBITOS.md`) |
-| `next.log` durante o QA | ✅ 6 linhas, nenhum erro, nas quatro |
+| `scripts/qa-agendar.mjs` | ✅ **34 asserções** (eram 26), **cinco execuções** — da segunda em diante a partir do estado zerado pelo SQL do cabeçalho, para provar que o roteiro é repetível; da terceira em diante contra os builds **com os consertos das três rodadas de revisão adversarial** (ver `DEBITOS.md`) |
+| `next.log` durante o QA | ✅ 6 linhas, nenhum erro, nas cinco |
 
 Os cenários A–E rodaram idênticos aos de 14/09, com a asserção nova no B. O
 que é novo é o **F**:

@@ -199,13 +199,32 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
       .replace(/(^|[^:])\/\/.*$/gm, "$1");
   }
 
+  const METODOS = "GET|POST|PATCH|PUT|DELETE|HEAD|OPTIONS";
+
   /**
-   * Toda forma de exportar um handler COM corpo que o Next aceita. A primeira
-   * versão desta varredura só via `export async function` — `export const GET =`
-   * e `export function GET` passariam por ela sem guarda nenhuma.
+   * Toda forma de exportar um handler COM corpo que o Next aceita. Esta
+   * varredura já nasceu duas vezes curta demais: primeiro só via
+   * `export async function`; depois passou a ver `export const GET =`, mas o
+   * `=` obrigatório deixava `export const GET: Tipo =` escapar. Agora o nome
+   * do método basta — o que vem depois dele não muda o fato de ser um handler.
    */
-  const ABRE_HANDLER =
-    /export\s+(?:async\s+)?function\s+(GET|POST|PATCH|PUT|DELETE)\b|export\s+(?:const|let)\s+(GET|POST|PATCH|PUT|DELETE)\s*=/;
+  const ABRE_HANDLER = new RegExp(
+    `export\\s+(?:async\\s+)?function\\s+(${METODOS})\\b|export\\s+(?:const|let)\\s+(${METODOS})\\b`,
+  );
+
+  /**
+   * Onde a fatia de um handler TERMINA: no próximo handler ou na próxima
+   * declaração de topo (coluna 0), o que vier antes.
+   *
+   * Sem a segunda parte, um helper declarado ENTRE dois handlers caía na fatia
+   * do anterior — e a chamada da guarda DENTRO do helper fazia um handler sem
+   * guarda nenhuma passar. Reproduzido: `recusaSemPosse` movido para entre o
+   * POST e o GET do `/sinal` deixava o POST aberto com o teste verde.
+   */
+  const FIM_DA_FATIA = new RegExp(
+    `^(?:export\\s|(?:async\\s+)?function\\s|const\\s|let\\s|var\\s|class\\s|type\\s|interface\\s)`,
+    "gm",
+  );
 
   function inicioDosHandlers(src: string): { pos: number; metodo: string }[] {
     const re = new RegExp(ABRE_HANDLER.source, "g");
@@ -216,11 +235,18 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
     return achados;
   }
 
+  /** O corpo de UM handler: do seu início até o primeiro corte depois dele. */
+  function corpoDoHandler(src: string, inicio: number): string {
+    const re = new RegExp(FIM_DA_FATIA.source, "gm");
+    re.lastIndex = inicio + 1;
+    const corte = re.exec(src);
+    return src.slice(inicio, corte ? corte.index : src.length);
+  }
+
   /**
-   * Uma CHAMADA da guarda. A declaração `async function recusaSemPosse(` fica
-   * fora do corpo de qualquer handler hoje, mas se um dia alguém a mover para
-   * entre dois handlers ela seria atribuída ao anterior — o lookbehind impede
-   * que a definição conte como uso.
+   * Uma CHAMADA da guarda. O lookbehind impede que a DECLARAÇÃO
+   * `async function recusaSemPosse(` conte como uso — o corte de fatia acima
+   * já a mantém fora do corpo alheio, e isto é o cinto além do suspensório.
    */
   const CHAMA_GUARDA =
     /(?<!function\s)\b(?:temPosseDaReserva|recusaSemPosse)\s*\(/;
@@ -257,22 +283,19 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
       // com `as` (NextAuth), então ela é real; a sem `as` escapou da primeira
       // versão deste regex, que exigia o `as`. Sob [id] as duas são recusadas
       // de frente, com instrução, em vez de passar em silêncio.
-      const reexport =
-        /export\s*\{[^}]*\b(GET|POST|PATCH|PUT|DELETE)\b[^}]*\}/.exec(src);
+      const reexport = new RegExp(
+        `export\\s*\\{[^}]*\\b(?:${METODOS})\\b[^}]*\\}`,
+      ).exec(src);
       expect(
         reexport,
         `${arquivo}: "${reexport?.[0]}" — a varredura não enxerga re-export; escreva o handler como export async function`,
       ).toBeNull();
 
-      const inicios = inicioDosHandlers(src);
-      for (let i = 0; i < inicios.length; i++) {
-        const atual = inicios[i];
-        if (!atual) continue;
-        const corpo = src.slice(atual.pos, inicios[i + 1]?.pos ?? src.length);
+      for (const { pos, metodo } of inicioDosHandlers(src)) {
         olhados++;
         expect(
-          CHAMA_GUARDA.test(corpo),
-          `${arquivo}: o ${atual.metodo} não guarda o próprio corpo`,
+          CHAMA_GUARDA.test(corpoDoHandler(src, pos)),
+          `${arquivo}: o ${metodo} não guarda o próprio corpo`,
         ).toBe(true);
       }
     }

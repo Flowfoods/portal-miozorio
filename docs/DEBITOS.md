@@ -223,9 +223,9 @@
   Conferido por mutação: cada conserto foi quebrado e o teste caiu.
 
   **QA ponta a ponta executado** (`docs/agenda/QA-POSSE-TETO.md`, seção de
-  15/09): Postgres 16 real + Chromium, **34 asserções**, quatro execuções — da
-  segunda em diante a partir do estado zerado; a terceira e a quarta nos builds
-  com os consertos da revisão abaixo. O cenário **F** exercita o `GET /sinal` — estranho 403, dona
+  15/09): Postgres 16 real + Chromium, **34 asserções**, cinco execuções — da
+  segunda em diante a partir do estado zerado; da terceira em diante nos builds
+  com os consertos das revisões abaixo. O cenário **F** exercita o `GET /sinal` — estranho 403, dona
   200 — e prova que sem gateway o `POST` é 501 igual para os dois. O que
   **continua sem QA de browser** é o `POST /sinal` com gateway ligado: entra
   como cenário obrigatório do roteiro **no dia em que o PIX for ativado**.
@@ -276,6 +276,52 @@
   Os outros onze eram inconsistências de documentação (contagens, "duas"
   onde eram três, `cancel` que não existe no mapa de rotas, comentário do
   módulo que ainda dizia "duas rotas") — corrigidas neste mesmo PR.
+
+  **Terceira rodada** (lentes de UX/correção do wizard e de segurança da
+  guarda, esta com céticos: dois achados confirmados por 3 e 2 votos, o resto
+  sem voto — o limite de uso caiu de novo — e verificado por mutação). Dez
+  achados, oito consertados:
+
+  - **O `403 sem_posse` do POST `/sinal` caía no `erroPix`** e ganhava a
+    emenda "Seu horário continua guardado", enquanto o *mesmo* 403 no poll
+    virava `erroPosse` justamente porque isso pode não ser mais verdade.
+    Contradição entre dois consertos meus, na mesma tela. `gerarPix` agora lê
+    o `code`: `sem_posse` e `not_pending` vão para o `erroPosse`.
+  - **O card continuava dizendo "Você pode pagar por PIX aqui mesmo", "Seu
+    horário está guardado 💛" e "Guardo esse horário até <data>"** depois do
+    403 — com o botão de PIX já escondido. Três frases se desmentindo em
+    390px. Título, frase-guia e prazo passam a considerar o `erroPosse`.
+  - **O botão do WhatsApp virava secundário** no estado em que é a única
+    saída; e o **502 `gateway_falhou`** trazia a frase inteira que a tela
+    emenda de novo — o mesmo defeito que a rodada anterior consertou no 403,
+    na função ao lado.
+  - **A varredura tinha dois furos**, os dois reproduzidos por mutação antes
+    de consertar: `export const GET: Tipo =` não era reconhecido como handler
+    (o regex exigia `=` logo após o nome), e um helper declarado **entre** dois
+    handlers caía na fatia do anterior — a chamada da guarda dentro do helper
+    fazia um handler sem guarda nenhuma passar. A fatia agora termina na
+    próxima declaração de topo, e o nome do método basta para abrir um handler.
+  - **"a guarda não consulta o banco"** era promessa maior que o código: com
+    cookie do Clube, `getClienteSession` faz um `select` em `customer`. Não
+    vaza nada (é pelo id da própria sessão, não pelo UUID da URL), mas o texto
+    virou "não consulta **a reserva**", em `claude.md`, na guarda e no
+    cabeçalho do teste. Teste novo cobre o caminho que faltava: estranha
+    **logada** toma 403 com uma consulta, e a resposta é idêntica com e sem
+    reserva no banco.
+
+  **Verificado e NÃO consertado** (entra com a decisão do gateway, junto com
+  a idempotência acima): quando o hold vence, o cron marca
+  `cancelled_by_business`, mas o `GET /sinal` segue devolvendo
+  `{pago:false, confirmado:false}` — o poll só para 30 min depois, quando o
+  comprovante vence. Nessa janela a cliente ainda vê o QR de um PIX cuja
+  reserva já voltou para a agenda, e pode pagar por ela. É anterior a esta
+  frente (antes, o poll não parava nunca), e o conserto — devolver
+  `encerrada: status !== "pending"` e parar o poll nela — muda o contrato da
+  rota de pagamento. **Fazer antes de ligar o PIX.**
+
+  Sem teste de componente para o wizard: o repo não tem jsdom nem Testing
+  Library, e não vale trazer os dois por causa de um `<p>`. O que dá para
+  travar em rota está travado; o resto foi conferido no browser.
 
   `tests/posse-rotas.test.ts` (16) chama as **rotas de verdade**, com Prisma,
   sessão e gateway falsos, e **conta consultas**: prova que sem gateway o 501

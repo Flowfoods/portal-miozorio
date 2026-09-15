@@ -89,10 +89,12 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   `temPosseDaReserva` de `posse-reserva-guarda.ts` e chame-a **antes** de
   qualquer consulta (senão o 403 denuncia se a reserva existe). O módulo puro
   guarda as decisões (`verificarPosse`, `sessaoEDona`, que recusa sessão
-  provisória); a guarda faz o I/O e **não consulta o banco** para sessão nula
-  ou provisória. `tests/posse-sinal.test.ts` varre os handlers e falha
-  nomeando o que ficou sem guarda; `tests/posse-rotas.test.ts` chama as rotas
-  de verdade e prova a ordem (sem gateway 501 → posse 403 → só então o banco).
+  provisória); a guarda faz o I/O e **não consulta a reserva** para sessão nula
+  ou provisória (a sessão em si custa um `select` em `customer`, pelo id dela
+  mesma — não conta nada sobre a reserva). `tests/posse-sinal.test.ts` varre os
+  handlers e falha nomeando o que ficou sem guarda; `tests/posse-rotas.test.ts`
+  chama as rotas de verdade e prova a ordem (sem gateway 501 → posse 403 → só
+  então a reserva).
 - **Teto de reservas por IP** (`authlog.ts`, `RESERVA_IP_MAX`) fecha o que o
   teto por telefone não alcança — quem troca o telefone a cada POST — e reusa
   o `auth_log` (a coluna `event` é String: evento novo não pede migration).
@@ -166,13 +168,13 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
 
-- `npm test` — **559 testes**, sem banco. Roda em qualquer lugar.
+- `npm test` — **560 testes**, sem banco. Roda em qualquer lugar.
 - `npm run test:db` — **21 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 559 testes, build) + job `integracao` (postgres:16, aplica as
+(lint, typecheck, 560 testes, build) + job `integracao` (postgres:16, aplica as
 migrations de verdade e roda os 21). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.

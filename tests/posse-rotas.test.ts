@@ -5,7 +5,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
  * isolada. `posse-sinal.test.ts` prova que a guarda decide certo e que cada
  * handler a menciona; este arquivo prova o que só a rota inteira mostra: a
  * ORDEM. Sem gateway o `/sinal` responde 501 antes de olhar posse; com posse
- * negada, nenhuma rota chega ao banco; com posse, o resto acontece.
+ * negada, o 403 sai sem que a resposta dependa de a reserva existir — sem
+ * sessão ou com a provisória, sem consulta nenhuma; logada de outra conta, uma
+ * consulta, e o 403 é o mesmo com ou sem reserva.
  *
  * É a ordem que segura a promessa "403 não depende de a reserva existir".
  * Trocar duas linhas de lugar não muda nenhum status isolado e derruba a
@@ -270,6 +272,22 @@ describe("guarda — quando a 2ª porta NÃO pode ir ao banco", () => {
     H.sessao = { customerId: DONA, prov: false, tv: 1 };
     await expect(temPosseDaReserva(RESERVA)).resolves.toBe(true);
     expect(H.consultas).toBe(1);
+  });
+
+  it("estranha LOGADA: uma consulta, e o 403 é o mesmo com ou sem reserva", async () => {
+    // O único caminho de posse negada que chega ao banco. O que a ordem
+    // promete aqui não é "zero consultas" — é que a resposta não conta se a
+    // reserva existe. Por isso o teste compara os dois casos.
+    H.sessao = { customerId: ESTRANHA, prov: false, tv: 1 };
+    const comReserva = await lerReserva(req("GET"), CTX);
+    expect(comReserva.status).toBe(403);
+    expect(H.consultas).toBe(1);
+
+    H.reservas.clear();
+    H.consultas = 0;
+    const semReserva = await lerReserva(req("GET"), CTX);
+    expect(semReserva.status).toBe(403);
+    expect(await semReserva.json()).toEqual(await comReserva.json());
   });
 
   it("id que não é UUID: o Prisma lança, a guarda devolve não", async () => {

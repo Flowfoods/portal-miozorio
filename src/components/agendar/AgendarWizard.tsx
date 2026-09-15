@@ -1136,8 +1136,18 @@ function AguardandoSinalScreen({
         copiaECola?: string;
         qrCodeBase64?: string | null;
         error?: string;
+        code?: string;
       };
       if (!res.ok || !d.copiaECola) {
+        // `sem_posse` aqui é o mesmo caso do poll: o comprovante venceu (o
+        // horário guardado venceu 30 min antes) ou sumiu do navegador. Cair no
+        // `erroPix` emendaria "Seu horário continua guardado" justamente
+        // quando isso pode não ser mais verdade. `not_pending` é a reserva que
+        // já saiu de pé — mesma razão.
+        if (d.code === "sem_posse" || d.code === "not_pending") {
+          setErroPosse(d.error ?? "Não consegui gerar o PIX por aqui.");
+          return;
+        }
         setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
         return;
       }
@@ -1204,7 +1214,12 @@ function AguardandoSinalScreen({
         Reserva feita
       </p>
       <h1 className="mt-5 font-titulo text-4xl text-mi-marrom-escuro">
-        Seu horário está guardado 💛
+        {/* Com `erroPosse` não dá para afirmar que o horário segue guardado:
+            o comprovante vence 30 min depois dele. O título deixa de prometer
+            e aponta a única saída que resta. */}
+        {erroPosse
+          ? "Vamos acertar pelo WhatsApp 💛"
+          : "Seu horário está guardado 💛"}
       </h1>
       <p className="mt-4 font-corpo text-mi-texto">
         <strong>{service.name}</strong> ·{" "}
@@ -1220,14 +1235,20 @@ function AguardandoSinalScreen({
               de <strong>{formatBRL(depositCents)}</strong>
             </>
           ) : null}
-          {semGateway
-            ? ". A Mi te chama no WhatsApp para acertar — e você também pode chamar ela agora, se preferir."
-            : ". Você pode pagar por PIX aqui mesmo, ou combinar com a Mi no WhatsApp."}
+          {erroPosse
+            ? ". Chame a Mi no WhatsApp para acertar."
+            : semGateway
+              ? ". A Mi te chama no WhatsApp para acertar — e você também pode chamar ela agora, se preferir."
+              : ". Você pode pagar por PIX aqui mesmo, ou combinar com a Mi no WhatsApp."}
         </p>
-        <p className="mt-3 font-corpo text-sm text-mi-marrom-700">
-          Guardo esse horário até <strong>{prazoFmt}</strong>. Depois disso ele
-          volta para a agenda.
-        </p>
+        {/* O prazo sai de cena com `erroPosse`: ele já passou, ou está prestes
+            a passar, e mostrá-lo no presente contradiz o aviso lá embaixo. */}
+        {!erroPosse && (
+          <p className="mt-3 font-corpo text-sm text-mi-marrom-700">
+            Guardo esse horário até <strong>{prazoFmt}</strong>. Depois disso
+            ele volta para a agenda.
+          </p>
+        )}
 
         {pix && (
           <div className="mt-4 border-t border-mi-cinza pt-4">
@@ -1293,7 +1314,9 @@ function AguardandoSinalScreen({
       )}
       <Botao
         href={wa}
-        variante={pix || semGateway ? "whatsapp" : "secundario"}
+        // Com `erroPosse` o WhatsApp é a única saída — igual a `semGateway`.
+        // Sem isto ele fica com borda, indistinguível do "Voltar ao início".
+        variante={pix || semGateway || erroPosse ? "whatsapp" : "secundario"}
         className="mt-3 w-full"
       >
         Falar com a Mi no WhatsApp

@@ -145,8 +145,10 @@ export async function POST(
     // A reserva continua de pé: o WhatsApp da Mi segue como caminho.
     return NextResponse.json(
       {
-        error:
-          "Não consegui gerar o PIX agora. Seu horário continua guardado — fale com a Mi no WhatsApp.",
+        // Curta pela mesma razão do 403: a tela emenda "Seu horário continua
+        // guardado — fale com a Mi no WhatsApp" a todo erro do PIX, e a frase
+        // inteira aqui aparecia duas vezes seguidas.
+        error: "Não consegui gerar o PIX agora.",
         code: "gateway_falhou",
       },
       { status: 502 },

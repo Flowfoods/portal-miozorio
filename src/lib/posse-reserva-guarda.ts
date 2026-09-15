@@ -51,11 +51,12 @@ export async function temPosseDaReserva(id: string): Promise<boolean> {
     console.error("posse: não consegui ler a sessão do Clube", id, e);
     return false;
   }
-  // Sem sessão, ou com a provisória, a resposta já é "não" — e o banco NÃO é
-  // consultado. O 403 antes de qualquer consulta vale também nesta porta: é o
-  // que impede a rota de virar oráculo de UUID. `sessaoEDona` confere a
-  // provisória de novo, de propósito — a decisão pura tem que ficar completa
-  // sozinha, sem depender de quem a chama ter filtrado antes.
+  // Sem sessão, ou com a provisória, a resposta já é "não" — e a RESERVA não é
+  // consultada. É essa consulta que o 403 não pode depender, porque é ela que
+  // usaria o UUID da URL; a que `getClienteSession` faz acima é em `customer`,
+  // pelo id da própria sessão, e não conta nada sobre a reserva de ninguém.
+  // `sessaoEDona` confere a provisória de novo, de propósito — a decisão pura
+  // tem que ficar completa sozinha, sem depender de quem a chama ter filtrado.
   if (!sessao || sessao.prov) return false;
   // `id` vem da URL: um valor que não é UUID faz o Prisma recusar a consulta, e
   // recusa é a resposta certa aqui de qualquer jeito.
