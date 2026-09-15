@@ -13,7 +13,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const MI = process.env.MI_WHATSAPP ?? "+5521970225231";
+// `||`, não `??`: env "limpa" no Dokploy vira string vazia, e "wa.me/?text=…"
+// abre o WhatsApp sem destinatário — justamente o botão de socorro.
+const MI = process.env.MI_WHATSAPP?.trim() || "+5521970225231";
 
 export default async function RecuperarPage({
   searchParams,
