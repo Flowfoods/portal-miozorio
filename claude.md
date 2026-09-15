@@ -89,8 +89,10 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   `temPosseDaReserva` de `posse-reserva-guarda.ts` e chame-a **antes** de
   qualquer consulta (senão o 403 denuncia se a reserva existe). O módulo puro
   guarda as decisões (`verificarPosse`, `sessaoEDona`, que recusa sessão
-  provisória); a guarda faz o I/O. `tests/posse-sinal.test.ts` varre os handlers
-  e falha nomeando o que ficou sem guarda. O teto de reservas por IP (`authlog.ts`,
+  provisória); a guarda faz o I/O e **não consulta o banco** para sessão nula ou
+  provisória. `tests/posse-sinal.test.ts` varre os handlers e falha nomeando o
+  que ficou sem guarda; `tests/posse-rotas.test.ts` chama as rotas de verdade e
+  prova a ordem (sem gateway 501 → posse 403 → só então o banco). O teto de reservas por IP (`authlog.ts`,
   `RESERVA_IP_MAX`) fecha o que o teto por telefone não alcança — quem troca o
   telefone a cada POST — e reusa o `auth_log` (a coluna `event` é String: evento
   novo não pede migration).

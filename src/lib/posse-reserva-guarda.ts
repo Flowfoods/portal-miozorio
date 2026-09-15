@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getClienteSession } from "@/lib/cliente-auth";
+import { getClienteSession, type ClienteSession } from "@/lib/cliente-auth";
 import {
   nomeCookiePosse,
   sessaoEDona,
@@ -39,8 +39,23 @@ export async function temPosseDaReserva(id: string): Promise<boolean> {
     console.error("posse: não consegui conferir o comprovante", id, e);
   }
 
-  const sessao = await getClienteSession();
-  if (!sessao) return false;
+  let sessao: ClienteSession | null;
+  try {
+    sessao = await getClienteSession();
+  } catch (e) {
+    // Mesma regra do comprovante. `getClienteSession` lança quando o segredo
+    // sumiu e há cookie do Clube no navegador; sem este try, as três rotas
+    // responderiam 500 nesse estado. Configuração quebrada vira "não é dona"
+    // (403, que tem caminho de saída pela Mi), nunca 500.
+    console.error("posse: não consegui ler a sessão do Clube", id, e);
+    return false;
+  }
+  // Sem sessão, ou com a provisória, a resposta já é "não" — e o banco NÃO é
+  // consultado. O 403 antes de qualquer consulta vale também nesta porta: é o
+  // que impede a rota de virar oráculo de UUID. `sessaoEDona` confere a
+  // provisória de novo, de propósito — a decisão pura tem que ficar completa
+  // sozinha, sem depender de quem a chama ter filtrado antes.
+  if (!sessao || sessao.prov) return false;
   // `id` vem da URL: um valor que não é UUID faz o Prisma recusar a consulta, e
   // recusa é a resposta certa aqui de qualquer jeito.
   const reserva = await prisma.booking

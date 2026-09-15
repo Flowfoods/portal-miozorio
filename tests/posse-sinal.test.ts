@@ -85,7 +85,9 @@ describe("sessaoEDona — a segunda porta, decidida sozinha", () => {
   });
 
   it("quem está logada mas não é dona não entra", () => {
-    expect(sessaoEDona({ customerId: ESTRANHA, prov: false }, DONA)).toBe(false);
+    expect(sessaoEDona({ customerId: ESTRANHA, prov: false }, DONA)).toBe(
+      false,
+    );
   });
 
   it("sem sessão não entra", () => {
@@ -190,6 +192,39 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
     });
   }
 
+  /** Tira `/* *\/` e `// …` (poupa o `//` de URLs, que vem depois de `:`). */
+  function semComentarios(s: string): string {
+    return s
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  }
+
+  /**
+   * Toda forma de exportar um handler COM corpo que o Next aceita. A primeira
+   * versão desta varredura só via `export async function` — `export const GET =`
+   * e `export function GET` passariam por ela sem guarda nenhuma.
+   */
+  const ABRE_HANDLER =
+    /export\s+(?:async\s+)?function\s+(GET|POST|PATCH|PUT|DELETE)\b|export\s+(?:const|let)\s+(GET|POST|PATCH|PUT|DELETE)\s*=/;
+
+  function inicioDosHandlers(src: string): { pos: number; metodo: string }[] {
+    const re = new RegExp(ABRE_HANDLER.source, "g");
+    const achados: { pos: number; metodo: string }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null)
+      achados.push({ pos: m.index, metodo: m[1] ?? m[2] ?? "?" });
+    return achados;
+  }
+
+  /**
+   * Uma CHAMADA da guarda. A declaração `async function recusaSemPosse(` fica
+   * fora do corpo de qualquer handler hoje, mas se um dia alguém a mover para
+   * entre dois handlers ela seria atribuída ao anterior — o lookbehind impede
+   * que a definição conte como uso.
+   */
+  const CHAMA_GUARDA =
+    /(?<!function\s)\b(?:temPosseDaReserva|recusaSemPosse)\s*\(/;
+
   it("toda rota sob /api/bookings/[id] exige posse", () => {
     const achadas = rotas(RAIZ);
     // Se este número cair, alguém apagou uma rota; se subir, alguém criou uma
@@ -212,20 +247,27 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
     let olhados = 0;
 
     for (const arquivo of rotas(RAIZ)) {
-      const src = readFileSync(arquivo, "utf8");
-      const abre = /export async function (GET|POST|PATCH|PUT|DELETE)\b/g;
-      const inicios: { pos: number; metodo: string }[] = [];
-      let m: RegExpExecArray | null;
-      while ((m = abre.exec(src)) !== null)
-        inicios.push({ pos: m.index, metodo: m[1] ?? "?" });
+      // Comentário citando a guarda não é guarda: a varredura olha só código.
+      const src = semComentarios(readFileSync(arquivo, "utf8"));
 
+      // `export { h as GET }` não tem corpo para fatiar. O repo usa essa forma
+      // (NextAuth), então ela é real — sob [id] é recusada de frente, com
+      // instrução, em vez de escapar da varredura em silêncio.
+      const reexport =
+        /export\s*\{[^}]*\bas\s+(GET|POST|PATCH|PUT|DELETE)\b/.exec(src);
+      expect(
+        reexport,
+        `${arquivo}: "${reexport?.[0]}" — a varredura não enxerga re-export; escreva o handler como export async function`,
+      ).toBeNull();
+
+      const inicios = inicioDosHandlers(src);
       for (let i = 0; i < inicios.length; i++) {
         const atual = inicios[i];
         if (!atual) continue;
         const corpo = src.slice(atual.pos, inicios[i + 1]?.pos ?? src.length);
         olhados++;
         expect(
-          /temPosseDaReserva\(|recusaSemPosse\(/.test(corpo),
+          CHAMA_GUARDA.test(corpo),
           `${arquivo}: o ${atual.metodo} não guarda o próprio corpo`,
         ).toBe(true);
       }

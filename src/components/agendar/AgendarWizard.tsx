@@ -1156,6 +1156,17 @@ function AguardandoSinalScreen({
     const t = setInterval(async () => {
       try {
         const r = await fetch(`/api/bookings/${bookingId}/sinal`);
+        if (r.status === 403) {
+          // O comprovante de posse morreu (o horário guardado venceu há mais
+          // de 30 min) ou sumiu do navegador. Seguir perguntando seria manter
+          // o "esta tela confirma sozinha" acima como promessa para sempre.
+          clearInterval(t);
+          const d = (await r.json().catch(() => ({}))) as { error?: string };
+          setErroPix(
+            d.error ?? "Não consegui acompanhar esse pagamento por aqui.",
+          );
+          return;
+        }
         if (!r.ok) return;
         const d = (await r.json()) as { pago?: boolean; confirmado?: boolean };
         if (d.pago || d.confirmado) {

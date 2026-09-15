@@ -53,9 +53,13 @@ export async function POST(
 
   // Antes do `findUnique`: o 403 não pode depender de a reserva existir, senão
   // a rota vira oráculo de UUID.
+  //
+  // A frase é curta de propósito: a tela do sinal (`AgendarWizard`) emenda
+  // "Seu horário continua guardado — fale com a Mi no WhatsApp" em todo erro
+  // do PIX. Repetir o convite aqui deixava dois CTAs na mesma linha.
   const semPosse = await recusaSemPosse(
     params.id,
-    "Não consegui gerar o PIX por aqui. Abra o agendamento no mesmo aparelho em que você marcou, ou chame a Mi no WhatsApp 💛",
+    "Não consegui gerar o PIX por aqui.",
   );
   if (semPosse) return semPosse;
 
@@ -74,16 +78,25 @@ export async function POST(
   });
 
   if (!booking) {
-    return NextResponse.json({ error: "Reserva não encontrada." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Reserva não encontrada." },
+      { status: 404 },
+    );
   }
   if (booking.status !== "pending") {
     return NextResponse.json(
-      { error: "Essa reserva não está mais aguardando sinal.", code: "not_pending" },
+      {
+        error: "Essa reserva não está mais aguardando sinal.",
+        code: "not_pending",
+      },
       { status: 409 },
     );
   }
   if (booking.depositPaidAt) {
-    return NextResponse.json({ error: "Sinal já recebido.", code: "ja_pago" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Sinal já recebido.", code: "ja_pago" },
+      { status: 409 },
+    );
   }
   if (!booking.depositCents || booking.depositCents <= 0) {
     return NextResponse.json(
@@ -168,7 +181,10 @@ export async function GET(
     select: { status: true, depositPaidAt: true },
   });
   if (!b) {
-    return NextResponse.json({ error: "Reserva não encontrada." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Reserva não encontrada." },
+      { status: 404 },
+    );
   }
   return NextResponse.json({
     pago: b.depositPaidAt != null,

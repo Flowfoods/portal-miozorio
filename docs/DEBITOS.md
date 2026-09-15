@@ -228,6 +228,53 @@
   **continua sem QA de browser** é o `POST /sinal` com gateway ligado: entra
   como cenário obrigatório do roteiro **no dia em que o PIX for ativado**.
 
+  **Revisão adversarial do diff (15/09, à tarde).** Cinco lentes independentes
+  leram o commit; quatro chegaram ao fim — a de documentação e **todos os
+  céticos** caíram no limite de uso da sessão. Logo, o que segue foi
+  **verificado por leitura de código, não por votação**. Quatro achados
+  viraram conserto no mesmo PR:
+
+  - **A 2ª porta consultava o banco antes de recusar a sessão provisória.** O
+    resultado era o mesmo do `podeConfirmar` antigo, mas o I/O não — e a
+    promessa "403 antes de qualquer consulta" só valia para o caminho anônimo.
+    A guarda agora recusa sessão nula ou provisória **sem** consultar; e
+    `getClienteSession` que lança (segredo ausente com cookie do Clube no
+    navegador) vira 403, não 500 — antes, as três rotas responderiam 500 nesse
+    estado.
+  - **A copy do 403 do `POST /sinal` duplicava o CTA.** O wizard já emenda
+    "Seu horário continua guardado — fale com a Mi no WhatsApp" a todo erro do
+    PIX, e "abra no mesmo aparelho em que você marcou" era conselho impossível
+    de seguir naquela tela. Ficou "Não consegui gerar o PIX por aqui."
+  - **O poll do `GET /sinal` engolia o 403 como rede instável** (`if (!r.ok)
+    return`) e deixava "esta tela confirma sozinha" como promessa para sempre.
+    Agora para no 403 e mostra a mensagem.
+  - **A varredura de cobertura só enxergava `export async function`.**
+    `export const GET =` e `export function GET` passariam sem guarda;
+    `export { h as GET }` — forma que o NextAuth do próprio repo usa — idem.
+    Reconhece as duas primeiras e recusa a terceira sob `[id]` com instrução.
+    Comentário citando a guarda deixou de contar como guarda.
+
+  `tests/posse-rotas.test.ts` (16) chama as **rotas de verdade**, com Prisma,
+  sessão e gateway falsos, e **conta consultas**: prova que sem gateway o 501
+  vem antes da posse, que nas três rotas o 403 vem antes do `findUnique`, e
+  que sessão provisória não toca o banco. Sete mutações, sete quedas no teste
+  certo — inclusive a que troca o handler para `export const GET = async` e
+  confirma que a varredura o reconhece.
+
+  **Lido, pré-existente e fora deste diff** — anotado, não corrigido:
+
+  - `POST /sinal` seleciona `depositPaymentId` e nunca o reaproveita: a
+    idempotência que o comentário da rota promete vive só no
+    `X-Idempotency-Key` do Mercado Pago (`mercadopago.ts:67`). Com gateway
+    ativo, a dona pode disparar o POST repetidas vezes. **Conferir junto com o
+    item 6 do Anexo A, antes de ligar o PIX.**
+  - Sessão provisória → senha própria é self-service sem prova do telefone (o
+    #106/#108 já registram, 5.2): quem conhece o número toma a conta e, com
+    ela, a 2ª porta. A posse não piora nem melhora isso.
+  - `POST /api/bookings` liga a reserva ao cadastro que já tem aquele telefone
+    e entrega o comprovante a quem fez o POST. É o desenho do agendamento
+    público sem verificação de telefone — anterior à posse e independente dela.
+
   ⚠️ **Não auditado:** se alguma cobrança PIX já foi criada por terceiro, não dá
   para saber — `depositPaymentId` não guarda quem pediu. Com o gateway desligado
   desde sempre (R22), o POST nunca passou do 501, então a resposta prática é
