@@ -60,11 +60,12 @@
 
   O **QA logado ponta a ponta** que a dívida pedia **foi executado** em
   14/09/2026 contra um PostgreSQL 16 de verdade, num Chromium real em 390px:
-  21 asserções, todas verdes, incluindo o teste que separa "fechei o buraco" de
-  "quebrei a rota" — a dona confirma normal, e a cliente logada **não** confirma
-  reserva alheia. Evidência e como repetir: `docs/agenda/QA-POSSE-TETO.md`,
-  roteiro em `scripts/qa-agendar.mjs`. Os 21 testes de integração também
-  rodaram, com as 10 migrations aplicadas do zero.
+  **26 asserções**, todas verdes, incluindo o teste que separa "fechei o buraco"
+  de "quebrei a rota" — a dona confirma normal, e a cliente logada **não**
+  confirma reserva alheia. Evidência e como repetir:
+  `docs/agenda/QA-POSSE-TETO.md`, roteiro em `scripts/qa-agendar.mjs`. Os 21
+  testes de integração também rodaram, com as **43** migrations aplicadas do
+  zero.
 
 - ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
   14/09/2026** (`RESERVA_IP_MAX`/`throttleDeReservaPorIp` em `authlog.ts`).
@@ -201,5 +202,12 @@
   `podeConfirmar` do `/confirm` — não foi feito aqui para não inchar um PR que
   já estava pronto, e porque a rota está inerte enquanto o gateway estiver
   desligado. **Fazer junto com a decisão do gateway, não depois.**
+
+- **13 pistas não verificadas** de uma revisão de correção de 14/09/2026 estão em
+  `docs/REVISAO-2026-09-14-ACHADOS.md`. Não são dívidas ainda: são alegações que
+  eu **não** reproduzi, e o documento diz isso em cima. As duas que eu verifiquei
+  saíram de lá — uma consertada, outra é o item do `/sinal` acima. As de maior
+  aposta, se confirmadas: sinal pago perdendo o horário em silêncio, e o rate
+  limit de login chaveado só nos 4 últimos dígitos do telefone.
 
 - As quatro dívidas registradas em 15/08/2026 estão todas fechadas.
