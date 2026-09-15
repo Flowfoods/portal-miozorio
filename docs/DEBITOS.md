@@ -108,6 +108,18 @@
   cache do roteador do cliente pode reaproveitar por até 30 s uma página
   aberta logo antes da troca (`staleTimes` padrão do Next 14.2).
 
+  **A verificação desse conserto achou o mesmo buraco em duas rotas que a
+  guarda de página não cobre**, e as duas vinham de antes desta frente: o
+  export CSV das listas do CRM (`/admin/crm/listas/csv`) conferia `!session`,
+  e o `durationMin` de `/api/availability` conferia `admin`. A sessão revogada
+  **não é `null`** — o callback `session` do NextAuth devolve
+  `{ ...session, user: undefined }`, objeto verdadeiro —, então as duas
+  passavam: o CSV com nome e WhatsApp da base inteira baixava depois de a Mi
+  achar que tinha derrubado o acesso. As irmãs (`media`, `financeiro/anexo`)
+  sempre conferiram `session?.user?.email`. Além do teste de unidade da rota,
+  `tests/auth-painel.test.ts` varre o `src` e falha se alguém voltar a testar
+  a sessão de admin pela variável crua (`!s`, `s ? …`, `if (s)`).
+
 - **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
   indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
   ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é

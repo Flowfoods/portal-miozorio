@@ -143,3 +143,66 @@ describe("toda página do painel chama a guarda (estático)", () => {
     }
   });
 });
+
+/**
+ * A sessão REVOGADA não é `null`. O callback `session` do NextAuth devolve
+ * `{ ...session, user: undefined }` quando o `tokenVersion` não bate ou a
+ * conta foi desativada — objeto VERDADEIRO. Então testar a variável crua
+ * (`!s`, `s ? … : …`, `if (s)`) deixa a sessão derrubada passar.
+ *
+ * Mordeu duas vezes: o CSV das listas do CRM (nome + WhatsApp da base
+ * inteira) e o `durationMin` de `/api/availability`. Este teste varre o
+ * `src` inteiro para não morder uma terceira.
+ */
+describe("ninguém testa a sessão do admin pela variável crua", () => {
+  const SRC = path.join(process.cwd(), "src");
+  const arquivos: string[] = [];
+  walk(SRC, (f) => {
+    if (/\.tsx?$/.test(f)) arquivos.push(f);
+  });
+
+  it("varreu o src", () => {
+    expect(arquivos.length).toBeGreaterThan(100);
+  });
+
+  it("todo uso de getAdminSession() confere `.user`", () => {
+    const suspeitos: string[] = [];
+    for (const f of arquivos) {
+      const linhas = readFileSync(f, "utf8").split("\n");
+      linhas.forEach((linha, i) => {
+        const m = /(?:const|let)\s+(\w+)\s*=\s*await\s+getAdminSession\(/.exec(
+          linha,
+        );
+        if (!m) return;
+        const nome = m[1]!;
+        // Só a vizinhança da atribuição: é onde uma guarda estaria. A janela
+        // termina onde o nome é redeclarado — senão um `s` de OUTRA sessão
+        // logo abaixo (o `passkeys.ts` tem os dois) entraria na conta.
+        const seguintes = linhas.slice(i + 1, i + 13);
+        const redeclara = seguintes.findIndex((l) =>
+          new RegExp(`(?:const|let|var)\\s+${nome}\\s*=`).test(l),
+        );
+        const janela = (
+          redeclara === -1 ? seguintes : seguintes.slice(0, redeclara)
+        ).join("\n");
+        const cru = [
+          // !sessao — negação da variável crua (permite !sessao?.user e !sessao.user)
+          new RegExp(`![\\s]*${nome}(?![?.\\w])`),
+          // sessao ? … : … — ternário na variável crua (permite sessao?.x)
+          new RegExp(`\\b${nome}\\s+\\?[^.]`),
+          // if (sessao)
+          new RegExp(`if\\s*\\(\\s*${nome}\\s*\\)`),
+        ].find((re) => re.test(janela));
+        if (cru) {
+          suspeitos.push(
+            `${path.relative(SRC, f)}:${i + 1} → ${nome} (${cru.source})`,
+          );
+        }
+      });
+    }
+    expect(
+      suspeitos,
+      `Sessão de admin testada pela variável crua — a revogada passa:\n${suspeitos.join("\n")}`,
+    ).toEqual([]);
+  });
+});

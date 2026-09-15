@@ -19,8 +19,12 @@ export async function GET(req: NextRequest) {
   // `durationMin` existe para o encaixe multi-serviço do painel. Vindo de fora,
   // permitia pedir a agenda com duração menor que a real e receber horários que
   // estouram o fim do expediente. Só a Mi (sessão de admin) pode sobrescrever.
+  //
+  // `admin?.user?.email`, nunca `admin`: a sessão revogada (senha trocada em
+  // outro aparelho, conta desativada) não é `null` — o callback `session`
+  // devolve `{ ...session, user: undefined }`, que é objeto verdadeiro.
   const admin = await getAdminSession();
-  const duracao = admin ? parsed.data.durationMin : undefined;
+  const duracao = admin?.user?.email ? parsed.data.durationMin : undefined;
 
   const slots = await getAvailability(
     parsed.data.serviceId,
