@@ -13,10 +13,11 @@ import {
  * `posse-reserva.ts` é puro (só `node:crypto`) e guarda as DECISÕES. Este
  * módulo é o lado de fora: lê cookie, sessão e banco, na ordem que importa.
  * Ficam separados para que o teste da decisão não precise de Prisma e para que
- * `/confirm` e `/sinal` não possam divergir — as duas importam daqui.
+ * as três rotas sob `[id]` — `/confirm`, `/sinal` e o `GET` da própria reserva —
+ * não possam divergir: todas importam daqui.
  *
- * O `code: "sem_posse"` é o mesmo nas duas rotas de propósito: é a mesma recusa,
- * e a tela pode tratá-la num lugar só.
+ * O `code: "sem_posse"` é o mesmo nas três de propósito: é a mesma recusa, e a
+ * tela pode tratá-la num lugar só.
  */
 export const CODIGO_SEM_POSSE = "sem_posse";
 

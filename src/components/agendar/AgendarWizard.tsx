@@ -1115,6 +1115,10 @@ function AguardandoSinalScreen({
   const [gerando, setGerando] = useState(false);
   const [semGateway, setSemGateway] = useState(false);
   const [erroPix, setErroPix] = useState<string | null>(null);
+  // Separado do `erroPix` de propósito: aquele ganha a emenda "seu horário
+  // continua guardado", e este aparece justamente quando isso pode não ser
+  // mais verdade (o comprovante de posse vence 30 min depois do horário).
+  const [erroPosse, setErroPosse] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
 
   async function gerarPix() {
@@ -1159,10 +1163,13 @@ function AguardandoSinalScreen({
         if (r.status === 403) {
           // O comprovante de posse morreu (o horário guardado venceu há mais
           // de 30 min) ou sumiu do navegador. Seguir perguntando seria manter
-          // o "esta tela confirma sozinha" acima como promessa para sempre.
+          // o "esta tela confirma sozinha" como promessa para sempre — e o QR
+          // de um PIX que venceu junto com o horário. Some tudo, fica o aviso.
           clearInterval(t);
           const d = (await r.json().catch(() => ({}))) as { error?: string };
-          setErroPix(
+          setPix(null);
+          setCopiado(false);
+          setErroPosse(
             d.error ?? "Não consegui acompanhar esse pagamento por aqui.",
           );
           return;
@@ -1267,9 +1274,19 @@ function AguardandoSinalScreen({
             {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
           </p>
         )}
+
+        {erroPosse && (
+          <p
+            role="alert"
+            className="mt-3 font-corpo text-sm text-mi-erro-tinta"
+          >
+            {erroPosse} Fale com a Mi no WhatsApp para ver se o horário ainda
+            dá.
+          </p>
+        )}
       </div>
 
-      {!pix && !semGateway && (
+      {!pix && !semGateway && !erroPosse && (
         <Botao onClick={gerarPix} disabled={gerando} className="mt-6 w-full">
           {gerando ? "Gerando PIX…" : "Pagar sinal por PIX"}
         </Botao>

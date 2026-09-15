@@ -7,7 +7,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// GET /api/bookings/:id  → status (polling do checkout)
+// GET /api/bookings/:id  → status da reserva (sem consumidor hoje — ver abaixo)
 //
 // Mesma posse do `/confirm` e do `/sinal`: o id não é segredo, e sem a guarda
 // esta rota contava a quem tivesse um UUID o horário marcado de outra pessoa

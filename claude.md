@@ -81,22 +81,23 @@ placeholder `<!-- APROVAR COM A MI -->`, nunca inventar preço/política/copy.
   que repassa à pessoa no número cadastrado — nunca direto para quem pediu.
 - **Posse da reserva (`posse-reserva.ts` + `posse-reserva-guarda.ts`):**
   `/api/bookings` emite um comprovante HMAC em cookie httpOnly e **toda** rota
-  sob `/api/bookings/[id]` o exige — id de reserva na mão não abre, confirma nem
-  cobra reserva alheia. Não é sessão (não identifica ninguém, não vale para
-  outra reserva); emitir é best-effort, porque a reserva já está no banco quando
-  o comprovante é assinado.
+  sob `/api/bookings/[id]` o exige — id de reserva na mão não abre, confirma
+  nem cobra reserva alheia. Não é sessão (não identifica ninguém, não vale
+  para outra reserva); emitir é best-effort, porque a reserva já está no banco
+  quando o comprovante é assinado.
   ⚠️ **Rota nova sob `[id]` nasce pública — a guarda é manual.** Importe
   `temPosseDaReserva` de `posse-reserva-guarda.ts` e chame-a **antes** de
   qualquer consulta (senão o 403 denuncia se a reserva existe). O módulo puro
   guarda as decisões (`verificarPosse`, `sessaoEDona`, que recusa sessão
-  provisória); a guarda faz o I/O e **não consulta o banco** para sessão nula ou
-  provisória. `tests/posse-sinal.test.ts` varre os handlers e falha nomeando o
-  que ficou sem guarda; `tests/posse-rotas.test.ts` chama as rotas de verdade e
-  prova a ordem (sem gateway 501 → posse 403 → só então o banco). O teto de reservas por IP (`authlog.ts`,
-  `RESERVA_IP_MAX`) fecha o que o teto por telefone não alcança — quem troca o
-  telefone a cada POST — e reusa o `auth_log` (a coluna `event` é String: evento
-  novo não pede migration).
-- `src/app/api/` — público: availability, bookings (+confirm/cancel), services, health, NextAuth
+  provisória); a guarda faz o I/O e **não consulta o banco** para sessão nula
+  ou provisória. `tests/posse-sinal.test.ts` varre os handlers e falha
+  nomeando o que ficou sem guarda; `tests/posse-rotas.test.ts` chama as rotas
+  de verdade e prova a ordem (sem gateway 501 → posse 403 → só então o banco).
+- **Teto de reservas por IP** (`authlog.ts`, `RESERVA_IP_MAX`) fecha o que o
+  teto por telefone não alcança — quem troca o telefone a cada POST — e reusa
+  o `auth_log` (a coluna `event` é String: evento novo não pede migration).
+- `src/app/api/` — público: availability, bookings (+ `[id]`, `[id]/confirm`,
+  `[id]/sinal` — todas sob posse), services, health, NextAuth
 - `src/app/admin/` — painel (server components + `actions.ts`): Agenda, Serviços (CRUD),
   Bloqueios, Clientes (strikes/perdoar), Usuárias, Configurações
 - `prisma/seed.ts` — idempotente; entrypoint roda `--if-empty` no boot; admin bootstrap
@@ -165,13 +166,13 @@ Diagnóstico: `docs/agenda/FASE1-DIAGNOSTICO.md` · verificação:
 `npm run dev | build | lint | typecheck | test | format | prisma:generate | prisma:migrate`
 (husky pre-commit roda lint+typecheck)
 
-- `npm test` — **526 testes**, sem banco. Roda em qualquer lugar.
+- `npm test` — **559 testes**, sem banco. Roda em qualquer lugar.
 - `npm run test:db` — **21 testes de integração** contra Postgres de verdade
   (`tests/integration/*.itest.ts`, exige `DATABASE_URL`). Cobrem a R2, que mora
   numa constraint e não no código: mockar o Prisma testaria o mock.
 
 **CI** (`.github/workflows/ci.yml`, todo PR e push p/ master): job `verificacao`
-(lint, typecheck, 526 testes, build) + job `integracao` (postgres:16, aplica as
+(lint, typecheck, 559 testes, build) + job `integracao` (postgres:16, aplica as
 migrations de verdade e roda os 21). O repo não tinha CI até 13/09/2026 — um
 `--no-verify` passava direto e migration com erro de SQL só aparecia no boot do
 container em produção.

@@ -62,8 +62,8 @@ Evolution/n8n — nada saiu para ninguém, nada tocou produção.
 | `npm test` | ✅ 559/559 (+33: `tests/posse-sinal.test.ts` e `tests/posse-rotas.test.ts`) |
 | `npm run test:db` | ✅ **21/21** contra Postgres 16 real, num segundo banco |
 | Migrations do zero | ✅ as **43**, nos dois bancos |
-| `scripts/qa-agendar.mjs` | ✅ **34 asserções** (eram 26), **três execuções** — a segunda a partir do estado zerado pelo SQL do cabeçalho, para provar que o roteiro é repetível; a terceira contra o build **com os consertos da revisão adversarial** (guarda sem consulta para sessão provisória, copy e poll do sinal — ver `DEBITOS.md`) |
-| `next.log` durante o QA | ✅ 6 linhas, nenhum erro, nas três |
+| `scripts/qa-agendar.mjs` | ✅ **34 asserções** (eram 26), **quatro execuções** — da segunda em diante a partir do estado zerado pelo SQL do cabeçalho, para provar que o roteiro é repetível; a terceira e a quarta contra os builds **com os consertos da revisão adversarial** (guarda sem consulta para sessão provisória, copy e poll do sinal, e depois o poll limpando o QR — ver `DEBITOS.md`) |
+| `next.log` durante o QA | ✅ 6 linhas, nenhum erro, nas quatro |
 
 Os cenários A–E rodaram idênticos aos de 14/09, com a asserção nova no B. O
 que é novo é o **F**:
@@ -169,4 +169,7 @@ node scripts/qa-agendar.mjs
   cenário B (403, reserva de pé, a Mi confirma pelo painel), mas ninguém
   exercitou a experiência real dessa cliente.
 - **Sinal/PIX.** Sem gateway configurado (R22), a reserva com sinal nem chega a
-  `/confirm` — o wizard para antes. Caminho inalterado por estas mudanças.
+  `/confirm` — o wizard para antes. Caminho inalterado pelas mudanças de
+  **14/09**; em 15/09 o `GET /sinal` sem gateway passou a ser coberto pelo
+  cenário F, e o `POST` com gateway continua fora, como a seção de 15/09
+  registra.

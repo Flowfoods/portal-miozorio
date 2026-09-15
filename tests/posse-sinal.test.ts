@@ -232,9 +232,11 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
     expect(achadas.length).toBeGreaterThanOrEqual(3);
 
     for (const arquivo of achadas) {
-      const src = readFileSync(arquivo, "utf8");
+      // Sem comentários, senão `// temPosseDaReserva` satisfaz — o crítico de
+      // completude provou isso com uma rota falsa que passou aqui.
+      const src = semComentarios(readFileSync(arquivo, "utf8"));
       expect(
-        src.includes("temPosseDaReserva"),
+        CHAMA_GUARDA.test(src),
         `${arquivo} não chama temPosseDaReserva — rota de reserva nasce pública`,
       ).toBe(true);
     }
@@ -250,11 +252,13 @@ describe("cobertura — nenhuma rota de reserva sem guarda de posse", () => {
       // Comentário citando a guarda não é guarda: a varredura olha só código.
       const src = semComentarios(readFileSync(arquivo, "utf8"));
 
-      // `export { h as GET }` não tem corpo para fatiar. O repo usa essa forma
-      // (NextAuth), então ela é real — sob [id] é recusada de frente, com
-      // instrução, em vez de escapar da varredura em silêncio.
+      // `export { h as GET }` e `export { GET }` não têm corpo para fatiar —
+      // `ABRE_HANDLER` só vê `export` colado à declaração. O repo usa a forma
+      // com `as` (NextAuth), então ela é real; a sem `as` escapou da primeira
+      // versão deste regex, que exigia o `as`. Sob [id] as duas são recusadas
+      // de frente, com instrução, em vez de passar em silêncio.
       const reexport =
-        /export\s*\{[^}]*\bas\s+(GET|POST|PATCH|PUT|DELETE)\b/.exec(src);
+        /export\s*\{[^}]*\b(GET|POST|PATCH|PUT|DELETE)\b[^}]*\}/.exec(src);
       expect(
         reexport,
         `${arquivo}: "${reexport?.[0]}" — a varredura não enxerga re-export; escreva o handler como export async function`,

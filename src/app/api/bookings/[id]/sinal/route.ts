@@ -163,8 +163,10 @@ export async function POST(
  * reserva existia. Pouco dano isolado, mas é estado de uma reserva alheia
  * respondido a quem não é dona — a mesma porta do POST, sem tranca.
  *
- * Exigir posse aqui não muda nada para a cliente: o poll só começa depois de um
- * POST que já devolveu 200, no mesmo navegador que tem o comprovante.
+ * Para a cliente muda pouco: o poll começa com o comprovante no navegador, mas
+ * ele vence (hold + 30 min, `FOLGA_POSSE_MS`). Quando isso acontece a tela
+ * toma 403 e para, dizendo o que houve — em vez de prometer "confirma sozinha"
+ * para sempre (`AgendarWizard`, poll do sinal).
  */
 export async function GET(
   _req: Request,

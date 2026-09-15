@@ -60,7 +60,7 @@
 
   O **QA logado ponta a ponta** que a dívida pedia **foi executado** em
   14/09/2026 contra um PostgreSQL 16 de verdade, num Chromium real em 390px:
-  21 asserções, todas verdes, incluindo o teste que separa "fechei o buraco" de
+  26 asserções, todas verdes, incluindo o teste que separa "fechei o buraco" de
   "quebrei a rota" — a dona confirma normal, e a cliente logada **não** confirma
   reserva alheia. Evidência e como repetir: `docs/agenda/QA-POSSE-TETO.md`,
   roteiro em `scripts/qa-agendar.mjs`. Os 21 testes de integração também
@@ -210,7 +210,8 @@
     esquecida é a que volta a ser usada sem ninguém lembrar que nunca checou
     dono.
 
-  Ordem que importa e está travada por comentário nas três: no POST do `/sinal`
+  Ordem que importa — travada por comentário no `/sinal` e por **teste** nas
+  três (`tests/posse-rotas.test.ts` conta consultas ao banco): no POST do `/sinal`
   o `gatewayAtivo()` vem **antes** da posse, para que um portal sem PIX continue
   respondendo 501 igual para todo mundo sem tocar no banco; a posse vem **antes**
   do `findUnique`, para o 403 não depender de a reserva existir.
@@ -222,17 +223,21 @@
   Conferido por mutação: cada conserto foi quebrado e o teste caiu.
 
   **QA ponta a ponta executado** (`docs/agenda/QA-POSSE-TETO.md`, seção de
-  15/09): Postgres 16 real + Chromium, **34 asserções**, duas execuções a partir
-  do estado zerado. O cenário **F** exercita o `GET /sinal` — estranho 403, dona
+  15/09): Postgres 16 real + Chromium, **34 asserções**, quatro execuções — da
+  segunda em diante a partir do estado zerado; a terceira e a quarta nos builds
+  com os consertos da revisão abaixo. O cenário **F** exercita o `GET /sinal` — estranho 403, dona
   200 — e prova que sem gateway o `POST` é 501 igual para os dois. O que
   **continua sem QA de browser** é o `POST /sinal` com gateway ligado: entra
   como cenário obrigatório do roteiro **no dia em que o PIX for ativado**.
 
-  **Revisão adversarial do diff (15/09, à tarde).** Cinco lentes independentes
-  leram o commit; quatro chegaram ao fim — a de documentação e **todos os
-  céticos** caíram no limite de uso da sessão. Logo, o que segue foi
-  **verificado por leitura de código, não por votação**. Quatro achados
-  viraram conserto no mesmo PR:
+  **Revisão adversarial do diff (15/09, à tarde).** Primeira rodada: cinco
+  lentes achadoras leram o commit; quatro chegaram ao fim, a de documentação
+  caiu no limite de uso da sessão — e com ela a etapa seguinte inteira, os
+  três céticos por achado. Segunda rodada, menor, sobre a árvore já com os
+  consertos: a lente de documentação e um crítico de completude rodaram (13
+  achados, todos tratados abaixo); os céticos foram pulados de novo, por teto.
+  Logo, **tudo o que segue foi verificado por leitura de código, não por
+  votação**. Da primeira rodada, quatro achados viraram conserto:
 
   - **A 2ª porta consultava o banco antes de recusar a sessão provisória.** O
     resultado era o mesmo do `podeConfirmar` antigo, mas o I/O não — e a
@@ -251,8 +256,26 @@
   - **A varredura de cobertura só enxergava `export async function`.**
     `export const GET =` e `export function GET` passariam sem guarda;
     `export { h as GET }` — forma que o NextAuth do próprio repo usa — idem.
-    Reconhece as duas primeiras e recusa a terceira sob `[id]` com instrução.
-    Comentário citando a guarda deixou de contar como guarda.
+    Reconhece as duas primeiras e recusa re-export sob `[id]` — com ou sem
+    `as` — com instrução. Comentário citando a guarda deixou de contar como
+    guarda, nos dois testes de cobertura.
+
+  Da segunda rodada, o crítico de completude achou dois defeitos **nos
+  consertos acima**, e os dois foram consertados:
+
+  - **O 403 no poll deixava o QR e o "esta tela confirma sozinha" na tela**, e
+    emendava "seu horário continua guardado" — justamente no caso em que o
+    comprovante venceu porque o horário venceu. Agora o QR some, o botão de
+    pagar some, e o aviso tem estado próprio, sem a emenda: "Fale com a Mi no
+    WhatsApp para ver se o horário ainda dá."
+  - **`export { GET }` sem `as` escapava da varredura**, e o primeiro teste de
+    cobertura lia o arquivo com comentários. O crítico provou com uma rota
+    falsa que passava nos dois. Corrigidos; a mesma rota falsa agora derruba
+    o teste nomeando o `GET`.
+
+  Os outros onze eram inconsistências de documentação (contagens, "duas"
+  onde eram três, `cancel` que não existe no mapa de rotas, comentário do
+  módulo que ainda dizia "duas rotas") — corrigidas neste mesmo PR.
 
   `tests/posse-rotas.test.ts` (16) chama as **rotas de verdade**, com Prisma,
   sessão e gateway falsos, e **conta consultas**: prova que sem gateway o 501
