@@ -23,7 +23,14 @@ import {
 } from "./auth-identidade";
 import { opcoesCookie } from "./auth-cookies";
 import { CLUB_MIN_SENHA, iniciarSessaoCliente } from "./cliente-auth";
-import { hashIp, maskPhone, metaFromHeaders, recordAuth } from "./authlog";
+import {
+  hashIp,
+  identTelefone,
+  metaFromHeaders,
+  recordAuth,
+  throttlePedidosPorIp,
+  throttlePorIp,
+} from "./authlog";
 
 /**
  * RECUPERAÇÃO DE SENHA — módulo ÚNICO de todos os perfis do portal (B2).
@@ -184,9 +191,11 @@ async function acharSujeito(identRaw: string): Promise<Sujeito | null> {
   };
 }
 
-/** Identificador seguro para o auth_log: telefone mascarado, e-mail inteiro. */
+/** Identificador seguro para o auth_log: telefone mascarado+HMAC, e-mail inteiro. */
 function paraLog(s: Sujeito): string {
-  return s.perfil === "cliente" ? maskPhone(s.identificador) : s.identificador;
+  return s.perfil === "cliente"
+    ? identTelefone(s.identificador)
+    : s.identificador;
 }
 
 /** A auditoria separa os dois portais — pedido do painel não vira "cliente". */
@@ -255,6 +264,31 @@ export function linkParaCliente(
 export async function pedirCodigo(identRaw: string): Promise<void> {
   const meta = metaFromHeaders(headers());
   const sujeito = await acharSujeito(identRaw);
+
+  // Auditoria + substrato do teto por IP. Registra ANTES de decidir — inclusive
+  // para identificador desconhecido (sem nome no log): é o que faz uma rajada
+  // de N pedidos simultâneos ser contada como N, em vez de passar inteira pela
+  // checagem antes de qualquer registro. A resposta pública não muda.
+  await recordAuth(
+    sujeito ? areaDe(sujeito.perfil) : "cliente",
+    "recover_request",
+    sujeito ? paraLog(sujeito) : null,
+    meta,
+  );
+  // Teto por IP: cada pedido de conta existente vira uma mensagem no WhatsApp
+  // da Mi. O teto por cadastro (3/h, abaixo) é por pessoa e não segura um
+  // script com uma lista de telefones. Silencioso para fora (neutro).
+  if ((await throttlePedidosPorIp(meta.ip)).bloqueado) {
+    if (sujeito) {
+      await recordAuth(
+        areaDe(sujeito.perfil),
+        "throttled",
+        paraLog(sujeito),
+        meta,
+      );
+    }
+    return;
+  }
   if (!sujeito) return; // neutro
 
   // Cooldown: pedido repetido em menos de 60s não gera código novo.
@@ -300,10 +334,30 @@ async function criarEAvisar(
   meta: MetaReq,
   origem: "publico" | "admin",
 ): Promise<{ codigo: string; expiresAt: Date; ate: string; id: string }> {
-  // Pedir um código novo invalida os anteriores da mesma pessoa (B3).
+  // Pedir um código novo invalida os anteriores da mesma pessoa (B3) — MENOS
+  // um código já confirmado cujo token de troca ainda vale: a pessoa está na
+  // tela da senha nesse exato momento. Como o pedido é público, sem essa
+  // exceção qualquer um que soubesse o telefone derrubava a troca em andamento
+  // (e o que a Mi tinha gerado pelo painel). O código confirmado morre sozinho
+  // em 15 min ou quando a senha é salva.
+  const agora = new Date();
   await prisma.passwordRecovery.updateMany({
-    where: { perfil: sujeito.perfil, subjectId: sujeito.id, usedAt: null },
-    data: { usedAt: new Date() },
+    where: {
+      perfil: sujeito.perfil,
+      subjectId: sujeito.id,
+      usedAt: null,
+      exchangeHash: null,
+    },
+    data: { usedAt: agora },
+  });
+  await prisma.passwordRecovery.updateMany({
+    where: {
+      perfil: sujeito.perfil,
+      subjectId: sujeito.id,
+      usedAt: null,
+      exchangeExpiresAt: { lte: agora },
+    },
+    data: { usedAt: agora },
   });
 
   const codigo = gerarCodigo();
@@ -323,12 +377,16 @@ async function criarEAvisar(
   });
 
   const ate = await horaLocal(expiresAt);
-  await recordAuth(
-    areaDe(sujeito.perfil),
-    "recover_request",
-    paraLog(sujeito),
-    meta,
-  );
+  // O pedido público já foi registrado em `pedirCodigo` (antes das checagens,
+  // para o teto por IP contar rajadas). Aqui só o gerado pelo painel.
+  if (origem === "admin") {
+    await recordAuth(
+      areaDe(sujeito.perfil),
+      "recover_request",
+      paraLog(sujeito),
+      meta,
+    );
+  }
 
   if (origem === "publico") {
     await avisarMi(row.id, sujeito, codigo, ate);
@@ -422,37 +480,56 @@ export async function verificarCodigo(
 ): Promise<VerificarResult> {
   const meta = metaFromHeaders(headers());
   const code = digitos(codeRaw ?? "").slice(0, 6);
-  const sujeito = await acharSujeito(identRaw);
+
+  // Segunda camada, por IP: 20 falhas (login ou código) em 15 min. A primeira
+  // é o teto de 5 por código, logo abaixo — que agora é atômico.
+  const porIp = await throttlePorIp(meta.ip);
+  if (porIp.bloqueado) {
+    return {
+      ok: false,
+      message: `Muitas tentativas por aqui. Espera ${porIp.minutos} min e tenta de novo 💛`,
+    };
+  }
+
   const ERRADO: VerificarResult = {
     ok: false,
     message: "Código incorreto. Confere os 6 números?",
   };
-  if (!sujeito || code.length !== 6) return ERRADO;
+  if (code.length !== 6) return ERRADO;
+
+  // "Sem código ativo" é a MESMA resposta para identificador desconhecido: o
+  // passo 2 não pode contar o que o passo 1 esconde. (Antes, desconhecido caía
+  // em "código incorreto" e cadastrado sem pedido em "não encontrei um código
+  // ativo" — dava para varrer telefones sem nunca pedir código nenhum.)
+  const SEM_CODIGO: VerificarResult = {
+    ok: false,
+    message: "Não encontrei um código ativo. Peça um novo 💛",
+    pedirNovo: true,
+  };
+  const NAO_VALE_MAIS: VerificarResult = {
+    ok: false,
+    message: "Esse código não vale mais. Peça um novo 💛",
+    pedirNovo: true,
+  };
+
+  const sujeito = await acharSujeito(identRaw);
+  if (!sujeito) {
+    await recordAuth("cliente", "recover_fail", null, meta);
+    return SEM_CODIGO;
+  }
+  const falhou = () =>
+    recordAuth(areaDe(sujeito.perfil), "recover_fail", paraLog(sujeito), meta);
 
   const reset = await prisma.passwordRecovery.findFirst({
     where: { perfil: sujeito.perfil, subjectId: sujeito.id, usedAt: null },
     orderBy: { createdAt: "desc" },
   });
   if (!reset) {
-    await recordAuth(
-      areaDe(sujeito.perfil),
-      "recover_fail",
-      paraLog(sujeito),
-      meta,
-    );
-    return {
-      ok: false,
-      message: "Não encontrei um código ativo. Peça um novo 💛",
-      pedirNovo: true,
-    };
+    await falhou();
+    return SEM_CODIGO;
   }
   if (reset.expiresAt <= new Date()) {
-    await recordAuth(
-      areaDe(sujeito.perfil),
-      "recover_fail",
-      paraLog(sujeito),
-      meta,
-    );
+    await falhou();
     return {
       ok: false,
       message: `Seu código venceu às ${await horaLocal(reset.expiresAt)}. Peça um novo 💛`,
@@ -460,12 +537,7 @@ export async function verificarCodigo(
     };
   }
   if (reset.attempts >= MAX_TENTATIVAS) {
-    await recordAuth(
-      areaDe(sujeito.perfil),
-      "recover_fail",
-      paraLog(sujeito),
-      meta,
-    );
+    await falhou();
     return {
       ok: false,
       message: "Tentativas demais nesse código. Peça um novo 💛",
@@ -473,22 +545,37 @@ export async function verificarCodigo(
     };
   }
 
+  // Cobra a tentativa ANTES de conferir, de forma atômica e condicional. Era
+  // read-modify-write: N palpites em paralelo liam o mesmo `attempts` e
+  // gravavam o mesmo `+1` — o teto de 5 virava 5×N para quem disparasse em
+  // rajada. Se o código foi consumido ou estourou entre a leitura e agora, a
+  // condição falha e nada é gravado.
+  const cobrada = await prisma.passwordRecovery.updateMany({
+    where: { id: reset.id, usedAt: null, attempts: { lt: MAX_TENTATIVAS } },
+    data: { attempts: { increment: 1 } },
+  });
+  if (cobrada.count === 0) {
+    await falhou();
+    return NAO_VALE_MAIS;
+  }
+
   if (!comparaHash(reset.codeHash, sha256(code))) {
-    const attempts = reset.attempts + 1;
-    await prisma.passwordRecovery.update({
+    // O valor real depois do incremento — não o que foi lido antes.
+    const atual = await prisma.passwordRecovery.findUnique({
       where: { id: reset.id },
-      // Estourou as tentativas? Queima o código.
-      data: {
-        attempts,
-        usedAt: attempts >= MAX_TENTATIVAS ? new Date() : null,
-      },
+      select: { attempts: true },
     });
-    await recordAuth(
-      areaDe(sujeito.perfil),
-      "recover_fail",
-      paraLog(sujeito),
-      meta,
-    );
+    const attempts = atual?.attempts ?? reset.attempts + 1;
+    if (attempts >= MAX_TENTATIVAS) {
+      // Queima o código. SÓ marca `usedAt` — nunca o zera: antes, o palpite
+      // errado gravava `usedAt: null` por cima, e um código que tivesse sido
+      // consumido por um salvar no meio do caminho voltava a valer.
+      await prisma.passwordRecovery.updateMany({
+        where: { id: reset.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+    }
+    await falhou();
     const restam = MAX_TENTATIVAS - attempts;
     return restam > 0
       ? {
@@ -503,16 +590,18 @@ export async function verificarCodigo(
   }
 
   // Acertou: emite o token de troca (15 min) e deixa o código vivo até a senha
-  // ser salva de fato.
+  // ser salva de fato. Condicional pelo mesmo motivo: consumido no meio, não
+  // emite.
   const token = gerarTokenTroca();
-  await prisma.passwordRecovery.update({
-    where: { id: reset.id },
+  const emitido = await prisma.passwordRecovery.updateMany({
+    where: { id: reset.id, usedAt: null },
     data: {
       attempts: 0,
       exchangeHash: sha256(token),
       exchangeExpiresAt: new Date(Date.now() + TROCA_TTL_MS),
     },
   });
+  if (emitido.count === 0) return NAO_VALE_MAIS;
   gravarTroca(reset.id, token);
   return { ok: true };
 }
@@ -550,12 +639,17 @@ export async function salvarNovaSenha(novaRaw: string): Promise<SalvarResult> {
     !comparaHash(reset.exchangeHash, sha256(troca.token))
   ) {
     limparTroca();
-    const quando = reset?.exchangeExpiresAt
-      ? ` às ${await horaLocal(reset.exchangeExpiresAt)}`
-      : "";
+    // A hora só entra quando o motivo é VENCIMENTO de verdade. Nos outros
+    // (código consumido em outro navegador, invalidado) o `exchangeExpiresAt`
+    // ainda está no futuro — e "venceu às 13:45" lido às 13:33 é a mesma
+    // confusão que o B3 veio consertar.
+    const vencimento = reset?.exchangeExpiresAt ?? null;
+    const venceu = vencimento !== null && vencimento <= new Date();
     return {
       ok: false,
-      message: `Sua confirmação venceu${quando}. Peça um código novo 💛`,
+      message: venceu
+        ? `Sua confirmação venceu às ${await horaLocal(vencimento)}. Peça um código novo 💛`
+        : "Sua confirmação não vale mais. Peça um código novo 💛",
       pedirNovo: true,
     };
   }
@@ -580,7 +674,9 @@ export async function salvarNovaSenha(novaRaw: string): Promise<SalvarResult> {
   await recordAuth(
     areaDe(perfil),
     "recover_ok",
-    perfil === "admin" ? reset.identificador : maskPhone(reset.identificador),
+    perfil === "admin"
+      ? reset.identificador
+      : identTelefone(reset.identificador),
     meta,
   );
 
