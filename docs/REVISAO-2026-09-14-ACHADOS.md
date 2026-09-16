@@ -62,17 +62,34 @@ por `hold_expired`, e a varredura seguinte cancelaria a reserva avisando a Mi qu
 gateway), então cai no mesmo pacote da decisão do PIX. **Verificar junto com o
 item do `/sinal`.**
 
-### 2. Rate limit de login por identificador usa só os 4 últimos dígitos
-`src/lib/cliente-auth.ts`
+### 2. ✅ CONFIRMADO — rate limit de login chaveado nos 4 últimos dígitos
+`src/lib/cliente-auth.ts:208`
 
-A alegação: o teto por identificador é chaveado em `maskPhone(phone)` —
-`"••••6845"`. Dez falhas de login num número **que nem precisa existir** criariam
-linhas com esse identificador, e a cliente real cujo telefone termina nos mesmos
-4 dígitos ficaria trancada 15 min, repetidamente. O `auth.ts` do admin passa o
-e-mail inteiro, que é o comportamento certo.
+**Verificado lendo o código em 16/09/2026. Não é mais pista: é bug vivo.**
 
-Se confirmado, é o mais explorável da lista: qualquer pessoa tranca qualquer
-cliente sabendo só o final do telefone dela.
+`const ident = maskPhone(phone)` devolve `••••7766`, e esse mesmo valor é ao
+mesmo tempo o que vai para o log **e a chave do balde de rate limit**:
+
+1. `throttlePorIdentificador("cliente", ident)` conta falhas por esses 4 dígitos
+   — 10 em 15 min bloqueiam (`IDENT_MAX_FAILS`/`IDENT_WINDOW_MS`).
+2. `recordAuth("cliente", "login_fail", ident, …)` grava as falhas no mesmo
+   balde.
+3. **O ramo do telefone desconhecido também grava `login_fail`** — o atacante
+   não precisa de conta existente para encher o balde.
+
+Resultado: 10 tentativas contra um número **que nem existe** terminando em 7766
+trancam **toda cliente** cujo telefone termine em 7766, por 15 min, repetível
+indefinidamente. São 10.000 baldes para a base inteira — colisão acidental entre
+clientes reais também acontece.
+
+`src/lib/auth.ts:58` passa o **e-mail inteiro** no equivalente do admin. O
+contraste confirma que é descuido, não desenho.
+
+**O conserto tem uma decisão dentro**, por isso não foi feito de imediato: a
+chave precisa ser única por telefone, mas o `authlog` tem a regra de nunca
+guardar telefone completo (LGPD), e a coluna `identifier` é a mesma que a tela
+"Acessos & segurança" exibe. Separar as duas responsabilidades — chave única
+para o teto, texto mascarado para a tela — é o que resolve.
 
 ### 3. Foto de celular real estoura o teto de tamanho
 `src/components/agendar/AgendarWizard.tsx` · `src/lib/validation.ts`
