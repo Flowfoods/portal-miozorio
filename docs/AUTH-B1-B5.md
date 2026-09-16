@@ -226,10 +226,11 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 ## Limites conhecidos (revisão adversarial de 15/09/2026)
 
 Uma revisão com sete lentes independentes sobre o código de auth achou 20
-pontos; 14 viraram conserto (na PR #107), mais 2 que a verificação pós-revisão
-encontrou (a sessão revogada testada pela variável crua — ver abaixo). Estes
-**não** foram corrigidos — por decisão ou por escopo — e ficam aqui para
-ninguém redescobrir:
+pontos; 14 viraram conserto (na PR #107), mais 3 que a verificação pós-revisão
+encontrou: a sessão revogada testada pela variável crua em duas rotas do
+painel, e a carteirinha da cliente aberta para sessão com senha provisória
+(as três no `docs/DEBITOS.md`). Estes **não** foram corrigidos — por decisão
+ou por escopo — e ficam aqui para ninguém redescobrir:
 
 1. **Enumeração residual pela recuperação.** O texto é neutro nos dois passos,
    mas (a) o passo 1 demora mais quando a conta existe — é o tempo de avisar a
@@ -276,8 +277,8 @@ arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
 > Esse 360 é o retrato **daquele dia, neste branch antes do merge** — está aqui
 > como registro, não como número atual. Depois do merge com a master, das
 > frentes que entraram em seguida (#103, #105, #106) e da revisão adversarial
-> de 15/09 (#107), a suíte está em **529 testes / 48 arquivos**. Se você rodar
-> `npm test` hoje e vir 529, é isso: não há teste faltando.
+> de 15/09 (#107), a suíte está em **532 testes / 49 arquivos**. Se você rodar
+> `npm test` hoje e vir 532, é isso: não há teste faltando.
 
 **Checklist funcional no navegador — 30 de 30 ✅**
 

@@ -120,6 +120,24 @@
   `tests/auth-painel.test.ts` varre o `src` e falha se alguém voltar a testar
   a sessão de admin pela variável crua (`!s`, `s ? …`, `if (s)`).
 
+- ~~**Carteirinha aberta para sessão com senha provisória**~~ — **resolvido em
+  15/09/2026**, e também achado na verificação acima, ao passar a mesma lente
+  na sessão da CLIENTE. Ela não tem o defeito do objeto verdadeiro
+  (`getClienteSession` confere `clubTokenVersion` no banco e devolve `null`),
+  mas tem outra flag: `prov`, "a senha ainda é o telefone". No primeiro acesso
+  a senha É o telefone, então **quem sabe o número entra** — por isso toda tela
+  da conta manda a provisória para `/clube/conta/senha` antes de mostrar
+  qualquer coisa. A carteirinha (`/clube/painel/[codigo]`) conferia a sessão e
+  que o código é da própria pessoa, e **não** conferia `prov`. Com o telefone
+  mais o código de indicação — que a membro divulga de propósito, é o link de
+  convite — dava para ler nome, saldo, segmento e **o próximo atendimento com
+  dia e hora** sem criar senha: sem trancar a dona para fora e sem deixar
+  rastro, que é o que uma tomada de conta faria. É exatamente o dado que o
+  comentário da própria página chama de "a localização física de uma mulher,
+  em horário exato" (R6/R18). `tests/clube-sessao-provisoria.test.ts` varre o
+  `src/app/(site)` e falha se uma tela ler a sessão da cliente e ignorar a
+  flag.
+
 - **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
   indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
   ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é
