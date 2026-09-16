@@ -25,7 +25,9 @@ export type AuthEvent =
   | "recover_fail" // código errado/expirado
   | "password_changed" // troca de senha logada (cliente/admin)
   | "passkey_added" // cadastrou uma passkey (Face ID/biometria)
-  | "passkey_login"; // entrou por passkey
+  | "passkey_login" // entrou por passkey
+  | "booking_create" // reserva pública criada (base do teto por IP)
+  | "booking_throttled"; // criação de reserva recusada pelo teto por IP
 
 export interface AuthMeta {
   ip?: string | null;
@@ -48,10 +50,36 @@ export const IDENT_WINDOW_MS = 15 * 60_000;
 /** Falhas toleradas no mesmo identificador dentro da janela. */
 export const IDENT_MAX_FAILS = 10;
 
+// ── Janela do teto de reservas por IP (rota pública de agendamento) ──────────
+/** Janela de contagem das reservas criadas pelo mesmo IP. */
+export const RESERVA_IP_WINDOW_MS = 60 * 60_000;
 /**
- * Função pura: dadas as falhas recentes do identificador (mais nova primeiro),
- * diz se está bloqueado e quantos minutos faltam. O bloqueio cai quando a
- * N-ésima falha mais recente sai da janela — nunca é bloqueio "para sempre".
+ * Reservas que um mesmo IP pode criar na janela. Folgado de propósito: o CGNAT
+ * das operadoras móveis põe muita cliente atrás do mesmo IP, e a Mi atende um
+ * punhado de pessoas por dia — dez reservas numa hora do mesmo lugar já é
+ * ordens de grandeza acima do movimento real, e continua sendo o bastante para
+ * transformar um ataque de centenas de horários travados em dez.
+ */
+export const RESERVA_IP_MAX = 10;
+
+/**
+ * Eventos que NÃO são acesso e ficam fora da tela "Acessos & segurança".
+ *
+ * Aquela tela lista os últimos 100 eventos sem filtro nenhum. `booking_create`
+ * acompanha o movimento normal do site, então sem esta exclusão ele empurraria
+ * as entradas e tentativas — que são o assunto da tela — para fora dela em um
+ * fim de semana movimentado. `booking_throttled` fica: é raro e é sinal de
+ * segurança, igual ao `throttled` do login.
+ */
+export const EVENTOS_FORA_DOS_ACESSOS: AuthEvent[] = ["booking_create"];
+
+/**
+ * Função pura: dadas as datas recentes (mais nova primeiro), diz se está
+ * bloqueado e quantos minutos faltam. O bloqueio cai quando a N-ésima data mais
+ * recente sai da janela — nunca é bloqueio "para sempre".
+ *
+ * É o núcleo deslizante compartilhado: serve tanto às falhas de login por
+ * identificador quanto ao teto de reservas por IP, com janela e teto próprios.
  */
 export function esperaPorIdentificador(
   falhas: Date[],
@@ -101,13 +129,31 @@ export function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex");
 }
 
-/** Primeiro IP do `x-forwarded-for` (Traefik) com fallback ao `x-real-ip`. */
+/**
+ * IP do request: `x-real-ip` primeiro, `x-forwarded-for` como reserva.
+ *
+ * A ordem importa e já foi o contrário. O Traefik **acrescenta** o IP real ao
+ * `x-forwarded-for` que chegou, sem apagar o que veio — então quem manda o
+ * próprio `X-Forwarded-For: 1.2.3.4` fica em PRIMEIRO na lista, e ler o
+ * primeiro item entregava ao cliente a escolha do próprio balde de rate limit.
+ * Girar esse header contornava o teto inteiro, de graça.
+ *
+ * `x-real-ip` o Traefik **sobrescreve** com o peer TCP, que o cliente não
+ * forja. Onde não há proxy os dois faltam e isto devolve null — os tetos não
+ * armam, que é o certo: não dá para punir um IP que não se conhece.
+ *
+ * ⚠️ Vale para UM proxy na frente (o nosso caso). Numa cadeia de dois, o
+ * `x-real-ip` do interno seria o IP do externo, e todo mundo cairia no mesmo
+ * balde — daí o certo passaria a ser o ÚLTIMO item do `x-forwarded-for`.
+ */
 export function clientIp(
   forwardedFor?: string | null,
   realIp?: string | null,
 ): string | null {
+  const real = (realIp ?? "").trim();
+  if (real) return real;
   const fwd = (forwardedFor ?? "").split(",")[0]?.trim();
-  return fwd || (realIp ?? "").trim() || null;
+  return fwd || null;
 }
 
 /** Extrai { ip, userAgent } de um objeto de headers (Fetch Headers ou plain). */
@@ -178,5 +224,56 @@ export async function isIpThrottled(
     return fails >= IP_MAX_FAILS;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Teto de reservas por IP — versão pura, para os testes dirigirem o relógio.
+ * Conta CRIAÇÕES, não tentativas: quem erra o formulário cinco vezes não pode
+ * ficar sem conseguir marcar.
+ */
+export function esperaDeReservaPorIp(
+  criacoes: Date[],
+  agora: Date = new Date(),
+): { bloqueado: boolean; minutos: number } {
+  return esperaPorIdentificador(
+    criacoes,
+    agora,
+    RESERVA_IP_MAX,
+    RESERVA_IP_WINDOW_MS,
+  );
+}
+
+/**
+ * Teto de reservas em aberto por IP na rota pública de agendamento.
+ *
+ * O teto por telefone (`MAX_PENDING_POR_TELEFONE`, no `booking-service`) já
+ * barra o abuso realista, mas não alcança quem troca o telefone a cada POST —
+ * e cada reserva nova segura um horário durante todo o hold. Com a agenda de
+ * fim de semana e passo de 30 min, algumas centenas de requisições deixavam a
+ * agenda intransitável sem um único agendamento aparecer para a Mi.
+ *
+ * Best-effort como o resto do `authlog`: se a consulta falhar, libera. Uma
+ * falha de log nunca pode impedir alguém de marcar horário.
+ */
+export async function throttleDeReservaPorIp(
+  ip: string | null | undefined,
+): Promise<{ bloqueado: boolean; minutos: number }> {
+  if (!ip) return { bloqueado: false, minutos: 0 };
+  try {
+    const desde = new Date(Date.now() - RESERVA_IP_WINDOW_MS);
+    const criacoes = await prisma.authLog.findMany({
+      where: {
+        ipHash: hashIp(ip),
+        event: "booking_create",
+        createdAt: { gte: desde },
+      },
+      orderBy: { createdAt: "desc" },
+      take: RESERVA_IP_MAX,
+      select: { createdAt: true },
+    });
+    return esperaDeReservaPorIp(criacoes.map((c) => c.createdAt));
+  } catch {
+    return { bloqueado: false, minutos: 0 };
   }
 }

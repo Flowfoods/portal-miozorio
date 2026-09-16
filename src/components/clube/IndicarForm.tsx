@@ -7,8 +7,19 @@ import SubmitButton from "@/components/admin/SubmitButton";
 import { PhoneField, Honeypot, FormError } from "./ClubFields";
 
 /**
- * Form da indicada (/indicar/[codigo]) — anamnese leve da Mi: ocasião,
- * alergia, referência. Mobile-first (R19): a amiga chega pelo WhatsApp.
+ * Form da indicada (/indicar/[codigo]) — ocasião e referência. Mobile-first
+ * (R19): a amiga chega pelo WhatsApp.
+ *
+ * NÃO pergunta alergia (14/09/2026). Alergia é dado de saúde e, pela LGPD,
+ * sensível (art. 5º, II): coletar por consentimento exige um aceite
+ * "específico e destacado" (art. 11, I), e aqui só existe o checkbox genérico
+ * da política. O portal já tem a trava certa para isso
+ * (`lib/consentimento-saude.ts`), mas ela vive no agendamento — e carimbar o
+ * consentimento aqui seria pior: este formulário é público e não prova posse
+ * do telefone.
+ *
+ * Nada se perde: a anamnese acontece quando ela mesma marca o horário, onde o
+ * consentimento específico já é exigido de quem de fato escreve uma alergia.
  */
 export default function IndicarForm({
   codigo,
@@ -51,16 +62,6 @@ export default function IndicarForm({
             </option>
           ))}
         </select>
-      </label>
-      <label className="block">
-        <span className="mb-1 block font-corpo text-sm text-mi-texto/80">
-          Tem alguma alergia? (opcional)
-        </span>
-        <input
-          name="alergia"
-          placeholder="Ex.: látex, fragrância…"
-          className="input-mi"
-        />
       </label>
       <label className="block">
         <span className="mb-1 block font-corpo text-sm text-mi-texto/80">

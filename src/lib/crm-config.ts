@@ -91,11 +91,14 @@ export const crmConfigSchema = z.object({
       intervaloPorClienteDias: 7,
       maxSugestoesPorDia: 10,
       templates: {
-        // <!-- APROVAR COM A MI: copies das réguas -->
+        // Textos de partida (14/09/2026). "bora" saiu: a voz da marca é
+        // acolhedora SEM gíria. E a régua de abandono não conta mais à cliente
+        // que o site registrou a visita dela — convidar é acolhedor, avisar que
+        // foi observada não é. As réguas nascem desligadas (ativas: false).
         sumida:
-          "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — bora marcar um horário pra gente se ver de novo?",
+          "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — que tal reservarmos um horário para a gente se ver de novo?",
         abandono:
-          "Oi {nome}! Vi que você deu uma olhadinha nos horários 💛 Ficou alguma dúvida? Posso te ajudar a escolher o melhor.",
+          "Oi {nome}! Aqui é a Mi 💛 Se quiser, eu te ajudo a escolher o melhor horário — é só me dizer o dia que te serve.",
         leadFria:
           "Oi {nome}! Aqui é a Mi 💛 Que alegria ter você por perto — quer conhecer o estúdio ou tirar alguma dúvida?",
       },
@@ -133,11 +136,11 @@ export const DEFAULT_CRM_CONFIG: CrmConfigData = {
     intervaloPorClienteDias: 7,
     maxSugestoesPorDia: 10,
     templates: {
-      // <!-- APROVAR COM A MI: copies das réguas -->
+      // Mesmos textos do default do schema acima — mudar um exige mudar o outro.
       sumida:
-        "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — bora marcar um horário pra gente se ver de novo?",
+        "Oi {nome}! Que saudade de você por aqui 💛 Já faz {dias} dias desde o seu último atendimento — que tal reservarmos um horário para a gente se ver de novo?",
       abandono:
-        "Oi {nome}! Vi que você deu uma olhadinha nos horários 💛 Ficou alguma dúvida? Posso te ajudar a escolher o melhor.",
+        "Oi {nome}! Aqui é a Mi 💛 Se quiser, eu te ajudo a escolher o melhor horário — é só me dizer o dia que te serve.",
       leadFria:
         "Oi {nome}! Aqui é a Mi 💛 Que alegria ter você por perto — quer conhecer o estúdio ou tirar alguma dúvida?",
     },

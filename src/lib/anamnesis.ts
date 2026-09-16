@@ -69,8 +69,30 @@ function normalizar(texto: string): string {
     .trim();
 }
 
+/**
+ * O texto é uma negação pura ("Não", "nenhuma", "-")? Campo em branco NÃO é
+ * negação — é ausência de resposta, e quem decide o que fazer com isso é quem
+ * chama.
+ *
+ * Exportado porque a mesma pergunta aparece em dois lugares com consequências
+ * diferentes: aqui, para o alerta da agenda; e em `consentimento-saude.ts`,
+ * para decidir se há dado sensível a consentir (R6/R18). Eram duas definições
+ * de "alergia de verdade" e elas divergiam: quem respondia "Não" via o alerta
+ * apagado pela A11, mas ainda assim era barrada no agendamento por não marcar
+ * uma autorização de dado de saúde — ou, marcando, ganhava um
+ * `health_consent_at` carimbado para um dado que não existe.
+ *
+ * O viés conservador vale para os dois usos: só a lista fechada apaga. Texto
+ * ambíguo continua sendo tratado como alergia de verdade, que é o lado seguro
+ * tanto para o alerta quanto para a LGPD.
+ */
+export function ehNegacao(texto: string): boolean {
+  const bruto = texto.trim();
+  return bruto.length > 0 && NEGACOES.has(normalizar(bruto));
+}
+
 export function temAlergia(data: unknown): boolean {
   const bruto = lerAnamnese(data).alergia;
   if (!bruto) return false;
-  return !NEGACOES.has(normalizar(bruto));
+  return !ehNegacao(bruto);
 }

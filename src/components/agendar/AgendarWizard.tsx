@@ -16,6 +16,7 @@ import Botao from "@/components/ui/Botao";
 import BarraResumo from "./BarraResumo";
 import { trackClient } from "@/lib/track-client";
 import { otimizar } from "@/lib/imagem-client";
+import { ehNegacao } from "@/lib/anamnesis";
 
 interface ApiService {
   id: string;
@@ -276,11 +277,18 @@ export default function AgendarWizard() {
   // A3 — com variação, tamanho e foto são obrigatórios: é a foto que permite a
   // Mi conferir antes de fechar o valor. Serviço sem variação não muda nada.
   const precisaTamanho = (service?.variantes.length ?? 0) > 0;
-  const tamanhoOk = !precisaTamanho || (varianteId !== null && fotoFile !== null);
+  const tamanhoOk =
+    !precisaTamanho || (varianteId !== null && fotoFile !== null);
 
-  /** Escreveu alergia? Então a autorização específica é obrigatória (R6/R18). */
-  const consentimentoSaudeOk =
-    form.allergy.trim().length === 0 || form.healthConsent;
+  /**
+   * Contou uma alergia DE VERDADE? Então a autorização específica é obrigatória
+   * (R6/R18). "Não" e afins não contam: mesma regra do servidor
+   * (`consentimento-saude.ts`) e do alerta da agenda, para a tela nunca pedir
+   * uma autorização que o backend não vai exigir — nem o contrário.
+   */
+  const contouAlergia =
+    form.allergy.trim().length > 0 && !ehNegacao(form.allergy);
+  const consentimentoSaudeOk = !contouAlergia || form.healthConsent;
 
   const canSubmit =
     form.name.trim().length >= 2 &&
@@ -364,10 +372,12 @@ export default function AgendarWizard() {
       if (!res.ok) {
         // Nunca ecoar a mensagem crua do servidor: "Dados inválidos" e "JSON
         // inválido" são texto de sistema e chegavam à cliente no último passo,
-        // sem dizer qual campo. 422 já vem com mensagem escrita para ela.
+        // sem dizer qual campo. 422 e 429 já vêm com mensagem escrita para ela
+        // — e no 429 o texto genérico seria pior que nada: mandaria tentar de
+        // novo justamente o que está sendo segurado, sem dizer por quanto tempo.
         const e = (await res.json().catch(() => ({}))) as { error?: string };
         setFormError(
-          res.status === 422 && e.error
+          (res.status === 422 || res.status === 429) && e.error
             ? e.error
             : res.status === 400
               ? "Confere os campos? Algum dado ficou fora do formato — o e-mail é o mais comum."
@@ -762,8 +772,12 @@ export default function AgendarWizard() {
                   específico e destacado (art. 11, I): o aceite genérico da
                   política não cobre. A caixinha só aparece para quem escreveu
                   alguma coisa — quem não tem alergia não leva pergunta extra.
-                  <!-- APROVAR COM A MI: texto da autorização --> */}
-              {form.allergy.trim().length > 0 && (
+
+                  O texto nomeia as quatro coisas que o art. 11 exige enxergar:
+                  QUAL dado (o que ela escreveu sobre alergia), PARA QUÊ (a
+                  escolha dos produtos — finalidade concreta, não "para melhor
+                  atendê-la"), QUEM acessa (só a Mi) e como desfazer. */}
+              {contouAlergia && (
                 <label className="mt-3 flex items-start gap-3 rounded-mi bg-mi-marrom-50 p-3 font-corpo text-sm text-mi-texto">
                   <input
                     type="checkbox"
@@ -774,9 +788,10 @@ export default function AgendarWizard() {
                     className="mt-0.5 h-5 w-5 shrink-0 accent-mi-marrom"
                   />
                   <span>
-                    Autorizo a Mi a guardar essa informação de saúde para cuidar
-                    da minha pele com segurança. Fica só com ela, e você pode
-                    pedir para apagar quando quiser.
+                    Pode deixar comigo — autorizo a Mi a guardar o que escrevi
+                    sobre alergia só para escolher os produtos certos para a
+                    minha pele. Fica só com ela, e é só me pedir que ela apaga
+                    💛
                   </span>
                 </label>
               )}
@@ -835,7 +850,9 @@ export default function AgendarWizard() {
             </label>
 
             {formError && (
-              <p className="font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+              <p className="font-corpo text-sm text-mi-erro-tinta">
+                {formError}
+              </p>
             )}
 
             {/* Botão fica HABILITADO: apagado a 40% e mudo, a cliente não
@@ -893,7 +910,9 @@ export default function AgendarWizard() {
           />
 
           {formError && (
-            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">{formError}</p>
+            <p className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+              {formError}
+            </p>
           )}
 
           <button
@@ -1118,7 +1137,10 @@ function AguardandoSinalScreen({
         setErroPix(d.error ?? "Não consegui gerar o PIX agora.");
         return;
       }
-      setPix({ copiaECola: d.copiaECola, qrCodeBase64: d.qrCodeBase64 ?? null });
+      setPix({
+        copiaECola: d.copiaECola,
+        qrCodeBase64: d.qrCodeBase64 ?? null,
+      });
     } catch {
       setErroPix("Tivemos um probleminha de conexão. Tenta de novo?");
     } finally {
@@ -1227,7 +1249,10 @@ function AguardandoSinalScreen({
         )}
 
         {erroPix && (
-          <p role="alert" className="mt-3 font-corpo text-sm text-mi-erro-tinta">
+          <p
+            role="alert"
+            className="mt-3 font-corpo text-sm text-mi-erro-tinta"
+          >
             {erroPix} Seu horário continua guardado — fale com a Mi no WhatsApp.
           </p>
         )}

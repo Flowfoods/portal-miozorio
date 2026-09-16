@@ -5,6 +5,7 @@ import {
   coletaDadoDeSaude,
   faltaConsentimentoSaude,
 } from "../src/lib/consentimento-saude";
+import { temAlergia } from "../src/lib/anamnesis";
 
 /**
  * R6/R18 — alergia é dado de saúde e, pela LGPD, sensível (art. 5º, II). O
@@ -40,20 +41,35 @@ describe("coletaDadoDeSaude", () => {
   });
 
   it("valor não-string (bot mandando JSON torto) não quebra a regra", () => {
-    expect(coletaDadoDeSaude({ alergia: 0 })).toBe(true); // "0" tem conteúdo
+    // MUDANÇA DELIBERADA (14/09/2026): antes este caso esperava `true`, com a
+    // justificativa de que `"0"` "tem conteúdo". Desde que a regra passou a ser
+    // a MESMA do alerta da agenda, `"0"` é negação — a A11 o pôs na lista
+    // porque gente responde "0" quando quer dizer "nenhuma". O objetivo do
+    // teste era robustez (não quebrar com JSON torto), e isso continua valendo;
+    // o `true` era raciocínio sobre a implementação antiga, não requisito.
+    expect(coletaDadoDeSaude({ alergia: 0 })).toBe(false);
     expect(coletaDadoDeSaude({ alergia: null })).toBe(false);
     expect(coletaDadoDeSaude({ alergia: undefined })).toBe(false);
+    // O que importa de verdade: nada aqui lança.
+    expect(() =>
+      coletaDadoDeSaude({ alergia: { nested: true } as unknown }),
+    ).not.toThrow();
+    expect(coletaDadoDeSaude({ alergia: 42 })).toBe(true); // número qualquer conta
   });
 });
 
 describe("faltaConsentimentoSaude — quem é recusado", () => {
   it("sem alergia, não exige nada (o caso da maioria das clientes)", () => {
-    expect(faltaConsentimentoSaude({ ocasiao: "festa" }, undefined)).toBe(false);
+    expect(faltaConsentimentoSaude({ ocasiao: "festa" }, undefined)).toBe(
+      false,
+    );
     expect(faltaConsentimentoSaude({ alergia: "" }, false)).toBe(false);
   });
 
   it("com alergia e sem consentimento, recusa", () => {
-    expect(faltaConsentimentoSaude({ alergia: "níquel" }, undefined)).toBe(true);
+    expect(faltaConsentimentoSaude({ alergia: "níquel" }, undefined)).toBe(
+      true,
+    );
     expect(faltaConsentimentoSaude({ alergia: "níquel" }, false)).toBe(true);
   });
 
@@ -85,13 +101,72 @@ describe("carimboConsentimentoSaude — o que vai para a auditoria", () => {
     expect(carimboConsentimentoSaude({ ocasiao: "festa" }, true, agora)).toBe(
       null,
     );
-    expect(carimboConsentimentoSaude({ alergia: "  " }, true, agora)).toBe(null);
+    expect(carimboConsentimentoSaude({ alergia: "  " }, true, agora)).toBe(
+      null,
+    );
   });
 
   it("NÃO carimba sem consentimento", () => {
     expect(carimboConsentimentoSaude({ alergia: "níquel" }, false, agora)).toBe(
       null,
     );
+  });
+});
+
+describe("negação pura não é dado de saúde", () => {
+  const agora = new Date("2026-09-14T18:00:00.000Z");
+
+  // O bug que isto trava: quem respondia "Não" via a caixinha de dado
+  // sensível e, sem marcá-la, NÃO CONSEGUIA AGENDAR — e, marcando, ganhava um
+  // health_consent_at carimbado para um dado que não existe. Eram duas
+  // definições de "alergia de verdade" no repo, e elas discordavam: o alerta
+  // da agenda (A11) já filtrava negações, este módulo não.
+  it.each([
+    "Não",
+    "não",
+    "NÃO",
+    "nao",
+    "n",
+    "nenhuma",
+    "nada",
+    "-",
+    "x",
+    "sem alergia",
+    "negativo",
+    "0",
+    "  Não.  ",
+  ])("%o não exige consentimento nem carimba", (resposta) => {
+    expect(coletaDadoDeSaude({ alergia: resposta })).toBe(false);
+    expect(faltaConsentimentoSaude({ alergia: resposta }, undefined)).toBe(
+      false,
+    );
+    expect(carimboConsentimentoSaude({ alergia: resposta }, true, agora)).toBe(
+      null,
+    );
+  });
+
+  it("texto ambíguo CONTINUA sendo dado de saúde — o lado seguro", () => {
+    // O viés da A11 vale aqui também: só a lista fechada apaga. "Não uso látex,
+    // mas tenho alergia a níquel" é alergia de verdade, e um "contém não"
+    // ingênuo a teria silenciado.
+    for (const real of [
+      "não uso látex, mas tenho alergia a níquel",
+      "nenhuma que eu saiba, fora fragrância",
+      "níquel",
+      "não sei",
+    ]) {
+      expect(coletaDadoDeSaude({ alergia: real })).toBe(true);
+      expect(faltaConsentimentoSaude({ alergia: real }, undefined)).toBe(true);
+    }
+  });
+
+  it("a mesma regra do alerta da agenda, não uma cópia", () => {
+    // Se as duas divergirem de novo, este teste cai.
+    for (const texto of ["Não", "nenhuma", "níquel", "não sei"]) {
+      expect(coletaDadoDeSaude({ alergia: texto })).toBe(
+        temAlergia({ alergia: texto }),
+      );
+    }
   });
 });
 

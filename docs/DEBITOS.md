@@ -32,15 +32,71 @@
 - **Posse na confirmação (`POST /api/bookings/[id]/confirm`).** A rota não checa
   quem chama. O dano é contido por desenho — ela fixa o ator em `system`, então
   hold vencido é recusado, e a janela é de poucos minutos com um UUID v4 que só
-  a própria cliente recebeu. A correção (cookie httpOnly curto emitido na
-  criação) mexe no caminho que gera receita, e o risco de quebrar o
-  agendamento é maior do que o de um atacante que precisaria adivinhar o UUID.
-  Fazer junto com um QA logado de ponta a ponta.
+  a própria cliente recebeu.
 
-- **Rate limit por IP em `POST /api/bookings`.** Entrou honeypot e teto de
-  reservas em aberto por telefone, que cobrem o abuso realista. O limite por IP
-  exige um evento novo no `AuthEvent` (`isIpThrottled` só conta `login_fail` e
-  `recover_fail`), então não é plug-and-play.
+  **Resolvido em 14/09/2026** (`src/lib/posse-reserva.ts`). Quem cria recebe um
+  comprovante — HMAC-SHA256 do próprio id da reserva mais a validade, em cookie
+  httpOnly — e `/confirm` passa a exigi-lo. **Não é sessão**: não diz quem é a
+  pessoa, não vale para outra reserva e morre junto com o horário guardado.
+  Assinado e não sorteado de propósito: nada de novo no banco, nada a limpar
+  depois, e um comprovante vazado não abre nenhuma outra porta.
+
+  O medo registrado na dívida era quebrar o caminho que gera receita. Três
+  decisões existem só para isso:
+  - **Emitir o comprovante é best-effort.** Quando o código chega lá a reserva
+    já está no banco e a Mi já foi avisada; deixar uma exceção subir devolveria
+    500 para um agendamento que existe, e a cliente tentaria de novo até bater
+    no teto por telefone achando que nada funcionou.
+  - **O comprovante vive 30 min a mais que o hold.** Quem chega atrasado lê "o
+    tempo da reserva expirou" (410, que explica), não "não consegui confirmar
+    por aqui" (403, que é a resposta para quem não é dono).
+  - **Segunda porta para a cliente logada** no Clube que seja dona da reserva —
+    o comprovante mora num navegador só, e quem marca pelo portal e confirma de
+    outro aparelho não pode ficar de fora do próprio agendamento.
+
+  Sobra um caminho pior do que antes: navegador com cookies bloqueados toma 403.
+  A reserva continua de pé e a Mi confirma pelo painel (`actor: "business"`),
+  que é o mesmo caminho do encaixe manual.
+
+  O **QA logado ponta a ponta** que a dívida pedia **foi executado** em
+  14/09/2026 contra um PostgreSQL 16 de verdade, num Chromium real em 390px:
+  **26 asserções**, todas verdes, incluindo o teste que separa "fechei o buraco"
+  de "quebrei a rota" — a dona confirma normal, e a cliente logada **não**
+  confirma reserva alheia. Evidência e como repetir:
+  `docs/agenda/QA-POSSE-TETO.md`, roteiro em `scripts/qa-agendar.mjs`. Os 21
+  testes de integração também rodaram, com as **43** migrations aplicadas do
+  zero.
+
+- ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
+  14/09/2026** (`RESERVA_IP_MAX`/`throttleDeReservaPorIp` em `authlog.ts`).
+  O honeypot e o teto por telefone cobrem o abuso realista, mas não alcançam
+  quem troca o telefone a cada POST — e cada reserva nova segura um horário
+  durante todo o hold.
+
+  A dívida dizia "exige um evento novo no `AuthEvent`, então não é
+  plug-and-play". O evento novo (`booking_create`) saiu **sem migration**:
+  `auth_log.event` é `String` no schema, não enum, e o índice
+  `[ip_hash, created_at]` que a consulta usa já existe.
+
+  ⚠️ **Achado do QA no browser:** o teto depende do header do proxy. Sem proxy
+  na frente, `clientIp` devolve `null` e o teto **não arma** — correto (não dá
+  para punir um IP que não se conhece), mas quer dizer que em produção ele só
+  existe porque o Traefik preenche o header. Servir o portal sem proxy
+  transforma o teto em no-op **em silêncio**.
+
+  🔒 **E a revisão de segurança achou o buraco de verdade:** `clientIp` lia o
+  **primeiro** item do `x-forwarded-for`. O Traefik *acrescenta* o IP real ao
+  header que chegou, sem apagar o que veio — então quem mandasse o próprio
+  `X-Forwarded-For` ficava em primeiro e **escolhia o próprio balde**. Girar
+  esse valor contornava o teto inteiro, de graça. Agora `x-real-ip` (que o
+  Traefik **sobrescreve** com o peer TCP) manda, e o `x-forwarded-for` é só
+  reserva. Vale também para o rate limit de login, que tinha a mesma falha.
+
+  Conta **criações**, não tentativas: quem erra o formulário cinco vezes não
+  pode ficar sem conseguir marcar. Teto folgado (10 por hora) porque o CGNAT das
+  operadoras põe muita cliente atrás do mesmo IP — o número existe para
+  transformar centenas de horários travados em dez, não para policiar quem marca
+  duas vezes. Best-effort como o resto do `authlog`: falha de consulta libera.
 
 - ~~**Alergia coletada no formulário público com o checkbox genérico de LGPD.**~~
   — **resolvido em 13/09/2026** (`20260913090000_consentimento_saude`).
@@ -64,9 +120,94 @@
   (`AgendarWizard.tsx`, passo 3) — a dívida dizia que a copy dependia dela.
   O que está lá é proposta, não decisão.
 
+## Resolvidos depois
+
+- ~~**Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`)~~ —
+  **resolvido em 14/09/2026**, mas a dívida estava **errada no diagnóstico** e
+  isso importa mais que o conserto.
+
+  A dívida dizia: *"quem indica escreve a alergia da amiga; consentimento de
+  dado sensível não pode ser dado por outra pessoa adulta"*. **Não é o que
+  acontece.** `/indicar/[codigo]` é a tela da **indicada** — título "Você foi
+  indicada", campos "Seu nome" e "Seu WhatsApp", e `submitReferral` chega a
+  recusar o número da própria embaixadora (*"Esse é o seu próprio número 💛
+  indique uma amiga!"*). Quem preenche é a titular do dado. Ninguém consentia
+  por ninguém.
+
+  O problema real era **outro, e do mesmo tipo que a R6/R18 já resolve**:
+  alergia é dado sensível, e ali o único aceite era o checkbox genérico da
+  política — o que o art. 11, I não aceita. Era a mesma falha do formulário
+  público de agendamento, num caminho que a correção de 13/09 não alcançou.
+
+  **Conserto: o campo saiu.** Dois motivos para não reaproveitar
+  `consentimento-saude.ts` aqui:
+  - `health_consent_at` vive em `booking`. Guardar o aceite de uma *customer*
+    pediria coluna nova — mudança de schema em produção para um dado que vai ser
+    perguntado de novo daqui a pouco.
+  - Este formulário é público e **não prova posse do telefone** (a mesma razão
+    pela qual `submitReferral` já se recusava a carimbar `lgpdConsentAt` da
+    cliente existente). Aceite de dado sensível colhido sem prova de quem é a
+    pessoa vale pouco.
+
+  Nada se perde: a anamnese acontece quando ela mesma marca o horário, com o
+  consentimento específico exigido de quem de fato escreve uma alergia.
+
+- ~~**"Não" na alergia era tratado como dado de saúde.**~~ — **resolvido em
+  14/09/2026**, achado por uma revisão de correção. Não era dívida registrada:
+  era bug vivo, introduzido junto com a própria correção de LGPD do #106.
+
+  Havia **duas definições de "alergia de verdade"** no repositório, e elas
+  discordavam. `anamnesis.ts` (A11) filtra negações — "Não", "nenhuma", "-" —
+  justamente para o alerta da agenda não acender à toa. `consentimento-saude.ts`
+  tratava **qualquer texto não-vazio** como dado sensível.
+
+  Para a cliente que respondia "Não", a mais comum de todas: aparecia a caixinha
+  de dado de saúde e, sem marcá-la, **ela não conseguia agendar**. Marcando,
+  o portal gravava `health_consent_at` para um dado que a A11 já havia decidido
+  que não existe — a auditoria inventada que aquele módulo foi escrito para
+  evitar.
+
+  Conserto: `ehNegacao` sai do `anamnesis.ts` como fonte única e é usado pelos
+  dois lados, mais a tela (a caixinha nem aparece para negação). O viés
+  conservador da A11 vale nos dois usos: só a lista fechada apaga, texto
+  ambíguo continua contando como alergia de verdade — o lado seguro tanto para
+  o alerta quanto para a LGPD. Um teste compara os dois módulos e cai se eles
+  divergirem de novo; o roteiro de QA cobre o caso na tela.
+
+  ⚠️ **Confira as reservas já carimbadas à toa** antes de confiar na auditoria:
+
+  ```sql
+  select id, anamnesis->>'alergia' as alergia, health_consent_at
+  from bookings where health_consent_at is not null
+  order by health_consent_at desc;
+  ```
+
+  Toda linha cuja alergia seja uma negação pura tem consentimento registrado
+  sem dado sensível correspondente. Não apaguei nada: decidir entre limpar o
+  carimbo ou deixá-lo com nota é do Rodolfo, e depende de o #106 já ter subido.
+
 ## Ainda abertos
 
-- **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
-  indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode
-  ser dado por outra pessoa adulta, então o conserto não é uma caixinha — é
-  decidir se esse campo deve existir ali. Decisão de produto, com a Mi.
+- **`POST /api/bookings/[id]/sinal` não checa dono** — a mesma classe de IDOR
+  que o comprovante de posse fechou no `/confirm`, na rota vizinha. Verificado,
+  **não consertado**.
+
+  Hoje está adormecido: sem gateway (R22) o POST devolve 501 antes de tocar em
+  qualquer coisa. O `GET` já responde `{pago, confirmado}` para qualquer id de
+  reserva, o que vaza pouco — mas vaza.
+
+  ⚠️ **Ligar o PIX (item 6 do Anexo A) acorda o buraco**: com gateway ativo,
+  quem tiver um UUID de reserva gera cobrança PIX na reserva de outra pessoa e
+  sobrescreve `depositProvider`/`depositPaymentId` dela. O conserto é o mesmo
+  `podeConfirmar` do `/confirm` — não foi feito aqui para não inchar um PR que
+  já estava pronto, e porque a rota está inerte enquanto o gateway estiver
+  desligado. **Fazer junto com a decisão do gateway, não depois.**
+
+- **13 pistas não verificadas** de uma revisão de correção de 14/09/2026 estão em
+  `docs/REVISAO-2026-09-14-ACHADOS.md`. Não são dívidas ainda: são alegações que
+  eu **não** reproduzi, e o documento diz isso em cima. As duas que eu verifiquei
+  saíram de lá — uma consertada, outra é o item do `/sinal` acima. As de maior
+  aposta, se confirmadas: sinal pago perdendo o horário em silêncio, e o rate
+  limit de login chaveado só nos 4 últimos dígitos do telefone.
+
+- As quatro dívidas registradas em 15/08/2026 estão todas fechadas.

@@ -53,11 +53,30 @@ curl -fsS -X POST https://miozorio.com.br/api/cron/reguas -H "Authorization: Bea
 curl -fsS -X POST https://miozorio.com.br/api/cron/limpeza-eventos -H "Authorization: Bearer $CRON_SECRET"
 ```
 
-## Pendências com a Mi (copies marcadas `<!-- APROVAR COM A MI -->`)
+## Copies — revisadas em 14/09/2026
 
-1. Textos das réguas (sumida/abandono/boas-vindas) — editáveis em
-   `/admin/crm/config`.
-2. Rascunhos do funil por etapa — editáveis em `/admin/conteudo`
-   (grupo "Mensagens de WhatsApp · Funil de noiva").
-3. Revisar limiares default: sumida 120d, lead fria 14d, parada no funil 14d,
-   intervalo entre mensagens 7d, teto 10/dia, retenção 24 meses.
+Os marcadores de aprovação saíram do código. **O que foi aprovado é um texto de
+partida, não um piloto automático**: nada aqui é enviado sozinho. As jornadas
+nascem desativadas e, desde a F4, só *sugerem* na fila da Mi (`jornadas.ts`); as
+réguas nascem `ativas: false`; as listas e o funil abrem o WhatsApp com o texto
+pronto para ela editar antes de mandar.
+
+Três coisas mudaram, e por quê:
+
+1. **Saiu a gíria.** "bora marcar" virou "que tal reservarmos". A voz da marca é
+   acolhedora **sem** gíria — próxima e sofisticada ao mesmo tempo.
+2. **Saiu o rastreio da mensagem.** "Vi que você deu uma olhadinha nos horários"
+   e "Vi seu cadastro por aqui" contavam à cliente que o site registrou o que
+   ela fez. Convidar é acolhedor; avisar que foi observada não é. O gatilho
+   continua existindo — quem muda é só o que a mensagem diz.
+3. **Regra para o 💛**, para não virar gosto pessoal na próxima edição: fica nos
+   momentos de emoção (primeiro contato, resultado da prévia, contrato,
+   pós-evento) e sai dos operacionais (agendar prévia, confirmar horários).
+
+Tudo segue editável sem deploy: réguas em `/admin/crm/config`, funil em
+`/admin/conteudo` (grupo "Mensagens de WhatsApp · Funil de noiva").
+
+### Ainda aberto
+
+- Revisar limiares default: sumida 120d, lead fria 14d, parada no funil 14d,
+  intervalo entre mensagens 7d, teto 10/dia, retenção 24 meses.

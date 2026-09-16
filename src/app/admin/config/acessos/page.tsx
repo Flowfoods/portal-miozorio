@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { requireAdmin } from "@/lib/auth";
+import { EVENTOS_FORA_DOS_ACESSOS } from "@/lib/authlog";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatPhoneBR } from "@/lib/format";
@@ -17,6 +18,10 @@ const EVENTO: Record<string, { label: string; tom: string }> = {
   },
   throttled: {
     label: "Bloqueio por excesso de acessos (IP)",
+    tom: "text-mi-alerta-tinta",
+  },
+  booking_throttled: {
+    label: "Bloqueio por excesso de horários marcados",
     tom: "text-mi-alerta-tinta",
   },
   reset_request: {
@@ -43,6 +48,10 @@ export default async function AcessosPage() {
 
   const [eventos, falhas24h, entradas24h, recuperacoes] = await Promise.all([
     prisma.authLog.findMany({
+      // A tabela também guarda o movimento do agendamento (teto por IP). Aqui a
+      // tela é de ACESSO: reserva criada não é entrada no painel nem na área da
+      // cliente, e em volume empurraria o que interessa para fora das 100.
+      where: { event: { notIn: EVENTOS_FORA_DOS_ACESSOS } },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),

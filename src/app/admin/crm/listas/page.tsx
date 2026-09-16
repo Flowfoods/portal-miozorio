@@ -29,14 +29,17 @@ const TIPOS = [
 type Tipo = (typeof TIPOS)[number]["id"];
 
 // Rascunhos de mensagem (a Mi edita no WhatsApp antes de enviar — R20).
-// <!-- APROVAR COM A MI: copy das mensagens de reativação -->
+// Alinhados com os templates das réguas em `crm-config.ts` (14/09/2026): duas
+// telas mandando a mesma cliente textos com critérios diferentes é pior do que
+// qualquer uma das versões. Nenhum deles conta à cliente que o site registrou
+// o que ela olhou.
 const MSG = {
   sumidas: (nome: string) =>
-    `Oi ${nome.split(" ")[0]}! Que saudade de você por aqui 💛 Já pensou em marcar um horário pra gente se ver de novo?`,
+    `Oi ${nome.split(" ")[0]}! Que saudade de você por aqui 💛 Que tal marcarmos um horário para a gente se ver de novo?`,
   leads: (nome: string) =>
-    `Oi ${nome.split(" ")[0]}! Aqui é a Mi 💛 Vi seu cadastro por aqui — quer conhecer o estúdio ou tirar alguma dúvida?`,
+    `Oi ${nome.split(" ")[0]}! Aqui é a Mi 💛 Que alegria ter você por perto — quer conhecer o estúdio ou tirar alguma dúvida?`,
   visitou: (nome: string) =>
-    `Oi ${nome.split(" ")[0]}! Vi que você deu uma olhadinha nos horários 💛 Posso te ajudar a escolher o melhor?`,
+    `Oi ${nome.split(" ")[0]}! Aqui é a Mi 💛 Se quiser, te ajudo a escolher o melhor horário — é só me dizer o dia que te serve.`,
   indicacao: (nome: string) =>
     `Oi ${nome.split(" ")[0]}! Obrigada por indicar o estúdio 💛 Suas amigas vão amar!`,
 } as const;
