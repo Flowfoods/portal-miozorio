@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import { contarSegmento, type SegmentoConfig } from "@/lib/campanhas/segmento";
 import { metricasCampanha } from "@/lib/campanhas/service";
@@ -27,7 +27,7 @@ export default async function CampanhaDetalhePage({
 }: {
   params: { id: string };
 }) {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const camp = await prisma.campanha.findUnique({ where: { id: params.id } });
   if (!camp) notFound();
 

@@ -23,6 +23,7 @@ import {
   adminAdjustPoints,
 } from "../../actions";
 import { getSaldoExtrato } from "@/lib/clube-pontos";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://miozorio.com.br";
 
@@ -38,6 +39,7 @@ export default async function FichaClientePage({
 }: {
   params: { id: string };
 }) {
+  await exigirSessaoDoPainel();
   const [settings, customer] = await Promise.all([
     getSettings(),
     prisma.customer

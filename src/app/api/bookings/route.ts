@@ -4,6 +4,13 @@ import { createBooking } from "@/lib/booking-service";
 import { processPrivatePhoto, deletePrivatePhoto } from "@/lib/media";
 import { EV, getSid, track } from "@/lib/tracking";
 import { getClienteSession } from "@/lib/cliente-auth";
+import {
+  apagarRegistroAuth,
+  maskPhone,
+  metaFromHeaders,
+  recordAuth,
+  throttleReservasPorIp,
+} from "@/lib/authlog";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +48,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: "", holdExpiresAt: "" }, { status: 201 });
   }
 
+  // Rate limit por IP. A TENTATIVA é registrada ANTES de contar — é isso que
+  // segura uma rajada: N POSTs simultâneos liam o mesmo total e passavam todos
+  // pela checagem antes de qualquer registro existir. Se a reserva não nascer,
+  // o registro sai (abaixo). Vem antes da foto de propósito (flood não custa
+  // decode de base64) e depois do honeypot (bot burro nem chega aqui).
+  // Telefone MASCARADO (4 últimos dígitos) e IP só hasheado — LGPD.
+  const meta = metaFromHeaders(req.headers);
+  const tentativa = await recordAuth(
+    "cliente",
+    "booking_new",
+    maskPhone(parsed.data.customer.phone),
+    meta,
+  );
+  const limite = await throttleReservasPorIp(meta.ip);
+  if (limite.bloqueado) {
+    // O registro fica: é o que mantém o balde cheio durante a rajada.
+    // Nunca bloqueio silencioso: diz quanto esperar e oferece a saída humana.
+    return NextResponse.json(
+      {
+        error: `Recebi vários agendamentos deste aparelho agora há pouco. Espera ${limite.minutos} min e tenta de novo? Se for urgente, me chama no WhatsApp 💛`,
+        code: "muitas_reservas",
+        minutos: limite.minutos,
+      },
+      { status: 429 },
+    );
+  }
+
   // A3 — a foto vira arquivo PRIVADO antes de tocar no motor. processPrivatePhoto
   // valida o conteúdo por magic bytes, então um base64 de qualquer outra coisa
   // morre aqui e não vira linha no banco.
@@ -51,8 +85,12 @@ export async function POST(req: NextRequest) {
       const bruto = fotoBase64.replace(/^data:image\/\w+;base64,/, "");
       photoKey = await processPrivatePhoto(Buffer.from(bruto, "base64"));
     } catch {
+      await apagarRegistroAuth(tentativa);
       return NextResponse.json(
-        { error: "Não consegui ler essa foto — tente outra?", code: "foto_invalida" },
+        {
+          error: "Não consegui ler essa foto — tente outra?",
+          code: "foto_invalida",
+        },
         { status: 415 },
       );
     }
@@ -64,12 +102,15 @@ export async function POST(req: NextRequest) {
     await deletePrivatePhoto(photoKey).catch(() => undefined);
   }
   if (!result.ok) {
+    // Reserva que não nasceu não conta no limite por IP.
+    await apagarRegistroAuth(tentativa);
     const status = STATUS_BY_CODE[result.code] ?? 400;
     return NextResponse.json(
       { error: result.message, code: result.code },
       { status },
     );
   }
+
   // Tracking F1 (server-authoritative): a cliente concluiu o fluxo de agendar.
   // serviceId não é PII; sanitizeMeta descarta o que não for primitivo simples.
   await track({

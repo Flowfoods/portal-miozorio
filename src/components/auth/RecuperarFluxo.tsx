@@ -73,14 +73,22 @@ export default function RecuperarFluxo({
   // ── Cooldown do reenvio ────────────────────────────────────────────────────
   const [cooldown, setCooldown] = useState(0);
   const pedidos = useRef(0);
+  // Erro velho não sobrevive a um pedido novo. Os estados do useFormState só
+  // mudam quando a própria action roda de novo — sem isto, "Seu código venceu
+  // às 14:30" continuava na tela ao lado do código recém-pedido.
+  const [erroSuprimido, setErroSuprimido] = useState(false);
   useEffect(() => {
     if (pedir && "ok" in pedir && pedir.ok) {
       setIdentificador(pedir.identificador);
       setPasso("codigo");
       pedidos.current += 1;
       setCooldown(COOLDOWN_S);
+      setErroSuprimido(true);
     }
   }, [pedir]);
+  useEffect(() => {
+    setErroSuprimido(false);
+  }, [verificar, salvar]);
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setInterval(() => setCooldown((c) => c - 1), 1000);
@@ -119,8 +127,10 @@ export default function RecuperarFluxo({
   }, [salvar]);
 
   const erroPedir = pedir && "error" in pedir ? pedir.error : null;
-  const erroVerificar = verificar && "error" in verificar ? verificar : null;
-  const erroSalvar = salvar && "error" in salvar ? salvar : null;
+  const erroVerificar =
+    !erroSuprimido && verificar && "error" in verificar ? verificar : null;
+  const erroSalvar =
+    !erroSuprimido && salvar && "error" in salvar ? salvar : null;
 
   const rotuloIdent =
     perfil === "cliente" ? "Seu WhatsApp" : "Seu e-mail ou WhatsApp";

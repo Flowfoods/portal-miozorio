@@ -12,6 +12,12 @@ import {
 
 // Export CSV das listas de ação (F3). Só admin logada (defesa dupla: o
 // middleware já protege /admin, e aqui checamos a sessão de novo).
+//
+// A conferência é `session?.user?.email`, nunca `!session`: a sessão REVOGADA
+// (senha trocada em outro aparelho, conta desativada) não é `null` — o
+// callback `session` do NextAuth devolve `{ ...session, user: undefined }`,
+// que é objeto verdadeiro. Com `!session` este CSV, que leva nome e WhatsApp
+// de toda a base, baixava depois de a Mi achar que tinha derrubado o acesso.
 export const dynamic = "force-dynamic";
 
 const esc = (v: unknown) => {
@@ -24,7 +30,7 @@ const csv = (cab: string[], linhas: unknown[][]) =>
 
 export async function GET(req: NextRequest) {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session?.user?.email) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

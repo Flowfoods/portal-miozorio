@@ -35,6 +35,7 @@ vi.mock("@/lib/prisma", () => {
         if ("gte" in c) return (v as Date) >= (c.gte as Date);
         if ("gt" in c) return (v as Date) > (c.gt as Date);
         if ("lte" in c) return (v as Date) <= (c.lte as Date);
+        if ("lt" in c) return (v as number) < (c.lt as number);
         if ("in" in c) return (c.in as unknown[]).includes(v);
       }
       return v === cond;
@@ -53,9 +54,15 @@ vi.mock("@/lib/prisma", () => {
   const recentesPrimeiro = (a: Row, b: Row) =>
     (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime();
 
+  // Leituras devolvem CÓPIA, como um banco de verdade: quem leu uma linha não
+  // enxerga o que outra requisição gravou depois. Com o objeto vivo, o
+  // read-modify-write de `attempts` NÃO era reproduzível — cada chamada em
+  // paralelo lia o valor já atualizado pela anterior e a corrida sumia.
   const tabela = (linhas: Row[]) => ({
-    findUnique: async ({ where }: { where: Row }) =>
-      linhas.find((r) => bate(r, where)) ?? null,
+    findUnique: async ({ where }: { where: Row }) => {
+      const r = linhas.find((r) => bate(r, where));
+      return r ? { ...r } : null;
+    },
     findFirst: async ({
       where,
       orderBy,
@@ -65,7 +72,7 @@ vi.mock("@/lib/prisma", () => {
     }) => {
       const achados = linhas.filter((r) => bate(r, where));
       if (orderBy) achados.sort(recentesPrimeiro);
-      return achados[0] ?? null;
+      return achados[0] ? { ...achados[0] } : null;
     },
     findMany: async ({ where }: { where?: Row } = {}) =>
       where ? linhas.filter((r) => bate(r, where)) : [...linhas],
@@ -493,5 +500,88 @@ describe("B2 — a Mi gera o código pela ficha da cliente", () => {
   it("cliente fora do Clube não gera código", async () => {
     H.customers[0]!.clubJoinedAt = null;
     expect(await gerarCodigoParaCliente(CLIENTE_ID)).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Revisão pré-deploy (15/09) — corridas e vazamentos no ciclo do código", () => {
+  /** Um código errado com certeza: diferente do que a Mi recebeu. */
+  const errado = (certo: string) => (certo === "000000" ? "000001" : "000000");
+
+  it("5 palpites errados em PARALELO custam 5 tentativas, não 1 (teto atômico)", async () => {
+    // Antes: read-modify-write — todos liam attempts=0 e gravavam 1.
+    await pedirCodigo(TEL);
+    const certo = codigoRecebidoPelaMi();
+    await Promise.all(
+      Array.from({ length: 5 }, () => verificarCodigo(TEL, errado(certo))),
+    );
+    expect(H.recoveries[0]!.attempts).toBe(5);
+    expect(H.recoveries[0]!.usedAt).toBeInstanceOf(Date); // queimou
+    // E nem o código certo vale mais: o teto foi respeitado.
+    expect((await verificarCodigo(TEL, certo)).ok).toBe(false);
+  });
+
+  it("palpite errado nunca ressuscita um código já consumido", async () => {
+    await pedirCodigo(TEL);
+    const certo = codigoRecebidoPelaMi();
+    await verificarCodigo(TEL, certo);
+    // Salvar (consome) e um palpite errado em voo, ao mesmo tempo.
+    await Promise.all([
+      salvarNovaSenha("senhaNova123"),
+      verificarCodigo(TEL, errado(certo)),
+    ]);
+    expect(H.recoveries[0]!.usedAt).toBeInstanceOf(Date);
+    // Quem ainda tiver o código (ele fica no WhatsApp) não consegue nada.
+    expect((await verificarCodigo(TEL, certo)).ok).toBe(false);
+  });
+
+  it("pedir código novo NÃO derruba uma confirmação em andamento", async () => {
+    await pedirCodigo(TEL);
+    await verificarCodigo(TEL, codigoRecebidoPelaMi()); // token de troca vivo
+    avancar(2); // fora do cooldown de 60s
+    await pedirCodigo(TEL); // terceiro — ou a própria cliente em outra aba
+    // A tela da senha continua funcionando para quem confirmou.
+    expect(await salvarNovaSenha("senhaNova123")).toMatchObject({ ok: true });
+  });
+
+  it("confirmação invalidada por OUTRO salvar: recusa sem hora do futuro", async () => {
+    // Navegador A confirma o código e para na tela da senha.
+    await pedirCodigo(TEL);
+    await verificarCodigo(TEL, codigoRecebidoPelaMi());
+    const cookieA = H.cookies.get("mi_recuperacao")!;
+    // Navegador B pede outro código, confirma e salva — consome tudo.
+    avancar(2);
+    await pedirCodigo(TEL);
+    await verificarCodigo(TEL, codigoRecebidoPelaMi());
+    expect(await salvarNovaSenha("senhaDoB12345")).toMatchObject({ ok: true });
+    // A tenta salvar com o token dele: recusado — e SEM "venceu às 13:47"
+    // num relógio que marca 13:34.
+    H.cookies.set("mi_recuperacao", cookieA);
+    const r = await salvarNovaSenha("senhaDoA12345");
+    expect(r).toMatchObject({ ok: false, pedirNovo: true });
+    if (!r.ok) {
+      expect(r.message).not.toMatch(/venceu às/);
+      expect(r.message).toContain("Peça um código novo");
+    }
+  });
+
+  it("passo 2 não conta o que o passo 1 esconde: desconhecido = 'sem código ativo'", async () => {
+    const desconhecido = await verificarCodigo("(21) 90000-0000", "123456");
+    const semCodigo = await verificarCodigo(TEL, "123456"); // cadastrada, sem pedido
+    expect(desconhecido).toEqual(semCodigo);
+    expect(desconhecido).toMatchObject({ ok: false, pedirNovo: true });
+  });
+
+  it("a forma FORMATADA do telefone também é recusada como senha", async () => {
+    await pedirCodigo(TEL);
+    await verificarCodigo(TEL, codigoRecebidoPelaMi());
+    expect(await salvarNovaSenha("(21) 99862-6845")).toMatchObject({
+      ok: false,
+    });
+    expect(await salvarNovaSenha("+55 21 99862-6845")).toMatchObject({
+      ok: false,
+    });
+    // E uma senha de verdade continua passando.
+    expect(await salvarNovaSenha("senhaNova123")).toMatchObject({ ok: true });
   });
 });

@@ -8,6 +8,7 @@ import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import ConfirmForm from "@/components/admin/ConfirmForm";
 import { adminCreateRevenue, adminDeleteRevenue } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function ReceitasPage({
 }: {
   searchParams: { mes?: string };
 }) {
+  await exigirSessaoDoPainel();
   const { gte, lt, iso } = mesRange(searchParams.mes ?? "");
   const { timezone: tz } = await getSettings();
 

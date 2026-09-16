@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatPeriodoExtenso } from "@/lib/periods";
@@ -31,7 +31,7 @@ export default async function MensagensPage({
 }: {
   searchParams: { status?: string; periodo?: string; de?: string; ate?: string };
 }) {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
   const pr = periodoDaRequest("mensagens", searchParams, {
     fallback: "ultimos30",

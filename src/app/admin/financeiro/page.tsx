@@ -23,6 +23,7 @@ import ChartCard from "@/components/ui/ChartCard";
 import RoscaChart from "@/components/ui/charts/RoscaChart";
 import { ChartVazio } from "@/components/ui/charts/estados";
 import { fmtBRL } from "@/lib/charts/theme";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function FinanceiroDashboard({
     ate?: string;
   };
 }) {
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
   const regime: Regime = searchParams.regime === "competencia" ? "competencia" : "caixa";
   const now = DateTime.now().setZone(tz);

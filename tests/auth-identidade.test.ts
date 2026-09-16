@@ -3,6 +3,7 @@ import { maskPhoneBR } from "@/lib/format";
 import { normalizeE164BR } from "@/lib/phone";
 import {
   SENHA_MIN_CLIENTE,
+  ehOProprioTelefone,
   emailValido,
   identificarLogin,
   normalizarEmail,
@@ -197,5 +198,32 @@ describe("B1 — mensagens do login do painel", () => {
   it("arredonda para cima e nunca mostra 0 min", () => {
     expect(codigoLocked(new Date(Date.now() + 1_000))).toBe("CONTA_PAUSADA:1");
     expect(codigoLocked(new Date(Date.now() - 1_000))).toBe("CONTA_PAUSADA:1");
+  });
+});
+
+describe("B5 — 'diferente do seu telefone' vale para a forma formatada", () => {
+  const TEL = "+5521998626845";
+
+  it("recusa o telefone em qualquer jeito de escrever", () => {
+    // A forma formatada é a que a cliente vê na carteirinha e na mensagem da
+    // Mi — era exatamente a que passava.
+    for (const s of [
+      "21998626845",
+      "5521998626845",
+      "+5521998626845",
+      "(21) 99862-6845",
+      "+55 21 99862-6845",
+      "21 99862 6845",
+      "21.99862.6845",
+    ]) {
+      expect(ehOProprioTelefone(s, TEL)).toBe(true);
+    }
+  });
+
+  it("senha de verdade que só CONTÉM os dígitos não é 'o telefone'", () => {
+    expect(ehOProprioTelefone("a21998626845", TEL)).toBe(false);
+    expect(ehOProprioTelefone("21998626845!", TEL)).toBe(false);
+    expect(ehOProprioTelefone("minhasenha", TEL)).toBe(false);
+    expect(ehOProprioTelefone("12345678", TEL)).toBe(false);
   });
 });

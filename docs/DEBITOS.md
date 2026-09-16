@@ -37,10 +37,30 @@
   agendamento é maior do que o de um atacante que precisaria adivinhar o UUID.
   Fazer junto com um QA logado de ponta a ponta.
 
-- **Rate limit por IP em `POST /api/bookings`.** Entrou honeypot e teto de
-  reservas em aberto por telefone, que cobrem o abuso realista. O limite por IP
-  exige um evento novo no `AuthEvent` (`isIpThrottled` só conta `login_fail` e
-  `recover_fail`), então não é plug-and-play.
+- ~~**Rate limit por IP em `POST /api/bookings`.**~~ — **resolvido em
+  14/09/2026**, e **sem migration**. A dívida dizia que "exige um evento novo no
+  `AuthEvent`": exige mesmo, mas `AuthEvent` é um union de TypeScript e
+  `auth_log.event` é uma coluna `String` — acrescentar `booking_new` não toca no
+  schema. O que travava era a leitura da dívida, não o banco.
+
+  **Conta reservas CRIADAS, não falhas.** Foi o ponto de desenho: o abuso aqui
+  não é errar, é acertar muitas vezes — cada reserva nasce com hold e segura um
+  horário na agenda. Contar falhas (como o `isIpThrottled` do login faz) não
+  pararia nada. O honeypot e o teto por telefone já pegam o bot burro; isto
+  fecha a brecha de quem troca de telefone a cada POST.
+
+  10 por hora, folgado de propósito: um IP pode ser NAT (prédio, estúdio,
+  operadora móvel), e punir uma casa inteira é pior do que o abuso evitado.
+  Nenhum caminho do painel passa por essa rota — só o wizard público —, então a
+  Mi nunca esbarra nisto. Fail-open se o log estiver indisponível: derrubar
+  agendamento por causa da auditoria seria trocar abuso raro por perda de
+  receita certa.
+
+  A checagem vem **antes** de processar a foto (um flood não deve custar decode
+  de base64) e **depois** do honeypot. A recusa é 429 com quanto falta esperar,
+  nunca bloqueio silencioso — e o `AgendarWizard` passou a ecoar a mensagem do
+  429, porque o genérico _"tenta de novo?"_ é o conselho errado para quem bateu
+  num limite de taxa.
 
 - ~~**Alergia coletada no formulário público com o checkbox genérico de LGPD.**~~
   — **resolvido em 13/09/2026** (`20260913090000_consentimento_saude`).
@@ -65,6 +85,58 @@
   O que está lá é proposta, não decisão.
 
 ## Ainda abertos
+
+- ~~**Revogação de sessão do painel em navegação interna**~~ (achado da
+  revisão adversarial de 15/09/2026) — **resolvido em 15/09/2026**, pela saída
+  (a). Trocar a senha sobe `tokenVersion`, mas só o carregamento completo
+  conferia isso no banco: o middleware roda no Edge e só valida a assinatura
+  do JWT, e o `admin/layout.tsx` não roda de novo em `<Link>` — nem um
+  `template.tsx` rodaria (é prop reaproveitada pelo roteador do cliente).
+  Cenário: celular da Mi com o painel aberto, ela troca a senha no notebook;
+  quem está com o celular seguia clicando pelo painel até recarregar ou o JWT
+  vencer (7 dias). A outra saída, (b) — o middleware consultar uma rota
+  interna que confere `tokenVersion`, com cache — criava um ponto novo de
+  falha exatamente no componente que, se quebrar, tranca a Mi para fora.
+
+  A guarda é `exigirSessaoDoPainel()` (`src/lib/auth-painel.ts`), no topo das
+  32 páginas do painel e no layout. Ela **redireciona** para o login com o
+  caminho de volta; `requireAdmin()`, que lança, continua sendo a guarda de
+  server action e rota de API — em página ele virava a tela "Ops, algo deu
+  errado". Das 34 páginas, 6 usavam esse `requireAdmin` e 26 não tinham guarda
+  própria (login e recuperar são públicas). `tests/auth-painel.test.ts` varre
+  o `src/app/admin` e falha se uma página nascer sem a chamada. Resíduo: o
+  cache do roteador do cliente pode reaproveitar por até 30 s uma página
+  aberta logo antes da troca (`staleTimes` padrão do Next 14.2).
+
+  **A verificação desse conserto achou o mesmo buraco em duas rotas que a
+  guarda de página não cobre**, e as duas vinham de antes desta frente: o
+  export CSV das listas do CRM (`/admin/crm/listas/csv`) conferia `!session`,
+  e o `durationMin` de `/api/availability` conferia `admin`. A sessão revogada
+  **não é `null`** — o callback `session` do NextAuth devolve
+  `{ ...session, user: undefined }`, objeto verdadeiro —, então as duas
+  passavam: o CSV com nome e WhatsApp da base inteira baixava depois de a Mi
+  achar que tinha derrubado o acesso. As irmãs (`media`, `financeiro/anexo`)
+  sempre conferiram `session?.user?.email`. Além do teste de unidade da rota,
+  `tests/auth-painel.test.ts` varre o `src` e falha se alguém voltar a testar
+  a sessão de admin pela variável crua (`!s`, `s ? …`, `if (s)`).
+
+- ~~**Carteirinha aberta para sessão com senha provisória**~~ — **resolvido em
+  15/09/2026**, e também achado na verificação acima, ao passar a mesma lente
+  na sessão da CLIENTE. Ela não tem o defeito do objeto verdadeiro
+  (`getClienteSession` confere `clubTokenVersion` no banco e devolve `null`),
+  mas tem outra flag: `prov`, "a senha ainda é o telefone". No primeiro acesso
+  a senha É o telefone, então **quem sabe o número entra** — por isso toda tela
+  da conta manda a provisória para `/clube/conta/senha` antes de mostrar
+  qualquer coisa. A carteirinha (`/clube/painel/[codigo]`) conferia a sessão e
+  que o código é da própria pessoa, e **não** conferia `prov`. Com o telefone
+  mais o código de indicação — que a membro divulga de propósito, é o link de
+  convite — dava para ler nome, saldo, segmento e **o próximo atendimento com
+  dia e hora** sem criar senha: sem trancar a dona para fora e sem deixar
+  rastro, que é o que uma tomada de conta faria. É exatamente o dado que o
+  comentário da própria página chama de "a localização física de uma mulher,
+  em horário exato" (R6/R18). `tests/clube-sessao-provisoria.test.ts` varre o
+  `src/app/(site)` e falha se uma tela ler a sessão da cliente e ignorar a
+  flag.
 
 - **Alergia de terceiro no formulário de indicação** (`IndicarForm.tsx`): quem
   indica escreve a alergia **da amiga**. Consentimento de dado sensível não pode

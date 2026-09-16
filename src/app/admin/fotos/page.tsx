@@ -13,6 +13,7 @@ import {
   adminUpdateMediaAlt,
   adminDeleteMedia,
 } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,7 @@ export default async function FotosPage({
 }: {
   searchParams?: { enviadas?: string; pulados?: string; quais?: string };
 }) {
+  await exigirSessaoDoPainel();
   const assets = await prisma.mediaAsset.findMany({
     orderBy: [{ sort: "asc" }, { createdAt: "desc" }],
   });

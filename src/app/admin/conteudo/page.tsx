@@ -2,10 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { CONTENT_FIELDS } from "@/lib/content";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminSetContent } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminConteudoPage() {
+  await exigirSessaoDoPainel();
   const rows = await prisma.siteContent.findMany();
   const override = new Map(rows.map((r) => [r.key, r.value]));
 

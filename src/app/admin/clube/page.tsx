@@ -15,6 +15,7 @@ import {
   adminSetPointsEngajamento,
   adminMarkVoucherEntregue,
 } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function AdminClubePage({
 }: {
   searchParams: { periodo?: string; de?: string; ate?: string };
 }) {
+  await exigirSessaoDoPainel();
   const settings = await getSettings();
 
   // Período global (F4): recorte do MOVIMENTO (pontos/indicações/resgates).

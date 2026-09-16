@@ -109,12 +109,29 @@ módulo (`src/lib/recuperacao.ts`, tabela `password_recoveries`):
 
 ### 1. Dokploy → variáveis de ambiente
 
-| Variável                 | Valor                         | Precisa?                       |
-| ------------------------ | ----------------------------- | ------------------------------ |
-| `AUTH_CANONICAL_HOST`    | `miozorio.com.br`             | recomendado                    |
-| `MI_WHATSAPP_EMERGENCIA` | segundo número da Mi em E.164 | opcional                       |
-| `AUTH_EXTRA_ORIGINS`     | vazio                         | só se surgir domínio novo      |
-| `AUTH_COOKIE_DOMAIN`     | vazio                         | só se um dia houver subdomínio |
+| Variável                 | Valor                         | Precisa?                                         |
+| ------------------------ | ----------------------------- | ------------------------------------------------ |
+| `MI_WHATSAPP`            | WhatsApp da Mi em E.164       | **sim — sem ela a recuperação não sai do lugar** |
+| `AUTH_CANONICAL_HOST`    | `miozorio.com.br`             | recomendado                                      |
+| `MI_WHATSAPP_EMERGENCIA` | segundo número da Mi em E.164 | opcional                                         |
+| `AUTH_EXTRA_ORIGINS`     | vazio                         | só se surgir domínio novo                        |
+| `AUTH_COOKIE_DOMAIN`     | vazio                         | só se um dia houver subdomínio                   |
+
+⚠️ **`MI_WHATSAPP` passa a ser lida pela primeira vez aqui.** Ela já existia no
+`.env.example`, mas nenhum código no portal a lia — então ninguém nunca notou se
+estava vazia no Dokploy. A partir do B2 ela é o destino do código de
+recuperação: vazia ou malformada, `numerosDaMi()` devolve lista vazia, o pedido
+fica gravado com `notify_error` e a pessoa lê _"a Mi vai te mandar o código"_
+enquanto o código não vai a lugar nenhum. **Confira antes do deploy** — é o
+único jeito de esse modo de falha não chegar calado na cliente.
+
+⚠️ **Cuidado com o nome.** Existem duas envs diferentes, com os nomes
+trocados de posição, e as duas guardam o número da Mi:
+
+| Env           | De quem é       | Formato        | Se faltar                             |
+| ------------- | --------------- | -------------- | ------------------------------------- |
+| `MI_WHATSAPP` | auth (B2)       | E.164 (`+55…`) | **falha silenciosa** — código não sai |
+| `WHATSAPP_MI` | agenda (A1–A11) | URL do `wa.me` | cai num número fixo no código         |
 
 `AUTH_CANONICAL_HOST` vazio faz o portal usar o host de `NEXT_PUBLIC_SITE_URL`.
 Se algum dia o redirect entrar em laço (Traefik reescrevendo o Host), colocar o
@@ -156,9 +173,15 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 
 ### 6. Ordem do deploy
 
-1. `merge` na master → `application.deploy` no Dokploy;
-2. o entrypoint roda as migrations sozinho (as duas são aditivas: nada é
-   apagado, ninguém é deslogado);
+> O roteiro completo, com backup e rollback, é o
+> `docs/DEPLOY-AUTH-B1-B5.md`. O resumo abaixo é só para situar.
+
+1. `merge` na master → `scripts/deploy-agenda.sh` (ele faz backup verificado,
+   pré-voo e conferência; `application.deploy` cru pula tudo isso);
+2. o entrypoint roda as migrations sozinho. **As duas desta frente são
+   aditivas** — nada é apagado, ninguém é deslogado. ⚠️ Mas o deploy carrega
+   **quatro frentes e 10 migrations**, e a `20260913080000_professional_obrigatorio`
+   (da #106) **aborta de propósito** se achar double-booking preexistente;
 3. conferir `https://miozorio.com.br/api/health`;
 4. abrir `https://www.miozorio.com.br/clube/entrar` e confirmar que cai no apex;
 5. fazer um pedido de código de teste e ver a mensagem chegar no WhatsApp da Mi.
@@ -176,9 +199,10 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
    caía no meio do atendimento; 7 dias é o teto sugerido para acesso ao painel.
 4. **Mensagem de login da cliente** — hoje ela diz _"Não encontrei esse telefone
    por aqui"_, o que é muito mais gentil, mas confirma para quem perguntar que
-   aquele número **não** tem conta. A recuperação de senha continua 100%
-   neutra. Se a Mi preferir privacidade máxima, a mensagem volta a ser única
-   ("Telefone ou senha incorretos") — é trocar uma linha.
+   aquele número **não** tem conta. A recuperação de senha é neutra no
+   **texto** dos dois passos — ver _Limites conhecidos_ abaixo para o que
+   ainda escapa. Se a Mi preferir privacidade máxima, a mensagem volta a ser
+   única ("Telefone ou senha incorretos") — é trocar uma linha.
 5. **Primeiro acesso — ✅ DECIDIDO (13/09/2026): fica como está.** A senha
    inicial da cliente continua sendo o próprio telefone, e a tela de login
    continua dizendo isso.
@@ -199,6 +223,45 @@ e-mail antigo de reset em algum lugar, o link dá 404 — o caminho é
 
 ---
 
+## Limites conhecidos (revisão adversarial de 15/09/2026)
+
+Uma revisão com sete lentes independentes sobre o código de auth achou 20
+pontos; 14 viraram conserto (na PR #107), mais 3 que a verificação pós-revisão
+encontrou: a sessão revogada testada pela variável crua em duas rotas do
+painel, e a carteirinha da cliente aberta para sessão com senha provisória
+(as três no `docs/DEBITOS.md`). Estes **não** foram corrigidos — por decisão
+ou por escopo — e ficam aqui para ninguém redescobrir:
+
+1. **Enumeração residual pela recuperação.** O texto é neutro nos dois passos,
+   mas (a) o passo 1 demora mais quando a conta existe — é o tempo de avisar a
+   Mi pela Evolution, que é síncrono; (b) com um código ativo, o contador
+   "você ainda pode tentar N vezes" confirma que existe conta. Os dois só
+   importam se a enumeração pelo login (decisão 4, aceita) um dia for
+   revertida; aí o conserto é enfileirar o aviso à Mi sem esperar a resposta e
+   tirar o contador da mensagem.
+2. **Sessão do painel derrubada: até 30 s de cache do roteador.** Era pior: o
+   middleware só valida a assinatura do JWT (roda no Edge, sem banco) e a
+   conferência no banco vivia só no `admin/layout.tsx`, que o App Router
+   **não** re-renderiza em navegação interna (`<Link>`) — uma sessão aberta
+   seguia navegando pelo painel até recarregar ou o JWT vencer (7 dias).
+   Fechado no mesmo dia com `exigirSessaoDoPainel()` no topo de cada página
+   (`src/lib/auth-painel.ts`; histórico no `docs/DEBITOS.md`). O que resta é
+   o cache do roteador do cliente, que pode reaproveitar por até 30 s uma
+   página aberta logo antes da troca de senha (`staleTimes` padrão do Next
+   14.2). `template.tsx` não resolveria: é uma prop que o roteador do cliente
+   reaproveita, não roda de novo no servidor.
+3. **Trocar a senha logada não pede a senha atual.** Foi assim de propósito
+   (cliente leiga, fluxo curto). Consequência: aparelho destravado por um
+   minuto = senha trocada e a dona deslogada dos outros aparelhos. Se
+   incomodar, é pedir a senha atual no `SenhaForm` quando `provisoria=false`.
+4. **Hora de "vale até / venceu às" está no fuso das Configurações da Mi**,
+   sem indicação de fuso. Cliente em Manaus lê uma hora que não é a dela.
+5. **Rajada distribuída de pedidos de código.** O teto por IP (10/h) segura
+   uma origem só; N origens ainda somam N×10 mensagens/hora no WhatsApp da Mi.
+   Fechar isso exige guarda no banco (índice único parcial em
+   `password_recoveries` por pessoa com `used_at IS NULL`) — migration, fora
+   deste PR.
+
 ## Verificação (13/09/2026)
 
 Rodado num ambiente completo: PostgreSQL 16 com **todas as migrations
@@ -210,6 +273,12 @@ telas.
 arquivos, entre eles dois novos com Prisma/cookies/Evolution falsos:
 `tests/recuperacao-ciclo.test.ts` (o ciclo do código ponta a ponta) e
 `tests/login-cliente.test.ts` (login, limites e sessão).
+
+> Esse 360 é o retrato **daquele dia, neste branch antes do merge** — está aqui
+> como registro, não como número atual. Depois do merge com a master, das
+> frentes que entraram em seguida (#103, #105, #106) e da revisão adversarial
+> de 15/09 (#107), a suíte está em **532 testes / 49 arquivos**. Se você rodar
+> `npm test` hoje e vir 532, é isso: não há teste faltando.
 
 **Checklist funcional no navegador — 30 de 30 ✅**
 

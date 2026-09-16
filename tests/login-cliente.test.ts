@@ -100,6 +100,7 @@ import {
   setClientePassword,
   logoutCliente,
 } from "@/lib/cliente-auth";
+import { identTelefone, maskPhone } from "@/lib/authlog";
 
 const TEL = "+5521998626845";
 const ID = "11111111-1111-1111-1111-111111111111";
@@ -230,7 +231,7 @@ describe("B4 — 11ª tentativa em 15 min pausa o telefone", () => {
       H.authLogs.push({
         area: "cliente",
         event: "login_fail",
-        identifier: "••••6845",
+        identifier: identTelefone(TEL),
         createdAt: new Date(Date.now() - i * 30_000),
       });
     }
@@ -245,10 +246,28 @@ describe("B4 — 11ª tentativa em 15 min pausa o telefone", () => {
       H.authLogs.push({
         area: "cliente",
         event: "login_fail",
-        identifier: "••••0000",
+        identifier: identTelefone("+5521900000000"),
         createdAt: new Date(),
       });
     }
+    expect(await loginCliente(TEL, SENHA)).toMatchObject({ ok: true });
+  });
+
+  it("outro telefone com o MESMO final não pausa este (a chave não é só a máscara)", async () => {
+    // +55 11 98888-6845 termina igual a +55 21 99862-6845. A chave antiga era
+    // só a máscara — "••••6845" para os dois —, então as falhas de um pausavam
+    // a outra, e bastava errar 10 vezes num número QUALQUER com esse final
+    // para pausar todas as clientes com esse final. As linhas abaixo são
+    // exatamente o que a chave antiga gravava.
+    for (let i = 0; i < 10; i++) {
+      H.authLogs.push({
+        area: "cliente",
+        event: "login_fail",
+        identifier: maskPhone("+5511988886845"), // "••••6845"
+        createdAt: new Date(),
+      });
+    }
+    expect(identTelefone(TEL)).not.toBe(identTelefone("+5511988886845"));
     expect(await loginCliente(TEL, SENHA)).toMatchObject({ ok: true });
   });
 });

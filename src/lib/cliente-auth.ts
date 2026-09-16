@@ -5,8 +5,8 @@ import { prisma } from "./prisma";
 import { BCRYPT_ROUNDS, hashFraco, lockoutMs } from "./security";
 import { EV, getSid, mergeAnonToClient, track } from "./tracking";
 import {
+  identTelefone,
   isIpThrottled,
-  maskPhone,
   metaFromHeaders,
   recordAuth,
   throttlePorIdentificador,
@@ -205,7 +205,9 @@ export async function loginCliente(
   if (!password) return { ok: false, message: "Digite sua senha." };
 
   const meta = metaFromHeaders(headers());
-  const ident = maskPhone(phone);
+  // Chave do log E do rate-limit por identificador. Era só a máscara
+  // (••••6845): 10^4 baldes — clientes com o mesmo final dividiam a pausa.
+  const ident = identTelefone(phone);
 
   // Rate-limit por IP (defesa-em-profundidade além da trava por conta).
   if (await isIpThrottled(meta.ip)) {
@@ -373,7 +375,7 @@ export async function setClientePassword(
   await recordAuth(
     "cliente",
     "password_changed",
-    maskPhone(c.phoneE164),
+    identTelefone(c.phoneE164),
     metaFromHeaders(headers()),
   );
   return { ok: true };

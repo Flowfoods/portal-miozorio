@@ -3,10 +3,12 @@ import { formatBRL } from "@/lib/format";
 import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminCreateRecurring, adminToggleRecurring } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
 export default async function RecorrentesPage() {
+  await exigirSessaoDoPainel();
   const [categorias, recorrentes] = await Promise.all([
     prisma.financialCategory.findMany({
       where: { kind: "expense", active: true },

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { formatPhoneBR } from "@/lib/format";
+import { identificadorVisivel } from "@/lib/authlog";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ const EVENTO: Record<string, { label: string; tom: string }> = {
 };
 
 export default async function AcessosPage() {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const { timezone: tz } = await getSettings();
   const desde24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -185,7 +186,7 @@ export default async function AcessosPage() {
                 <div className="min-w-0">
                   <p className={`font-corpo ${info.tom}`}>{info.label}</p>
                   <p className="truncate text-xs text-mi-texto/80">
-                    {e.identifier ?? "—"}
+                    {identificadorVisivel(e.identifier)}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">

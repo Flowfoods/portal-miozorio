@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import SubmitButton from "@/components/admin/SubmitButton";
 import { adminToggleJornada, adminSeedJornadasPadrao } from "../../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ const GATILHO_LABEL: Record<string, string> = {
 };
 
 export default async function CrmJornadasPage() {
+  await exigirSessaoDoPainel();
   const jornadas = await prisma.jornada.findMany({
     orderBy: { createdAt: "asc" },
     include: {

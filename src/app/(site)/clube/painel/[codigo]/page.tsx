@@ -49,6 +49,12 @@ export default async function PainelMembroPage({
 
   const sessao = await getClienteSession();
   if (!sessao) redirect(hrefLoginCliente());
+  // Senha ainda provisória = o telefone é a senha, e quem sabe o número
+  // entra. Sem esta linha bastava o telefone + o código de indicação (que a
+  // membro divulga de propósito) para ler a agenda dela sem criar senha —
+  // ou seja, sem trancar a dona para fora nem deixar rastro, que é o que uma
+  // tomada de conta faria. Mesma guarda das outras telas da conta.
+  if (sessao.prov) redirect("/clube/conta/senha");
   // Código de outra pessoa: 404 em vez de 403 — não confirma que o código
   // existe (mesma disciplina de /momentos/foto/[id]).
   if (sessao.customerId !== membro.id) notFound();

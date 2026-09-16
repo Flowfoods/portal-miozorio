@@ -49,6 +49,18 @@ export function hashFraco(hash: string | null | undefined): boolean {
   return Number(m[1]) < BCRYPT_ROUNDS;
 }
 
+// ── Anti-enumeração por tempo ────────────────────────────────────────────────
+
+/**
+ * Hash bcrypt (custo 12) de um segredo aleatório que ninguém conhece. Serve
+ * para o login gastar o MESMO tempo quando a conta não existe: `compareSync`
+ * contra ele nunca dá true, mas custa o mesmo que um login de verdade. Sem
+ * isso, e-mail desconhecido respondia em milissegundos e e-mail de admin em
+ * centenas de ms — a mensagem era única, o relógio entregava a lista.
+ */
+export const HASH_FANTASMA =
+  "$2b$12$IuTlVbcodm5MkccTaVAcouv/vIBzgN7GJ8tjHd784i.AmDipvPKvW";
+
 // ── M13.4 — token de redefinição de senha ────────────────────────────────────
 
 /** Validade do link de redefinição (30 min — F2.1). */

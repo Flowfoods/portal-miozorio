@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { evolutionStatus } from "@/lib/evolution-connect";
 import WhatsAppConnect from "@/components/admin/WhatsAppConnect";
 
 export const dynamic = "force-dynamic";
 
 export default async function WhatsAppPage() {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const inicial = await evolutionStatus();
 
   return (

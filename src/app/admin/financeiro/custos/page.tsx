@@ -6,6 +6,7 @@ import FinanceSubnav from "@/components/admin/finance/FinanceSubnav";
 import SubmitButton from "@/components/admin/SubmitButton";
 import ConfirmForm from "@/components/admin/ConfirmForm";
 import { adminCreateExpense, adminDeleteExpense } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function CustosPage({
 }: {
   searchParams: { mes?: string; cat?: string };
 }) {
+  await exigirSessaoDoPainel();
   const { gte, lt, iso } = mesRange(searchParams.mes ?? "");
   const catFiltro = searchParams.cat || "";
 

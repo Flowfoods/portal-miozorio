@@ -7,6 +7,7 @@ import {
   adminUpdateFaq,
   adminDeleteFaq,
 } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ const CATEGORIAS = [
 ] as const;
 
 export default async function AdminPacotesPage() {
+  await exigirSessaoDoPainel();
   const [pacotes, faqs] = await Promise.all([
     prisma.pacote.findMany({ orderBy: [{ categoria: "asc" }, { sort: "asc" }] }),
     prisma.faq.findMany({ orderBy: [{ categoria: "asc" }, { sort: "asc" }] }),

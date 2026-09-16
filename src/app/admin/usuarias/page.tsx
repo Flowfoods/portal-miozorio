@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { MIN_SENHA } from "@/lib/security";
 import {
   adminCreateUser,
@@ -11,11 +11,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsuariasPage() {
-  const [session, users] = await Promise.all([
-    getAdminSession(),
-    prisma.adminUser.findMany({ orderBy: { createdAt: "asc" } }),
-  ]);
-  const myEmail = session?.user?.email?.toLowerCase();
+  const session = await exigirSessaoDoPainel();
+  const users = await prisma.adminUser.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+  const myEmail = session.user?.email?.toLowerCase();
 
   return (
     <>

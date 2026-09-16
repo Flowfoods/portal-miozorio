@@ -12,6 +12,7 @@ import {
   adminAddVariante,
   adminRemoverVariante,
 } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ const centsToReais = (cents: number) =>
   (cents / 100).toFixed(2).replace(".", ",");
 
 export default async function AdminServicosPage() {
+  await exigirSessaoDoPainel();
   // A1 — arquivado some da lista da Mi (o histórico continua no banco).
   const services = await prisma.service.findMany({
     where: { archivedAt: null },

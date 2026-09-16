@@ -4,6 +4,7 @@ import { sujeitoAtual, listarPasskeysDoSujeito } from "@/lib/passkeys";
 import PasskeyManager from "@/components/auth/PasskeyManager";
 import AdminContaForm from "@/components/admin/AdminContaForm";
 import { adminSaveSettings } from "../actions";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ const NUMERIC_FIELDS: {
 ];
 
 export default async function AdminConfigPage() {
+  await exigirSessaoDoPainel();
   const s = await getSettings(true);
   const suj = await sujeitoAtual("admin");
   const passkeys = suj

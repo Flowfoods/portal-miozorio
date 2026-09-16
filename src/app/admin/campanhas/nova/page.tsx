@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { exigirSessaoDoPainel } from "@/lib/auth-painel";
 import { prisma } from "@/lib/prisma";
 import CampanhaBuilder from "@/components/admin/CampanhaBuilder";
 
 export const dynamic = "force-dynamic";
 
 export default async function NovaCampanhaPage() {
-  await requireAdmin();
+  await exigirSessaoDoPainel();
   const [servicos, segs, templates] = await Promise.all([
     prisma.service.findMany({
       where: { active: true, archivedAt: null },
